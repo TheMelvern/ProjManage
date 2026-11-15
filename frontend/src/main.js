@@ -4,6 +4,8 @@ import App from './App.vue';
 import Login from './views/modules/authentication/Login.vue';
 import Signup from './views/modules/authentication/Signup.vue';
 import ReviewCenter from './views/modules/administration/ReviewCenter.vue';
+import LeaveTracker from './views/modules/people/LeaveTracker.vue';
+import Parameters from './views/modules/administration/Parameters.vue';
 import PortfolioOverview from './views/modules/projects/pmoDashboard/PortfolioOverview.vue';
 import ProjectWorkspace from './views/modules/projects/ProjectWorkspace.vue';
 import RaidWorkspace from './views/modules/projects/RaidWorkspace.vue';
@@ -18,6 +20,8 @@ const router = createRouter({
     { path: '/login', name: 'Login', component: Login, meta: { public: true } },
     { path: '/signup', name: 'Signup', component: Signup, meta: { public: true } },
     { path: '/approvals', name: 'Approvals', component: ReviewCenter },
+    { path: '/leave', name: 'Leave', component: LeaveTracker },
+    { path: '/admin/parameters', name: 'Parameters', component: Parameters },
     { path: '/', redirect: '/portfolio' },
     { path: '/portfolio', name: 'Portfolio', component: PortfolioOverview },
     { path: '/workspace', name: 'Workspace', component: ProjectWorkspace },
