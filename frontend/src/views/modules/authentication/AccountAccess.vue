@@ -17,7 +17,7 @@
         <button type="submit" :disabled="busy">{{ busy?'Submitting…':mode==='forgot'?'Send password reset link':'Send verification link' }}</button>
       </form>
       <form v-else-if="mode==='reset'" @submit.prevent="reset">
-        <p v-if="!token" class="notice error">The reset link is missing a token. Request a new link.</p>
+        <p v-if="!token && !success" class="notice error">The reset link is missing a token. Request a new link.</p>
         <label for="new-password">New password</label>
         <input id="new-password" v-model="password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required/>
         <label for="confirm-password">Confirm new password</label>
@@ -25,7 +25,7 @@
         <button type="submit" :disabled="busy || !token">{{ busy?'Resetting…':'Reset password' }}</button>
       </form>
       <form v-else @submit.prevent="verify">
-        <p v-if="!token" class="notice error">The verification link is missing a token. Request another verification email.</p>
+        <p v-if="!token && !success" class="notice error">The verification link is missing a token. Request another verification email.</p>
         <button type="submit" :disabled="busy || !token">{{ busy?'Verifying…':'Verify my email' }}</button>
       </form>
       <div class="account-links">
