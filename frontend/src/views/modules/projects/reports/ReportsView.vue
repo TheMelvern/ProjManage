@@ -8,7 +8,8 @@
       </div>
       <div class="report-actions">
         <button type="button" @click="loadReport" :disabled="loading">Refresh</button>
-        <button type="button" class="primary" @click="downloadCSV" :disabled="!report">Export CSV</button>
+        <button type="button" class="primary" @click="submitPublication" :disabled="!report || publishing">Submit report for check</button>
+        <button type="button" @click="downloadCSV" :disabled="!selectedPublication">Export approved CSV</button>
       </div>
     </header>
 
@@ -21,6 +22,17 @@
       <button type="button" @click="loadReport">Try again</button>
     </div>
 
+    <p v-if="publicationNotice" class="report-notice" role="status">{{ publicationNotice }}</p>
+    <div class="report-notice">
+      <label for="approved-report">Approved executive snapshots</label>
+      <select id="approved-report" v-model="publicationId">
+        <option value="">Choose approved publication</option>
+        <option v-for="item in published" :key="item.id" :value="item.id">
+          {{ item.summary }} · {{ formatDate(item.reviewedAt) }}
+        </option>
+      </select>
+      <small>Export is available only for independently approved snapshots.</small>
+    </div>
     <template v-if="report">
       <div class="report-metrics">
         <article v-for="metric in metrics" :key="metric.label" class="report-metric">
@@ -68,6 +80,11 @@ const liveMode = import.meta.env.VITE_USE_LIVE_API === 'true';
 const loading = ref(false);
 const error = ref('');
 const report = ref(null);
+const published = ref([]);
+const publicationId = ref('');
+const publishing = ref(false);
+const publicationNotice = ref('');
+const selectedPublication = computed(() => published.value.find(p => p.id === publicationId.value) || null);
 
 const metrics = computed(() => {
   if (!report.value) return [];
@@ -91,6 +108,7 @@ async function loadReport() {
   try {
     const response = await axiosInstance.get('/reports/portfolio');
     report.value = response.data.data;
+    published.value = (await axiosInstance.get('/reports/published')).data.data;
   } catch (cause) {
     report.value = null;
     error.value = cause.response?.data?.message || 'Unable to load report. Check API connection and login.';
@@ -98,8 +116,20 @@ async function loadReport() {
     loading.value = false;
   }
 }
-function downloadCSV() {
+async function submitPublication() {
   if (!report.value) return;
+  publicationNotice.value = '';
+  publishing.value = true;
+  try {
+    await axiosInstance.post('/reviews/operations', { kind: 'REPORT_PUBLISH', values: {},
+      summary: 'Executive portfolio snapshot ' + new Date().toISOString().slice(0, 10) });
+    publicationNotice.value = 'Publication submitted. A separate PMO checker must approve the snapshot before export.';
+  } catch (cause) {
+    publicationNotice.value = cause.response?.data?.message || 'Unable to submit report for review.';
+  } finally { publishing.value = false; }
+}
+function downloadCSV() {
+  if (!selectedPublication.value) return;
   const escapeCell = (value) => {
     let text = String(value ?? '');
     if (/^[=+\-@]/.test(text)) text = "'" + text;
@@ -107,7 +137,7 @@ function downloadCSV() {
   };
   const records = [
     ['Project', 'Client', 'Status', 'Health', 'Progress (%)', 'Completed tasks', 'Total tasks', 'Overdue tasks'],
-    ...report.value.projects.map((project) => [
+    ...selectedPublication.value.snapshot.projects.map((project) => [
       project.name, project.client, project.status, project.health,
       project.progressPercent, project.completedTasks, project.totalTasks, project.overdueTasks
     ])
@@ -133,7 +163,7 @@ onMounted(loadReport);
 .report-actions button, .report-notice button { border:1px solid #cfd8ea; border-radius:10px; padding:10px 16px; color:#3155a5; background:white; cursor:pointer; font-weight:600; }
 .report-actions .primary { background:#2856bc; border-color:#2856bc; color:white; }
 .report-actions button:disabled { opacity:.5; cursor:not-allowed; }
-.report-notice { background:white; border:1px solid #d8e2f0; border-radius:12px; padding:18px; }
+.report-notice { background:white; border:1px solid #d8e2f0; border-radius:12px; padding:18px; margin:12px 0; display:flex; align-items:center; gap:12px; flex-wrap:wrap; font-size:13px; } .report-notice select { border:1px solid #d4dfee; border-radius:9px; padding:9px; background:#f8fafc; color:#263b5c; } .report-notice small { color:#64748b; }
 .report-error { color:#ae2f49; }
 .report-metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; margin:24px 0; }
 .report-metric { background:white; border:1px solid #e6eaf2; border-radius:16px; padding:21px; display:flex; flex-direction:column; gap:12px; }
