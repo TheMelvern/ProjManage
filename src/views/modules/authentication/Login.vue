@@ -16,7 +16,7 @@
             <div class="login-branding-logo">
               <span class="material-symbols-outlined login-branding-icon">group</span>
             </div>
-            <span class="login-branding-title">Cardzone</span>
+            <span class="login-branding-title">PMO Portal</span>
           </div>
           <h1 class="login-branding-headline">
             Intelligence Internal Operation Hub
@@ -40,14 +40,14 @@
           <div class="login-auth-header">
             <div class="login-mobile-branding">
               <span class="material-symbols-outlined login-mobile-icon">group</span>
-              <span class="login-mobile-title">Cardzone</span>
+              <span class="login-mobile-title">PMO Portal</span>
             </div>
             <h2 class="login-auth-title">Welcome Back</h2>
             <p class="login-auth-subtitle">Please enter your credentials to access the system.</p>
           </div>
 
           <!-- Demo Credentials Section -->
-          <div class="demo-credentials" v-if="showDemoCredentials">
+          <div class="demo-credentials" v-if="showDemoCredentials && demoAuthEnabled">
             <div class="demo-header">
               <span class="material-symbols-outlined demo-icon">info</span>
               <h3>Demo Accounts</h3>
@@ -120,7 +120,7 @@
               <label for="remember-me" class="login-checkbox-label">
                 Remember me
               </label>
-              <button type="button" @click="showDemoCredentials = true" class="demo-toggle-btn">
+              <button type="button" v-if="demoAuthEnabled" @click="showDemoCredentials = true" class="demo-toggle-btn">
                 Show Demo Accounts
               </button>
             </div>
@@ -165,7 +165,7 @@
         <!-- Global Footer for bottom edge -->
         <div class="login-copyright">
           <p class="login-copyright-text">
-            © {{ currentYear }} Cardzone Internal System. DEMO MODE
+            © {{ currentYear }} PMO Portal · {{ demoAuthEnabled ? 'Development demo' : 'Secure workspace' }}
           </p>
         </div>
       </div>
@@ -174,12 +174,15 @@
 </template>
 
 <script>
+import axiosInstance from '../../../api/axiosConfig';
+
 export default {
   name: 'Login',
   data() {
     return {
       email: '',
       password: '',
+      demoAuthEnabled: import.meta.env.DEV && import.meta.env.VITE_ENABLE_DEMO_AUTH === 'true',
       selectedRole: '',
       showPassword: false,
       showRoleSelection: false,
@@ -289,67 +292,56 @@ export default {
       this.selectedRole = roleId
     },
 
-    // Handle login with mock authentication
+    // Live API authentication is enabled with VITE_USE_LIVE_API=true.
+    // Demo login is intentionally restricted to explicit local development mode.
     async handleLogin() {
-      // Basic validation
       if (!this.email || !this.password) {
-        this.showError('Please enter both email and password')
-        return
+        this.showError('Please enter both email and password');
+        return;
       }
-
-      this.isLoading = true
-
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1500))
-
-      // Find user in mock database
-      const user = this.mockUsers.find(u => 
-        u.email.toLowerCase() === this.email.toLowerCase() && 
-        u.password === this.password
-      )
-
-      if (user) {
-        // Update last login
-        user.lastLogin = new Date().toISOString()
-        
-        // Store user data in localStorage (mock session)
-        localStorage.setItem('user', JSON.stringify({
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-          department: user.department,
-          permissions: user.permissions,
-          lastLogin: user.lastLogin,
-          icon: user.icon
-        }))
-
-        // Store remember me preference
-        if (this.rememberMe) {
-          localStorage.setItem('rememberedEmail', this.email)
-        } else {
-          localStorage.removeItem('rememberedEmail')
+      this.isLoading = true;
+      try {
+        if (import.meta.env.VITE_USE_LIVE_API === 'true') {
+          const response = await axiosInstance.post('/auth/login', {
+            email: this.email,
+            password: this.password
+          });
+          const payload = response.data.data;
+          if (!payload?.accessToken || !payload?.user) throw new Error('Unexpected authentication response');
+          localStorage.setItem('access_token', payload.accessToken);
+          localStorage.setItem('user', JSON.stringify({
+            ...payload.user,
+            lastLogin: new Date().toISOString()
+          }));
+          if (this.rememberMe) localStorage.setItem('rememberedEmail', this.email);
+          else localStorage.removeItem('rememberedEmail');
+          this.$router.push('/dashboard');
+          return;
         }
-
-        // Show success message
-        this.showSuccess(`Welcome back, ${user.name}!`)
-        
-        // Redirect based on role
-        setTimeout(() => {
-          this.redirectToDashboard(user.role)
-        }, 500)
-
-      } else {
-        // Show error for invalid credentials
-        this.showError('Invalid email or password. Try: admin@cardzone.com / admin123')
-        
-        // Auto-suggest demo credentials
-        setTimeout(() => {
-          this.showDemoCredentials = true
-        }, 1000)
+        if (!this.demoAuthEnabled) {
+          this.showError('API login is not configured. Set VITE_USE_LIVE_API=true.');
+          return;
+        }
+        const user = this.mockUsers.find((entry) =>
+          entry.email.toLowerCase() === this.email.toLowerCase() &&
+          entry.password === this.password
+        );
+        if (!user) {
+          this.showError('Invalid development demo credentials');
+          return;
+        }
+        localStorage.setItem('user', JSON.stringify({
+          id: user.id, email: user.email, name: user.name,
+          role: user.role, lastLogin: new Date().toISOString()
+        }));
+        if (this.rememberMe) localStorage.setItem('rememberedEmail', this.email);
+        else localStorage.removeItem('rememberedEmail');
+        this.$router.push('/dashboard');
+      } catch (error) {
+        this.showError(error.response?.data?.message || 'Unable to sign in. Check the API and credentials.');
+      } finally {
+        this.isLoading = false;
       }
-
-      this.isLoading = false
     },
 
     // Redirect to appropriate dashboard
@@ -396,6 +388,11 @@ export default {
       this.rememberMe = true
     }
     
+    // Local demo sessions are not accepted in live API mode.
+    if (import.meta.env.VITE_USE_LIVE_API === 'true' && !localStorage.getItem('access_token')) {
+      localStorage.removeItem('user');
+      return;
+    }
     // Check if user is already logged in
     const storedUser = localStorage.getItem('user')
     if (storedUser) {
