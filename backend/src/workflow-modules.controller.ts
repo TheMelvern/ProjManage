@@ -14,21 +14,35 @@ class LeaveDto {
 }
 
 class ParameterDto {
-  @IsIn(['timezone', 'currency', 'dateFormat', 'fiscalYearStart', 'leaveApprovalSlaDays', 'leaveAnnualEntitlement', 'leaveMedicalEntitlement', 'riskEscalationThreshold', 'sessionTimeoutMinutes'])
+  @IsIn(['timezone', 'currency', 'dateFormat', 'fiscalYearStart', 'leaveApprovalSlaDays', 'leaveAnnualEntitlement', 'leaveMedicalEntitlement', 'leavePublicHolidays', 'riskEscalationThreshold', 'sessionTimeoutMinutes'])
   key!: string;
-  @IsString() @MinLength(1) @MaxLength(120) value!: string;
+  @IsString() @MinLength(1) @MaxLength(2000) value!: string;
   @IsOptional() @IsString() @MaxLength(400) summary?: string;
 }
 
 
-export function workdays(start: string, end: string, dayType = 'FULL') {
+export function parseHolidays(raw: unknown): string[] {
+  if (typeof raw !== 'string' || !raw.trim()) return [];
+  const input = raw.split(',').map(s => s.trim()).filter(Boolean);
+  if (input.length > 500) throw new BadRequestException('Holiday calendar exceeds 500 dates');
+  for (const date of input) {
+    if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(date) ||
+      !Number.isFinite(Date.parse(date + 'T00:00:00.000Z')) ||
+      new Date(date + 'T00:00:00.000Z').toISOString().slice(0,10) !== date) {
+      throw new BadRequestException('Holiday dates must use YYYY-MM-DD');
+    }
+  }
+  return [...new Set(input)];
+}
+export function workdays(start: string, end: string, dayType = 'FULL', holidays: readonly string[] = []) {
   const first = new Date(start + 'T00:00:00.000Z');
   const last = new Date(end + 'T00:00:00.000Z');
   if (!Number.isFinite(first.valueOf()) || !Number.isFinite(last.valueOf())) return 0;
   let count = 0;
+  const excluded = new Set(holidays);
   for (let day = first.getTime(); day <= last.getTime() && count < 260; day += 86400000) {
     const weekday = new Date(day).getUTCDay();
-    if (weekday !== 0 && weekday !== 6) count++;
+    if (weekday !== 0 && weekday !== 6 && !excluded.has(new Date(day).toISOString().slice(0,10))) count++;
   }
   return dayType !== 'FULL' && start === end ? count / 2 : count;
 }
@@ -61,10 +75,11 @@ export class LeaveController {
       }),
       this.prisma.organizationParameter.findMany({
         where: { organizationId: req.principal.organizationId,
-          key: { in: ['leaveAnnualEntitlement', 'leaveMedicalEntitlement'] } }
+          key: { in: ['leaveAnnualEntitlement', 'leaveMedicalEntitlement', 'leavePublicHolidays'] } }
       })
     ]);
     const configured = Object.fromEntries(parameters.map(p => [p.key, Number(p.value)]));
+    const holidays = parseHolidays(parameters.find(p => p.key === 'leavePublicHolidays')?.value);
     const entitlements = {
       ANNUAL: Number.isFinite(configured.leaveAnnualEntitlement) && configured.leaveAnnualEntitlement >= 0
         ? configured.leaveAnnualEntitlement : 18,
@@ -80,14 +95,14 @@ export class LeaveController {
       const from = String(p.startDate), to = String(p.endDate);
       const lower = from < year + '-01-01' ? year + '-01-01' : from;
       const upper = to > year + '-12-31' ? year + '-12-31' : to;
-      if (lower <= upper) used[type] += workdays(lower, upper, String(p.dayType || 'FULL'));
+      if (lower <= upper) used[type] += workdays(lower, upper, String(p.dayType || 'FULL'), holidays);
     }
     const remaining = {
       ANNUAL: Math.max(0, entitlements.ANNUAL - used.ANNUAL),
       MEDICAL: Math.max(0, entitlements.MEDICAL - used.MEDICAL)
     };
     return { success: true, data: { year, entitlement: entitlements, used, remaining,
-      note: 'Weekdays only. Public holidays, half-days and tenure prorating require configured HR calendars.' } };
+      holidays, note: 'Weekdays excluding configured organization holidays. Hire-date prorating and accrual require HR policy.' } };
   }
 
   @Get('team')
@@ -148,10 +163,14 @@ export class LeaveController {
       throw new BadRequestException('Requests longer than 60 days must be handled by HR');
     }
     const dayType = body.dayType || 'FULL';
+    const policy = await this.prisma.organizationParameter.findUnique({
+      where: { organizationId_key: { organizationId: req.principal.organizationId, key: 'leavePublicHolidays' } }
+    });
+    const holidays = parseHolidays(policy?.value);
     if (dayType !== 'FULL' && body.startDate !== body.endDate) {
       throw new BadRequestException('Half-day leave must start and end on the same day');
     }
-    if (workdays(body.startDate, body.endDate, dayType) === 0) {
+    if (workdays(body.startDate, body.endDate, dayType, holidays) === 0) {
       throw new BadRequestException('A leave request must include at least one weekday');
     }
     const overlapping = await this.prisma.reviewRequest.findMany({
@@ -170,7 +189,7 @@ export class LeaveController {
     const balances = await this.balances(req);
     const remaining = balances.data.remaining as Record<string, number>;
     if (['ANNUAL', 'MEDICAL'].includes(body.type) &&
-      workdays(body.startDate, body.endDate, dayType) > (remaining[body.type] ?? 0)) {
+      workdays(body.startDate, body.endDate, dayType, holidays) > (remaining[body.type] ?? 0)) {
       throw new BadRequestException('Insufficient approved leave balance');
     }
     const request = await this.prisma.reviewRequest.create({
@@ -203,6 +222,7 @@ export class ParametersController {
   @Post('proposals')
   async propose(@Req() req: AuthenticatedRequest, @Body() body: ParameterDto) {
     this.assertAdmin(req);
+    if (body.key === 'leavePublicHolidays') parseHolidays(body.value);
     const current = await this.prisma.organizationParameter.findUnique({
       where: { organizationId_key: { organizationId: req.principal.organizationId, key: body.key } }
     });
