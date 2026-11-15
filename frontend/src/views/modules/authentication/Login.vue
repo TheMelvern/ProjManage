@@ -249,9 +249,7 @@ export default {
 <style scoped>
 .mfa-explainer{color:#607086;font-size:13px;line-height:1.6;margin:8px 0 20px}.mfa-form{margin-top:16px}.mfa-back{background:transparent;border:0;color:#315ac4;text-align:center;font-weight:750;padding:11px;cursor:pointer}
 .signup-prompt{margin:18px 0;color:#64748b;font-size:13px}.signup-prompt a{color:#315ac4;text-decoration:none;font-weight:800}
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
-@
+
 /* Demo Credentials Styles */
 .demo-credentials {
   background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
