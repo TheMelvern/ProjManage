@@ -19,10 +19,17 @@ export class TimesheetsController {
   async list(@Req() req: AuthenticatedRequest, @Param('projectId') projectId: string) {
     await this.projects.findOne(req.principal.organizationId, projectId);
     const isManager = ['ADMIN', 'PMO', 'PROJECT_MANAGER'].includes(req.principal.role);
-    return { success: true, data: await this.prisma.timesheetEntry.findMany({
+    const entries = await this.prisma.timesheetEntry.findMany({
       where: { projectId, ...(isManager ? {} : { userId: req.principal.userId }) },
       orderBy: { workDate: 'desc' }, take: 200
-    }) };
+    });
+    const users = await this.prisma.user.findMany({
+      where: { id: { in: [...new Set(entries.map(e => e.userId))] } },
+      select: { id: true, name: true }
+    });
+    const names = new Map(users.map(u => [u.id, u.name]));
+    return { success: true, data: entries.map(e => ({ ...e,
+      userName: names.get(e.userId) || 'Unknown member' })) };
   }
 
   @Post()
