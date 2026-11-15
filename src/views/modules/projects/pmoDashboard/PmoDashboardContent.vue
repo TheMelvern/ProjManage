@@ -143,6 +143,7 @@
 
 <script>
 import { ref, computed, onMounted } from 'vue'
+import { projectService } from '../../../services/projectService'
 
 export default {
   name: 'PMODashboardHome',
@@ -155,8 +156,13 @@ export default {
     const allProjects = ref([])
     const circumference = 2 * Math.PI * 25
 
-    const loadProjects = () => {
+    const loadProjects = async () => {
       try {
+        if (import.meta.env.VITE_USE_LIVE_API === 'true') {
+          const response = await projectService.getProjects();
+          allProjects.value = response.data;
+          return;
+        }
         const data = localStorage.getItem('saved_projects')
         if (data) {
           allProjects.value = JSON.parse(data)
