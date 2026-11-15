@@ -5,9 +5,7 @@
       <!-- Left Side: Visual Branding (Hidden on mobile) -->
       <div class="login-branding-panel">
         <!-- Background Image with Overlay -->
-        <div class="login-background-image"
-          :style="{ backgroundImage: `url('https://lh3.googleusercontent.com/aida-public/AB6AXuBYWWFGDkLgdhqRFHfuNwx339lfuvA4w-_kupsTNpk15XHhy_Ip02BZKkN5UQ0ElK6MLvfK6zC_77gxSLF562yzVxCSXC5MYVWom7C4UXI8r67Ww5ABRqCAI7C5fm2TJIIjfo8-b_mP_aM9zg7cou4awD_0tKasi89KkFrqxlQE97d6xP7UbMb6R_GViL5vIUlvnV-hYyMJoERSe9__D_pTfegvp-fQMAMgSEeBg7zctGFC3nQgnPQ6mcHvC6Ib6q7LQRF8Y9qW15o')` }">
-        </div>
+        <div class="login-background-image"></div>
         <div class="login-branding-overlay"></div>
 
         <!-- Branding Content -->
@@ -19,10 +17,10 @@
             <span class="login-branding-title">PMO Portal</span>
           </div>
           <h1 class="login-branding-headline">
-            Intelligence Internal Operation Hub
+            Project Portfolio Intelligence
           </h1>
           <p class="login-branding-description">
-            All-In-One Intelligence system for project oversight, resource planning, and financial tracking.
+            Organize delivery, risks, project effort and executive reporting in one place.
           </p>
           <div class="login-branding-features">
             <div class="login-branding-feature">
@@ -98,8 +96,8 @@
           <!-- Support Footer -->
           <div class="login-footer">
             <div class="login-footer-links">
-              <a class="login-footer-link" href="#">Terms of Service</a>
-              <a class="login-footer-link" href="#">Privacy Policy</a>
+              <span class="login-footer-link">PMO Workspace</span>
+              <span class="login-footer-link">Local development</span>
             </div>
             <div class="login-system-status">
               <div class="login-status-indicator"></div>
