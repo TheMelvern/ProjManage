@@ -6,7 +6,7 @@ Framer-aligned project-management workspace, implementing the [PMO Framer design
 
 | Module | URL (Vue hash routes) | Function |
 |---|---|---|
-| Sign In / Sign Up | `/#/login`, `/#/signup` | JWT sign-in, pending organization enrollment |
+| Sign In / Sign Up | `/#/login`, `/#/signup` | JWT sign-in, independent approval and email verification |
 | Portfolio | `/#/portfolio` | Live project health, progress, risks and priorities |
 | Projects & Tasks | `/#/projects` | Project creation and updates, tasks, status proposals |
 | RAID | `/#/raid` | Risks, issues, decisions, actions |
@@ -46,7 +46,7 @@ npm run dev
 
 5. Open **http://localhost:5174**. API default is `http://127.0.0.1:3000/api`. Set `frontend/.env.local` `VITE_USE_LIVE_API=true` and `VITE_API_BASE_URL=http://127.0.0.1:3000/api`. Frontend route history uses `#/`.
 
-**Important:** New source changes use a two-stage process: maker submission → independent checker approval → persisted effect and audit. The maker's proposal is not the approved record. Invite/signup requests likewise cannot authenticate until approval.
+**Important:** To activate account approvals and password recovery, configure transactional email in `backend/.env`. See [email verification and recovery](docs/email-security.md).\n\n**Important:** New source changes use a two-stage process: maker submission → independent checker approval → persisted effect and audit. The maker's proposal is not the approved record. Invite/signup requests likewise cannot authenticate until approval.
 
 ## Verification and deployment
 
