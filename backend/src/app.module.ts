@@ -10,6 +10,8 @@ import { AuthService } from './auth.service';
 import { AuthGuard } from './auth.guard';
 import { TasksController } from './tasks.controller';
 import { ReportsController } from './reports.controller';
+import { RaidController } from './raid.controller';
+import { TimesheetsController } from './timesheets.controller';
 
 @Module({
   imports: [
@@ -24,7 +26,7 @@ import { ReportsController } from './reports.controller';
       }
     })
   ],
-  controllers: [HealthController, AuthController, ProjectsController, TasksController, ReportsController],
+  controllers: [HealthController, AuthController, ProjectsController, TasksController, ReportsController, RaidController, TimesheetsController],
   providers: [PrismaService, ProjectsService, AuthService, AuthGuard]
 })
 export class AppModule {}
