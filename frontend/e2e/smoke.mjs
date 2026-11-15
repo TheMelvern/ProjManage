@@ -36,6 +36,15 @@ try {
   const story=await page.locator('.auth-story').evaluate(el=>getComputedStyle(el).backgroundColor);
   assert.equal(story,'rgb(20, 34, 61)','PMO navy brand color does not match application sidebar');
   assert.equal(await page.getByText('Illustrative').isVisible(),true,'Sample dashboard preview must be labelled');
+  const loginType=await page.locator('.auth-form-card h2').evaluate(el=>({
+    family:getComputedStyle(el).fontFamily,size:getComputedStyle(el).fontSize,
+    weight:Number(getComputedStyle(el).fontWeight)
+  }));
+  assert.ok(loginType.family.includes('Inter'),'Authentication header must use Inter');
+  assert.equal(loginType.size,'30px','Authentication headings must use global display size');
+  assert.ok(loginType.weight>=700);
+  const loginInput=await page.locator('#login-email').evaluate(el=>getComputedStyle(el).fontSize);
+  assert.equal(loginInput,'13px','Authentication input typography must match design system');
 
   await page.getByRole('link',{name:'Forgot password?'}).click();
   await page.getByRole('heading',{name:'Reset your password'}).waitFor();
@@ -45,15 +54,27 @@ try {
   await page.waitForURL('**/#/login');
   await page.getByRole('link',{name:'Create an account'}).click();
   await page.getByRole('heading',{name:'Create your account'}).waitFor();
+  const signupSize=await page.getByRole('heading',{name:'Create your account'}).evaluate(el=>getComputedStyle(el).fontSize);
+  assert.equal(signupSize,loginType.size,'Signup and sign-in headings should have identical size');
+  const signupLabel=await page.getByText('Work email address',{exact:false}).first().evaluate(el=>getComputedStyle(el).fontSize);
+  assert.equal(signupLabel,'12px','Signup labels should follow shared typography');
   await page.getByRole('link',{name:'Sign in'}).click();
   await page.getByPlaceholder('name@company.com').fill('admin@pmo.test');
   await page.getByPlaceholder('••••••••').fill('local-test-password-12345');
   await page.getByRole('button',{name:/Sign In/i}).click();
   await page.waitForURL('**/#/portfolio',{timeout:15000});
   await page.getByRole('heading',{name:'Portfolio Overview'}).waitFor();
+  const headingSize=await page.getByRole('heading',{name:'Portfolio Overview'}).evaluate(el=>getComputedStyle(el).fontSize);
+  assert.equal(headingSize,'30px','Portfolio page title should follow global type scale');
+  const portfolioH2=await page.getByRole('heading',{name:'Portfolio health'}).evaluate(el=>getComputedStyle(el).fontSize);
+  assert.equal(portfolioH2,'18px','Portfolio card heading should follow global section scale');
+  const tableHeader=await page.locator('thead th').first().evaluate(el=>getComputedStyle(el).fontSize);
+  assert.equal(tableHeader,'11px','Table headings should share type scale');
 
   await page.getByRole('link',{name:/Projects & Tasks/}).click();
   await page.getByRole('heading',{name:'Projects & tasks'}).waitFor();
+  const projectHeading=await page.getByRole('heading',{name:'Projects & tasks'}).evaluate(el=>getComputedStyle(el).fontSize);
+  assert.equal(projectHeading,headingSize,'Operational module headings should match Portfolio');
   await page.getByText('E2E Delivery Project').first().waitFor({timeout:15000});
   await page.getByLabel('New project name').fill('Approved Browser Project');
   await page.getByRole('button',{name:'Submit project'}).click();

@@ -1,0 +1,135 @@
+/*
+ * PMO Portal type system
+ * One font family across authentication, navigation and operational screens.
+ * Semantic sizing is centralized; KPI figures remain intentionally larger.
+ */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+:root {
+  --pmo-font-body: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --pmo-type-page: 30px;
+  --pmo-type-section: 18px;
+  --pmo-type-subsection: 15px;
+  --pmo-type-body: 13px;
+  --pmo-type-label: 12px;
+  --pmo-type-caption: 11px;
+  --pmo-type-kicker: 10px;
+  --pmo-type-button: 12px;
+  --pmo-weight-normal: 400;
+  --pmo-weight-medium: 500;
+  --pmo-weight-semibold: 600;
+  --pmo-weight-bold: 750;
+  --pmo-weight-extra: 800;
+  --pmo-line-body: 1.55;
+  --pmo-line-heading: 1.22;
+  --pmo-tracking-heading: -0.025em;
+}
+
+/* Inherited typeface applies consistently, even inside third-party form controls. */
+html, body, #app, .app-shell, .app-shell-login,
+.app-content, .app-sidebar,
+button, input, select, textarea, optgroup, option {
+  font-family: var(--pmo-font-body);
+}
+body { font-size: var(--pmo-type-body); line-height: var(--pmo-line-body); }
+button, input, select, textarea { font-family: inherit; }
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined' !important;
+}
+
+/* Shared application hierarchy: all operational modules follow one scale. */
+.app-shell .app-content main h1 {
+  font-size: var(--pmo-type-page) !important;
+  font-weight: var(--pmo-weight-bold) !important;
+  line-height: var(--pmo-line-heading) !important;
+  letter-spacing: var(--pmo-tracking-heading);
+}
+.app-shell .app-content main h2 {
+  font-size: var(--pmo-type-section) !important;
+  font-weight: var(--pmo-weight-bold) !important;
+  line-height: 1.3;
+  letter-spacing: -0.015em;
+}
+.app-shell .app-content main h3 {
+  font-size: var(--pmo-type-subsection) !important;
+  font-weight: var(--pmo-weight-bold) !important;
+  line-height: 1.35;
+}
+.app-shell .app-content main p {
+  line-height: var(--pmo-line-body);
+}
+.app-shell .app-content main label {
+  font-size: var(--pmo-type-label) !important;
+  font-weight: 700;
+  line-height: 1.4;
+}
+.app-shell .app-content main :is(input, select, textarea) {
+  font-size: var(--pmo-type-body) !important;
+  line-height: 1.45;
+}
+.app-shell .app-content main :is(button, .secondary, .primary, .action-link) {
+  font-size: var(--pmo-type-button) !important;
+  font-weight: 700;
+}
+.app-shell .app-content main :is(table th, thead th) {
+  font-size: var(--pmo-type-caption) !important;
+  font-weight: var(--pmo-weight-bold) !important;
+  line-height: 1.4;
+}
+.app-shell .app-content main :is(table td, tbody td) {
+  font-size: var(--pmo-type-label) !important;
+  line-height: 1.5;
+}
+.app-shell .app-content main .eyebrow {
+  font-size: var(--pmo-type-kicker) !important;
+  font-weight: var(--pmo-weight-extra) !important;
+  letter-spacing: 0.1em;
+}
+.app-shell .app-content main small {
+  line-height: 1.45;
+}
+
+/* Sidebar and top bar share the same family and navigation hierarchy. */
+.app-shell .app-brand { font-size: 18px; font-weight: 750; }
+.app-shell .sidebar-links a { font-size: var(--pmo-type-body); font-weight: 600; }
+.app-shell .nav-category { font-size: var(--pmo-type-kicker); font-weight: 800; }
+.app-shell .topbar-label { font-size: 14px; font-weight: 750; }
+.app-shell .user-label { font-size: var(--pmo-type-body); }
+
+/* Sign-in, sign-up and account recovery use the same semantic scale as each other. */
+.app-shell-login :is(.auth-form-card, .account-card) h2 {
+  font-size: var(--pmo-type-page) !important;
+  font-weight: var(--pmo-weight-bold) !important;
+  line-height: var(--pmo-line-heading);
+  letter-spacing: var(--pmo-tracking-heading);
+}
+.app-shell-login :is(.auth-story, .brand) h1 {
+  font-size: 42px !important;
+  font-weight: var(--pmo-weight-extra) !important;
+  line-height: 1.14 !important;
+  letter-spacing: -0.03em;
+}
+.app-shell-login :is(.auth-intro, .intro, .story-intro) {
+  font-size: var(--pmo-type-body) !important;
+  line-height: 1.65;
+}
+.app-shell-login :is(.auth-form, .account-card form) label {
+  font-size: var(--pmo-type-label) !important;
+  font-weight: 700 !important;
+}
+.app-shell-login :is(.auth-form-card, .account-card) :is(input:not([type='checkbox']), select, textarea) {
+  font-size: var(--pmo-type-body) !important;
+}
+.app-shell-login :is(.auth-form-card, .account-card) button {
+  font-size: var(--pmo-type-body) !important;
+  font-weight: var(--pmo-weight-extra);
+}
+.app-shell-login :is(.auth-eyebrow, .eyebrow, .story-kicker) {
+  font-size: var(--pmo-type-kicker) !important;
+  font-weight: var(--pmo-weight-extra);
+  letter-spacing: .1em;
+}
+@media (max-width: 600px) {
+  :root { --pmo-type-page: 27px; }
+  .app-shell-login :is(.auth-story, .brand) h1 { font-size: 30px !important; }
+}

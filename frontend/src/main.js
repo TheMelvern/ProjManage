@@ -21,6 +21,7 @@ import TimesheetWorkspace from './views/modules/projects/TimesheetWorkspace.vue'
 import ReportsView from './views/modules/projects/reports/ReportsView.vue';
 import './styles/shared/tailwind.css';
 import './styles/shared/app.css';
+import './styles/shared/typography.css';
 
 const router = createRouter({
   history: createWebHashHistory(),
