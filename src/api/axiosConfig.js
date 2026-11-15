@@ -1,45 +1,40 @@
-// /src/api/axiosConfig.js - With axios installed
 import axios from 'axios';
 
-// Create axios instance with default config
+// Keep the API origin configurable in Vite environments.
 const axiosInstance = axios.create({
-  baseURL: import.meta.env.VUE_APP_API_BASE_URL || 'http://localhost:3000/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api',
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
-    'Accept': 'application/json'
+    Accept: 'application/json'
   }
 });
 
-// Request interceptor
 axiosInstance.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('auth_token') || 
-                  localStorage.getItem('access_token');
-    
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    
-    // For FormData, let browser set content-type
+    // Legacy keys are accepted during migration; new sessions use access_token.
+    const token = localStorage.getItem('access_token') ||
+      localStorage.getItem('auth_token') ||
+      localStorage.getItem('auth-token');
+
+    if (token) config.headers.Authorization = `Bearer ${token}`;
+
     if (config.data instanceof FormData) {
       delete config.headers['Content-Type'];
     }
-    
+
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-// Response interceptor
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('access_token');
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login';
+      ['access_token', 'auth_token', 'auth-token'].forEach((key) => localStorage.removeItem(key));
+      if (window.location.hash !== '#/login') {
+        window.location.hash = '#/login';
       }
     }
     return Promise.reject(error);
