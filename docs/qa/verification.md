@@ -5,7 +5,7 @@
 `.github/workflows/verify.yml` is the mandatory merge gate. It performs:
 1. **Frontend build**: `npm ci` and Vite production build.
 2. **Production frontend dependency audit**: fail on high severity vulnerabilities.
-3. **Backend/PostgreSQL integration**: committed Prisma migrations and seed, NestJS build, real HTTP lifecycle in `backend/test/integration.mjs`. Verifies tenant isolation, signup pending/review, maker and independent checker, project and task CRUD through approval, RAID, timesheets, executive published snapshots, leave weekdays/half-day/cancellation, reviewed admin parameters and roles, audit events, session revocation and login lockout.
+3. **Backend/PostgreSQL integration**: committed Prisma migrations and seed, NestJS build, real HTTP lifecycle in `backend/test/integration.mjs`. Verifies tenant isolation, signup pending/review, maker and independent checker, project and task CRUD through approval, RAID, timesheets, executive published snapshots, leave weekdays/half-day/cancellation, reviewed admin parameters and roles, audit events, session revocation, login lockout, email verification, resend rotation, reset password and expiring one-time token controls.
 4. **Browser E2E**: Chromium against a live API and PostgreSQL using `frontend/e2e/smoke.mjs`. Exercises login/signup, project/task/RAID/timesheet/report, leave and admin approvals, logout, and mobile menu. CI collects desktop/mobile screenshots.
 
 ## Merge policy
@@ -18,7 +18,7 @@ Active Framer PMO modules run as a local authenticated application with responsi
 
 ## Production readiness requirements (separate release gate)
 
-- Email verification, recovery and MFA for high-privilege identities.
+- MFA for high-privilege identities; staged validation of transactional email sender and delivery.
 - Distributed/edge rate limiting for multiple API processes; HTTPS, secure secret storage.
 - Independent security review of RBAC, object-level scope, token storage, CORS and input validation.
 - HR holiday calendars and accrual/pro-rating, additional approval routing and delegation.
