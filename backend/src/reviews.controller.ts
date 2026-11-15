@@ -4,6 +4,7 @@ import { IsEmail, IsEnum, IsIn, IsOptional, IsString, IsUUID, MaxLength, MinLeng
 import { hash } from 'bcryptjs';
 import { AuthGuard, AuthenticatedRequest } from './auth.guard';
 import { PrismaService } from './prisma.service';
+import { workdays } from './workflow-modules.controller';
 
 class RegisterDto {
   @IsString() @MinLength(2) @MaxLength(140) name!: string;
@@ -279,8 +280,48 @@ export class ReviewsController {
             update: { value: String(payload.value), updatedBy: req.principal.userId }
           });
         } else if (review.kind === 'LEAVE_REQUEST') {
-          // The approved review request itself is the authoritative leave record.
-          // No user can publish a leave approval without passing this checker gate.
+          // Revalidate against all effective absences at approval time. Pending requests do not consume balance.
+          if (!review.makerId) throw new BadRequestException('Leave requester missing');
+          const start = String(payload.startDate), end = String(payload.endDate);
+          const dayType = String(payload.dayType || 'FULL');
+          const approved = await tx.reviewRequest.findMany({ where: {
+            organizationId: review.organizationId, kind: 'LEAVE_REQUEST',
+            makerId: review.makerId, status: 'APPROVED'
+          } });
+          for (const r of approved) {
+            const p = r.payload as Prisma.JsonObject;
+            if (String(p.startDate) > end || String(p.endDate) < start) continue;
+            if (start === end && String(p.startDate) === String(p.endDate) &&
+              dayType !== 'FULL' && String(p.dayType || 'FULL') !== 'FULL' &&
+              dayType !== String(p.dayType)) continue;
+            throw new ConflictException('Leave overlaps an existing approved absence');
+          }
+          const leaveType = String(payload.type);
+          if (leaveType === 'ANNUAL' || leaveType === 'MEDICAL') {
+            const key = leaveType === 'ANNUAL' ? 'leaveAnnualEntitlement' : 'leaveMedicalEntitlement';
+            const policy = await tx.organizationParameter.findUnique({
+              where: { organizationId_key: { organizationId: review.organizationId, key } }
+            });
+            const configured = Number(policy?.value ?? (leaveType === 'ANNUAL' ? 18 : 14));
+            const entitlement = Number.isFinite(configured) && configured >= 0
+              ? configured : leaveType === 'ANNUAL' ? 18 : 14;
+            for (let year = Number(start.slice(0,4)); year <= Number(end.slice(0,4)); year++) {
+              const lower = start < year + '-01-01' ? year + '-01-01' : start;
+              const upper = end > year + '-12-31' ? year + '-12-31' : end;
+              const requestedDays = workdays(lower, upper, dayType);
+              const alreadyUsed = approved.reduce((total, r) => {
+                const p = r.payload as Prisma.JsonObject;
+                if (String(p.type) !== leaveType) return total;
+                const a = String(p.startDate), b = String(p.endDate);
+                const first = a < year + '-01-01' ? year + '-01-01' : a;
+                const last = b > year + '-12-31' ? year + '-12-31' : b;
+                return total + (first <= last ? workdays(first,last,String(p.dayType || 'FULL')) : 0);
+              }, 0);
+              if (alreadyUsed + requestedDays > entitlement) {
+                throw new ConflictException('Insufficient leave entitlement at approval time');
+              }
+            }
+          }
         } else if (review.kind === 'REGISTRATION') {
           const email = String(payload.email);
           const already = await tx.user.findUnique({ where: { email } });
