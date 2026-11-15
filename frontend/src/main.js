@@ -2,6 +2,8 @@ import { createApp } from 'vue';
 import { createRouter, createWebHashHistory } from 'vue-router';
 import App from './App.vue';
 import Login from './views/modules/authentication/Login.vue';
+import Signup from './views/modules/authentication/Signup.vue';
+import ReviewCenter from './views/modules/administration/ReviewCenter.vue';
 import PortfolioOverview from './views/modules/projects/pmoDashboard/PortfolioOverview.vue';
 import ProjectWorkspace from './views/modules/projects/ProjectWorkspace.vue';
 import RaidWorkspace from './views/modules/projects/RaidWorkspace.vue';
@@ -14,6 +16,8 @@ const router = createRouter({
   history: createWebHashHistory(),
   routes: [
     { path: '/login', name: 'Login', component: Login, meta: { public: true } },
+    { path: '/signup', name: 'Signup', component: Signup, meta: { public: true } },
+    { path: '/approvals', name: 'Approvals', component: ReviewCenter },
     { path: '/', redirect: '/portfolio' },
     { path: '/portfolio', name: 'Portfolio', component: PortfolioOverview },
     { path: '/workspace', name: 'Workspace', component: ProjectWorkspace },
@@ -29,7 +33,7 @@ router.beforeEach((to) => {
   if (!to.meta.public && !hasToken) {
     return { name: 'Login', query: { redirect: to.fullPath } };
   }
-  if (to.name === 'Login' && hasToken) return { name: 'Portfolio' };
+  if (['Login', 'Signup'].includes(to.name) && hasToken) return { name: 'Portfolio' };
   return true;
 });
 
