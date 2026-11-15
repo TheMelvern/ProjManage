@@ -132,6 +132,8 @@ async function loadProjects() {
     if (!projects.value.some(p => p.id === selectedId.value)) {
       selectedId.value = projects.value[0]?.id || null;
     }
+    projectStatus.value = selectedProject.value?.status || 'PLANNING';
+    projectHealth.value = selectedProject.value?.health || 'UNKNOWN';
     await loadTasks();
   } catch (cause) { showError(cause); } finally { loading.value = false; }
 }
