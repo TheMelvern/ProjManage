@@ -59,7 +59,7 @@
                 <option v-for="health in projectHealthOptions" :key="health" :value="health">{{ formatLabel(health) }}</option>
               </select>
             </div>
-            <button type="submit" :disabled="!liveMode || busy">Save status</button>
+            <button type="submit" :disabled="!liveMode || busy">Submit for check</button>
           </form>
           <div class="task-header"><h3>Delivery tasks</h3><span>{{ progress }}% complete</span></div>
           <div class="progress-track" :aria-label="progress + '% of tasks completed'" role="progressbar"
@@ -166,11 +166,11 @@ async function saveProject() {
   if (!selectedId.value) return;
   busy.value = true;
   try {
-    await axiosInstance.patch('/projects/' + encodeURIComponent(selectedId.value), {
-      status: projectStatus.value, health: projectHealth.value
+    await axiosInstance.post('/reviews/projects', {
+      projectId: selectedId.value, status: projectStatus.value, health: projectHealth.value,
+      summary: 'Review delivery status for ' + selectedProject.value.name
     });
-    await loadProjects();
-    showSuccess('Project status saved.');
+    showSuccess('Project change submitted for independent approval. It will not affect reports until approved.');
   } catch (cause) { showError(cause); } finally { busy.value = false; }
 }
 async function createTask() {
