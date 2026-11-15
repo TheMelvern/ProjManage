@@ -6,6 +6,9 @@ import Signup from './views/modules/authentication/Signup.vue';
 import ReviewCenter from './views/modules/administration/ReviewCenter.vue';
 import LeaveTracker from './views/modules/people/LeaveTracker.vue';
 import Parameters from './views/modules/administration/Parameters.vue';
+import UserAdmin from './views/modules/administration/UserAdmin.vue';
+import AuditLog from './views/modules/administration/AuditLog.vue';
+import TeamAvailability from './views/modules/people/TeamAvailability.vue';
 import PortfolioOverview from './views/modules/projects/pmoDashboard/PortfolioOverview.vue';
 import ProjectWorkspace from './views/modules/projects/ProjectWorkspace.vue';
 import RaidWorkspace from './views/modules/projects/RaidWorkspace.vue';
@@ -22,6 +25,9 @@ const router = createRouter({
     { path: '/approvals', name: 'Approvals', component: ReviewCenter },
     { path: '/leave', name: 'Leave', component: LeaveTracker },
     { path: '/admin/parameters', name: 'Parameters', component: Parameters },
+    { path: '/admin/users', name: 'UserAdmin', component: UserAdmin },
+    { path: '/admin/audit', name: 'AuditLog', component: AuditLog },
+    { path: '/leave/team', name: 'TeamAvailability', component: TeamAvailability },
     { path: '/', redirect: '/portfolio' },
     { path: '/portfolio', name: 'Portfolio', component: PortfolioOverview },
     { path: '/workspace', name: 'Workspace', component: ProjectWorkspace },
