@@ -88,7 +88,16 @@ export class ReviewsController {
       },
       orderBy: { createdAt: 'desc' }, take: 150
     });
-    return { success: true, data: requests.map(safeRequest) };
+    const ids = [...new Set(requests.flatMap(r => [r.makerId, r.checkerId]).filter((id): id is string => Boolean(id)))];
+    const users = await this.prisma.user.findMany({
+      where: { id: { in: ids } }, select: { id: true, name: true }
+    });
+    const names = new Map(users.map(u => [u.id, u.name]));
+    return { success: true, data: requests.map(r => ({
+      ...safeRequest(r),
+      makerName: r.makerId ? names.get(r.makerId) || 'Unknown member' : 'Applicant',
+      checkerName: r.checkerId ? names.get(r.checkerId) || 'Unknown reviewer' : null
+    })) };
   }
 
   @Post('projects')
