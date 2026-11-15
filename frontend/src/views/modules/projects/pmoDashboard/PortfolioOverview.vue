@@ -38,6 +38,7 @@
               <th scope="col">Health</th>
               <th scope="col">Progress</th>
               <th scope="col">Overdue</th>
+              <th scope="col">Open risks</th>
             </tr></thead>
             <tbody>
               <tr v-for="project in projects" :key="project.id">
@@ -45,9 +46,10 @@
                 <td><span class="health-label" :class="'tone-' + project.health.toLowerCase()">{{ project.health }}</span></td>
                 <td>{{ project.progressPercent }}%</td>
                 <td>{{ project.overdueTasks }}</td>
+                <td>{{ project.openRisks ?? 0 }}</td>
               </tr>
               <tr v-if="projects.length === 0">
-                <td colspan="4" class="empty-cell">{{ liveMode && !loading ? 'No project records found.' : 'Connect live data to populate this portfolio.' }}</td>
+                <td colspan="5" class="empty-cell">{{ liveMode && !loading ? 'No project records found.' : 'Connect live data to populate this portfolio.' }}</td>
               </tr>
             </tbody>
           </table>
@@ -103,13 +105,19 @@ const kpis = computed(() => [
 
 const priorities = computed(() => {
   const ranked = projects.value
-    .filter(project => project.overdueTasks > 0 || ['AMBER', 'RED'].includes(project.health))
+    .filter(project => project.overdueTasks > 0 || project.highRisks > 0 ||
+      project.openIssues > 0 || ['AMBER', 'RED'].includes(project.health))
     .map(project => ({
       id: project.id,
-      order: project.health === 'RED' ? 0 : project.overdueTasks > 0 ? 1 : 2,
-      title: project.overdueTasks > 0
-        ? 'Resolve ' + project.overdueTasks + ' overdue task' + (project.overdueTasks === 1 ? '' : 's')
-        : 'Review ' + project.health.toLowerCase() + ' project health',
+      order: project.health === 'RED' || project.highRisks > 0 ? 0 :
+        project.overdueTasks > 0 || project.openIssues > 0 ? 1 : 2,
+      title: project.highRisks > 0
+        ? 'Mitigate ' + project.highRisks + ' high-severity risk' + (project.highRisks === 1 ? '' : 's')
+        : project.overdueTasks > 0
+          ? 'Resolve ' + project.overdueTasks + ' overdue task' + (project.overdueTasks === 1 ? '' : 's')
+          : project.openIssues > 0
+            ? 'Resolve ' + project.openIssues + ' open issue' + (project.openIssues === 1 ? '' : 's')
+            : 'Review ' + project.health.toLowerCase() + ' project health',
       subtitle: project.name
     }))
     .sort((a, b) => a.order - b.order);
