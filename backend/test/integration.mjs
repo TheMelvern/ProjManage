@@ -242,6 +242,23 @@ try {
   await approve(checker,param.id);
   const parameters=(await request('GET','/admin/parameters',maker,undefined,200)).data;
   assert.equal(parameters.find(x=>x.key==='currency').value,'MYR');
+  // Approved holiday policy changes leave-day counting consistently at application and review time.
+  const holidayDate=y+'-12-18';
+  const holidayReview=(await request('POST','/admin/parameters/proposals',maker,{
+    key:'leavePublicHolidays',value:holidayDate,summary:'Configure company public holiday'
+  },201)).data;
+  await approve(checker,holidayReview.id);
+  const balanceWithHoliday=(await request('GET','/leave/balances',member,undefined,200)).data;
+  assert.ok(balanceWithHoliday.holidays.includes(holidayDate));
+  await request('POST','/leave',member,{
+    type:'ANNUAL',startDate:holidayDate,endDate:holidayDate,reason:'Holiday must not be booked'
+  },400);
+  const holidaySpanning=(await request('POST','/leave',member,{
+    type:'ANNUAL',startDate:holidayDate,endDate:y+'-12-21',reason:'One eligible weekday only'
+  },201)).data;
+  await approve(checker,holidaySpanning.id);
+  const afterHolidayLeave=(await request('GET','/leave/balances',member,undefined,200)).data;
+  assert.equal(afterHolidayLeave.used.ANNUAL,balanceWithHoliday.used.ANNUAL+1);
   const users=(await request('GET','/admin/users',maker,undefined,200)).data;
   const target=users.find(x=>x.userId===memberUser.id);
   assert.ok(target);
