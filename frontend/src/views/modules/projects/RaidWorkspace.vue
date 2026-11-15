@@ -6,7 +6,7 @@
         <h1>RAID Register</h1>
         <p>Track risks, issues, decisions and action items across your project portfolio.</p>
       </div>
-      <router-link to="/workspace" class="nav-link">Delivery workspace</router-link>
+      <div class="module-shortcuts"><router-link to="/raid/detail" class="nav-link">View details</router-link><router-link to="/workspace" class="nav-link">Delivery workspace</router-link></div>
     </header>
     <p v-if="!liveMode" role="status" class="notice">
       This workspace requires local API mode. Set VITE_USE_LIVE_API=true and sign in.
@@ -139,6 +139,7 @@ onMounted(loadProjects);
 </script>
 
 <style scoped>
+.module-shortcuts{display:flex;gap:9px;flex-wrap:wrap}
 .raid-workspace{min-height:100vh;background:#f5f7fb;padding:34px;color:#21334b}
 .raid-header{display:flex;gap:24px;justify-content:space-between;align-items:center;margin-bottom:26px}
 .eyebrow{font-size:11px;font-weight:800;letter-spacing:.1em;color:#4a66ad}
