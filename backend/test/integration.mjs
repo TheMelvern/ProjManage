@@ -333,6 +333,75 @@ try {
   await request('GET','/projects',registrantSession,undefined,401);
   await request('POST','/auth/reset-password',null,{token:resetToken,password:'another-password-123456'},400);
   await request('POST','/auth/login',null,{email:registrant,password:'new-user-password-1234'},401);
+  const mfaBefore=await login(registrant,'updated-password-123456');
+  const disabledStatus=(await request('GET','/auth/mfa/status',mfaBefore,undefined,200)).data;
+  assert.equal(disabledStatus.enabled,false);
+  await request('POST','/auth/mfa/setup',mfaBefore,{password:'wrong-password'},401);
+  const setup=(await request('POST','/auth/mfa/setup',mfaBefore,{
+    password:'updated-password-123456'
+  },201)).data;
+  assert.ok(/^[A-Z2-7]+$/.test(setup.secret));
+  assert.ok(setup.otpauthUri.startsWith('otpauth://totp/'));
+  const alphabet='ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  let n=0,bits=0,secretBytes=[];
+  for(const letter of setup.secret){
+    n=(n<<5)|alphabet.indexOf(letter);bits+=5;
+    if(bits>=8){secretBytes.push((n>>>(bits-8))&255);bits-=8;}
+  }
+  const {createHmac}=await import('node:crypto');
+  const secret=Buffer.from(secretBytes);
+  const otp=()=>{
+    const counter=Buffer.alloc(8);
+    counter.writeBigUInt64BE(BigInt(Math.floor(Date.now()/30000)));
+    const h=createHmac('sha1',secret).update(counter).digest();
+    const offset=h[h.length-1]&15;
+    const code=((h[offset]&0x7f)<<24)|((h[offset+1]&255)<<16)|((h[offset+2]&255)<<8)|(h[offset+3]&255);
+    return String(code%1000000).padStart(6,'0');
+  };
+  await request('POST','/auth/mfa/confirm',mfaBefore,{code:'123xxx'},401);
+  const enabled=(await request('POST','/auth/mfa/confirm',mfaBefore,{code:otp()},201)).data;
+  assert.equal(enabled.enabled,true);
+  assert.equal(enabled.recoveryCodes.length,8);
+  await request('GET','/auth/mfa/status',mfaBefore,undefined,401);
+  const challenge=(await request('POST','/auth/login',null,{
+    email:registrant,password:'updated-password-123456'
+  },201)).data;
+  assert.equal(challenge.requiresMfa,true);
+  assert.ok(challenge.challengeToken&&!challenge.accessToken);
+  await request('POST','/auth/mfa/complete',null,{
+    challengeToken:challenge.challengeToken,code:'88888888'
+  },401);
+  const access=(await request('POST','/auth/mfa/complete',null,{
+    challengeToken:challenge.challengeToken,code:otp()
+  },201)).data;
+  assert.ok(access.accessToken);
+  await request('POST','/auth/mfa/complete',null,{
+    challengeToken:challenge.challengeToken,code:enabled.recoveryCodes[0]
+  },401);
+  const secondChallenge=(await request('POST','/auth/login',null,{
+    email:registrant,password:'updated-password-123456'
+  },201)).data;
+  await request('POST','/auth/mfa/complete',null,{
+    challengeToken:secondChallenge.challengeToken,code:enabled.recoveryCodes[1]
+  },201);
+  const thirdChallenge=(await request('POST','/auth/login',null,{
+    email:registrant,password:'updated-password-123456'
+  },201)).data;
+  await request('POST','/auth/mfa/complete',null,{
+    challengeToken:thirdChallenge.challengeToken,code:enabled.recoveryCodes[1]
+  },401);
+  const refreshed=(await request('POST','/auth/mfa/complete',null,{
+    challengeToken:thirdChallenge.challengeToken,code:enabled.recoveryCodes[2]
+  },201)).data;
+  assert.equal((await request('GET','/auth/mfa/status',refreshed.accessToken,undefined,200)).data.recoveryCodesRemaining,5);
+  await request('POST','/auth/mfa/disable',refreshed.accessToken,{
+    password:'wrong-password',code:enabled.recoveryCodes[3]
+  },401);
+  const disabled=(await request('POST','/auth/mfa/disable',refreshed.accessToken,{
+    password:'updated-password-123456',code:enabled.recoveryCodes[3]
+  },201)).data;
+  assert.equal(disabled.disabled,true);
+  await request('GET','/auth/mfa/status',refreshed.accessToken,undefined,401);
   await login(registrant,'updated-password-123456');
   const freshLogin=await login(checkerUser.email,'checker-password-12345');
   await request('POST','/auth/logout',freshLogin,{},201);
