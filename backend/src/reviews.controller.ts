@@ -286,7 +286,7 @@ export class ReviewsController {
           const dayType = String(payload.dayType || 'FULL');
           const approved = await tx.reviewRequest.findMany({ where: {
             organizationId: review.organizationId, kind: 'LEAVE_REQUEST',
-            makerId: review.makerId, status: 'APPROVED'
+            makerId: review.makerId, status: 'APPROVED', id: { not: review.id }
           } });
           for (const r of approved) {
             const p = r.payload as Prisma.JsonObject;
