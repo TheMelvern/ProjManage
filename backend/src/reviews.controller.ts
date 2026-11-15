@@ -126,6 +126,13 @@ export class ReviewsController {
       if (review.kind === 'LEAVE_REQUEST' && !['ADMIN', 'PMO', 'PROJECT_MANAGER'].includes(req.principal.role)) {
         throw new ForbiddenException('Leave checker permission required');
       }
+      // Acquire the pending state atomically inside this transaction to prevent double approval.
+      const claimed = await tx.reviewRequest.updateMany({
+        where: { id: review.id, organizationId: review.organizationId, status: 'PENDING' },
+        data: { status: body.decision as ReviewStatus, checkerId: req.principal.userId,
+          reviewedAt: new Date(), comment: body.comment?.trim() || null }
+      });
+      if (claimed.count !== 1) throw new ConflictException('Review request has already been decided');
       const payload = review.payload as Prisma.JsonObject;
       if (body.decision === 'APPROVED') {
         if (review.kind === 'PROJECT_CREATE') {
@@ -238,6 +245,9 @@ export class ReviewsController {
           await tx.membership.update({
             where: { id: membership.id }, data: { role: String(payload.newRole) }
           });
+          // Role changes immediately revoke previously issued access tokens.
+          await tx.user.update({ where: { id: membership.userId },
+            data: { sessionVersion: { increment: 1 } } });
         } else if (review.kind === 'PARAMETER_UPDATE') {
           if (req.principal.role !== 'ADMIN') {
             throw new ForbiddenException('Administrator checker required for parameter changes');
