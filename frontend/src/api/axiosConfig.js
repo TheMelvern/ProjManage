@@ -12,10 +12,7 @@ const axiosInstance = axios.create({
 
 axiosInstance.interceptors.request.use(
   (config) => {
-    // Legacy keys are accepted during migration; new sessions use access_token.
-    const token = localStorage.getItem('access_token') ||
-      localStorage.getItem('auth_token') ||
-      localStorage.getItem('auth-token');
+    const token = localStorage.getItem('access_token');
 
     if (token) config.headers.Authorization = `Bearer ${token}`;
 
@@ -32,7 +29,7 @@ axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      ['access_token', 'auth_token', 'auth-token', 'user'].forEach((key) => localStorage.removeItem(key));
+      ['access_token', 'user'].forEach((key) => localStorage.removeItem(key));
       if (window.location.hash !== '#/login') {
         window.location.hash = '#/login';
       }
