@@ -77,14 +77,14 @@ jobs:
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email: 'admin@pmo.test', password: 'local-test-password-12345' })
           });
-          assert.equal(login.status, 201, await login.text());
+          assert.equal(login.status, 201);
           const loggedIn = await login.json();
           assert.ok(loggedIn.data.accessToken);
           const headers = { Authorization: 'Bearer ' + loggedIn.data.accessToken, 'Content-Type': 'application/json' };
           const created = await fetch(base + '/projects', {
             method: 'POST', headers, body: JSON.stringify({ name: 'Automated Integration Project' })
           });
-          assert.equal(created.status, 201, await created.text());
+          assert.equal(created.status, 201);
           const project = (await created.json()).data;
           const list = await fetch(base + '/projects', { headers });
           assert.equal(list.status, 200);
