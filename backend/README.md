@@ -1,46 +1,43 @@
-# PMO Portal Backend
+# PMO Portal — NestJS API
 
-NestJS + Prisma + PostgreSQL API for authenticated, organization-scoped PMO operations.
+Node 22+, NestJS 10, Prisma 5 and PostgreSQL 16+. All protected endpoints require a JWT bearer token and perform organization membership rechecks. Local default `http://127.0.0.1:3000/api`, Vue origin `http://localhost:5174`.
 
-## Local development
+## Setup
 
-1. Install Node.js 22+ and PostgreSQL.
-2. Create a restricted `pmo_dev` role and dedicated `pmo_portal` database.
-3. Copy `.env.example` to `.env` and set `DATABASE_URL`, `JWT_SECRET` (32+ random characters), `BOOTSTRAP_ADMIN_EMAIL` and a unique `BOOTSTRAP_ADMIN_PASSWORD` (12+ characters).
-4. Run:
-   ```sh
-   npm install
-   npm run db:generate
-   npm run db:deploy
-   npm run db:seed
-   npm run build
-   npm run dev
-   ```
-5. API default: `http://127.0.0.1:3000/api`; frontend `http://localhost:5173`.
+Copy `.env.example` to `.env` and configure database, secure JWT secret and two independent administrator identities. Run:
 
-## API surface
+```powershell
+npm install
+npm run db:generate
+npm run db:deploy
+npm run db:seed
+npm run build
+npm run dev
+```
 
-`POST /api/auth/login` accepts email/password and returns a one-hour JWT.
+Do not run `prisma db push` against a shared database. The seed is for local bootstrap and test environments; use two distinct administrator credentials to initialize separation of duties.
 
-All of these endpoints require `Authorization: Bearer <token>`:
+## REST endpoints
 
-- `GET /api/projects`, `GET /api/projects/summary`, `GET /api/projects/:id`
-- `POST /api/projects`, `PATCH /api/projects/:id` (ADMIN, PMO, PROJECT_MANAGER)
-- `GET /api/projects/:projectId/tasks`, `POST /api/projects/:projectId/tasks`, `PATCH /api/projects/:projectId/tasks/:id`
-- `GET /api/projects/:projectId/raid`
-- `POST /api/projects/:projectId/raid/risks`, `POST .../issues`, `POST .../decisions`, `POST .../actions`
-- `PATCH /api/projects/:projectId/raid/risks/:id`, `PATCH .../issues/:id`, `PATCH .../actions/:id`
-- `GET /api/projects/:projectId/timesheets`, `POST /api/projects/:projectId/timesheets`
-- `GET /api/reports/portfolio`, `GET /api/reports/projects/:id`
+- Public: `GET /health`, `POST /auth/login`, `POST /auth/register`.
+- Auth: `POST /auth/logout` (revokes all existing tokens via sessionVersion).
+- Projects: `GET /projects`, `GET /projects/:id`, `GET /projects/summary`. Legacy direct POST/PATCH routes reject writes; submit `POST /reviews/operations` (`PROJECT_CREATE`) or `POST /reviews/projects` (status, health, name, client, description changes).
+- Tasks: `GET /projects/:id/tasks`, write through `/reviews/operations` (`TASK_CREATE`, `TASK_UPDATE`).
+- RAID: `GET /projects/:id/raid`, write through `/reviews/operations` (`RISK_CREATE`, `RISK_UPDATE`, `ISSUE_CREATE`, `ISSUE_UPDATE`, `ACTION_CREATE`, `ACTION_UPDATE`, `DECISION_CREATE`).
+- Timesheets: `GET /projects/:id/timesheets`, write through `/reviews/operations` (`TIMESHEET_CREATE`).
+- Reports: `GET /reports/portfolio`, `GET /reports/projects/:id`, `GET /reports/published`; maker submits `REPORT_PUBLISH` proposal; PMO/admin checker releases a snapshot.
+- Leave: `GET /leave/mine`, `GET /leave/balances`, `GET /leave/team` (manager), `POST /leave` (including optional AM/PM half-day), `POST /leave/:id/cancel` (maker, pending only).
+- Approvals: `GET /reviews`, `POST /reviews/operations`, `POST /reviews/projects`, `POST /reviews/:id/decision`.
+- Admin: `GET /admin/parameters`, `POST /admin/parameters/proposals`, `GET /admin/users`, `POST /admin/users/proposals`, `GET /admin/audit`. Restricted to ADMIN.
 
-The unauthenticated `GET /api/health` endpoint exposes status only.
+## Governance rules
 
-All project and nested-resource lookups verify organization scope. Editors can change delivery records; signed-in members may log their own timesheet entries. Organization membership is rechecked on each request.
+A maker creates a pending ReviewRequest. Appropriate different checker approves/rejects/returns it. Approved effects are applied transactionally with the decision and audit event. Direct legacy source-mutation paths are disabled. Project and RAID updates use previously approved version checks. Membership role changes revoke existing JWTs. Leave revalidates overlap and entitlement when approved. Pending leave may be cancelled by its maker.
 
-## Migration and verification
+Account signup is an approval request and only becomes a User and MEMBER after an admin checker approves. Review APIs never return the pending password hash. The application supports organization-scoped role checks and user account lockout (5 failed attempts for 15 minutes), with additional process-local IP throttling on public auth routes.
 
-The initial migration is committed under `prisma/migrations/20261115083000_init`. Use `npm run db:deploy` for an empty development database. Do not run `db push` over shared databases. GitHub Actions runs the migration, creates the test administrator, builds the API and exercises the main endpoints against PostgreSQL 16.
+## Development tests and limitations
 
-## Before production
+GitHub Actions uses PostgreSQL and `backend/test/integration.mjs` for cross-tenant isolation, approved project/task/RAID/timesheet/report lifecycles, leave balances, two-reviewer workflows, account enrollment, role controls, audit, token revocation and login lockout. Browser E2E checks the same user journeys and responsive navigation.
 
-Implement secure token rotation and revocation, rate limits on sign-in, detailed audit logging, secrets management, full RBAC and per-project access policy, pagination, upload safeguards, observability, and a comprehensive browser E2E suite. Do not deploy publicly until these controls and remaining legacy frontend modules are verified.
+Not production certification: verify email ownership, add MFA and password recovery, enforce HTTPS, centralize throttle state in shared storage for multi-instance deployments, implement comprehensive public holiday/leave accrual rules and dedicated HR policies, and perform formal penetration/privacy reviews, observability, backup and deployment hardening before public launch.
