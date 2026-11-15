@@ -37,7 +37,7 @@ try {
   await page.waitForURL('**/#/portfolio',{timeout:15000});
   await page.getByRole('heading',{name:'Portfolio Overview'}).waitFor();
 
-  await page.getByRole('link',{name:/Delivery Workspace/}).click();
+  await page.getByRole('link',{name:/Projects & Tasks/}).click();
   await page.getByRole('heading',{name:'Projects & tasks'}).waitFor();
   await page.getByText('E2E Delivery Project').first().waitFor({timeout:15000});
   await page.getByLabel('New project name').fill('Approved Browser Project');
