@@ -2,12 +2,11 @@
   "name": "pmo-management-system",
   "version": "1.0.0",
   "description": "PMO Management System",
-  "main": "server.js",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "serve": "vite preview --port 3000"
+    "serve": "vite preview --port 5174"
   },
   "dependencies": {
     "axios": "^1.13.4",
