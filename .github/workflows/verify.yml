@@ -64,6 +64,8 @@ jobs:
           node dist/main.js > /tmp/pmo-api.log 2>&1 &
           node --input-type=module <<'JS'
           import assert from 'node:assert/strict';
+          import { PrismaClient } from '@prisma/client';
+          import { hash } from 'bcryptjs';
           const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
           let ready = false;
           for (let i = 0; i < 30; i++) {
@@ -148,5 +150,44 @@ jobs:
           const timeListRes = await fetch(base + '/projects/' + project.id + '/timesheets', { headers });
           assert.equal(timeListRes.status, 200);
           assert.ok((await timeListRes.json()).data.some((entry) => Number(entry.hours) === 7.5));
-          console.log('API smoke passed: auth, scoped project-task operations, RAID, timesheets and reports');
+          const db = new PrismaClient();
+          try {
+            const otherOrg = await db.organization.create({ data: { name: 'Other Tenant' } });
+            const otherUser = await db.user.create({
+              data: { email: 'viewer@pmo.test', name: 'Read-only user',
+                passwordHash: await hash('test-viewer-password-1234', 12) }
+            });
+            await db.membership.create({
+              data: { organizationId: otherOrg.id, userId: otherUser.id, role: 'MEMBER' }
+            });
+            const viewerLogin = await fetch(base + '/auth/login', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email: 'viewer@pmo.test', password: 'test-viewer-password-1234' })
+            });
+            assert.equal(viewerLogin.status, 201);
+            const viewerToken = (await viewerLogin.json()).data.accessToken;
+            const viewerHeaders = { Authorization: 'Bearer ' + viewerToken, 'Content-Type': 'application/json' };
+            const viewerProjects = await fetch(base + '/projects', { headers: viewerHeaders });
+            assert.equal(viewerProjects.status, 200);
+            assert.equal((await viewerProjects.json()).data.length, 0);
+            const otherTenantDetail = await fetch(base + '/projects/' + project.id, { headers: viewerHeaders });
+            assert.equal(otherTenantDetail.status, 404);
+            const otherTenantTask = await fetch(base + '/projects/' + project.id + '/tasks', { headers: viewerHeaders });
+            assert.equal(otherTenantTask.status, 404);
+            const viewerCreate = await fetch(base + '/projects', {
+              method: 'POST', headers: viewerHeaders, body: JSON.stringify({ name: 'Unauthorized New Project' })
+            });
+            assert.equal(viewerCreate.status, 403);
+            const otherOrgReport = await fetch(base + '/reports/portfolio', { headers: viewerHeaders });
+            assert.equal(otherOrgReport.status, 200);
+            assert.equal((await otherOrgReport.json()).data.summary.totalProjects, 0);
+            await db.membership.delete({ where: { organizationId_userId: {
+              organizationId: otherOrg.id, userId: otherUser.id
+            } } });
+            const revoked = await fetch(base + '/projects', { headers: viewerHeaders });
+            assert.equal(revoked.status, 401);
+          } finally {
+            await db.$disconnect();
+          }
+          console.log('API smoke passed: project-task/RAID/timesheet/report lifecycle, cross-tenant isolation and role enforcement');
           JS
