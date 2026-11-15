@@ -69,8 +69,14 @@ export class ReviewsController {
 
   @Get()
   async list(@Req() req: AuthenticatedRequest) {
+    const role = req.principal.role;
     const requests = await this.prisma.reviewRequest.findMany({
-      where: { organizationId: req.principal.organizationId },
+      where: {
+        organizationId: req.principal.organizationId,
+        ...(role === 'ADMIN' ? {} : role === 'PMO' || role === 'PROJECT_MANAGER'
+          ? { kind: { notIn: ['REGISTRATION', 'PARAMETER_UPDATE'] } }
+          : { makerId: req.principal.userId })
+      },
       orderBy: { createdAt: 'desc' }, take: 150
     });
     return { success: true, data: requests.map(safeRequest) };
@@ -114,6 +120,9 @@ export class ReviewsController {
       }
       if (review.kind === 'REGISTRATION' && req.principal.role !== 'ADMIN') {
         throw new ForbiddenException('Only organization administrators can approve account registration');
+      }
+      if (review.kind === 'LEAVE_REQUEST' && !['ADMIN', 'PMO', 'PROJECT_MANAGER'].includes(req.principal.role)) {
+        throw new ForbiddenException('Leave checker permission required');
       }
       const payload = review.payload as Prisma.JsonObject;
       if (body.decision === 'APPROVED') {
