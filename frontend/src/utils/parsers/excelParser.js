@@ -1,5 +1,5 @@
 // utils/parsers/excelParser.js
-import readXlsxFile from 'read-excel-file';
+import readXlsxFile from 'read-excel-file/browser';
 
 export class ExcelParser {
   static async parse(file) {
