@@ -21,7 +21,7 @@ jobs:
         run: |
           npm ci
           npm uninstall --no-audit --no-fund @infectoone/vue-ganttastic @xpyjs/gantt-core dayjs html2canvas jordium-gantt-vue3 jspdf lodash pinia read-excel-file vue-toastification vuedraggable gh-pages
-          npm audit fix --omit=dev --no-fund || true
+          npm audit fix --no-fund || true
           npm run build
           npm audit --omit=dev --audit-level=high
       - name: Commit manifests
