@@ -81,6 +81,12 @@
         </div>
       </div>
 
+      <router-link to="/reports" class="sidebar-item"
+        :class="{ 'sidebar-item-active': currentRoute === '/reports' }" @click="closeAllDropdowns">
+        <span class="material-symbols-outlined sidebar-item-icon">summarize</span>
+        <span class="sidebar-item-text">Executive Reports</span>
+      </router-link>
+
       <!-- Leave -->
       <router-link to="/leave" class="sidebar-item" :class="{ 'sidebar-item-active': currentRoute === '/leave' }"
         @click="closeAllDropdowns">
