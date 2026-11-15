@@ -59,7 +59,7 @@
             <div class="login-form-group">
               <div class="login-form-header">
                 <label class="login-form-label">Password</label>
-<span class="login-form-hint">Contact your administrator to reset access</span>
+<router-link class="login-form-hint" to="/forgot-password">Forgot password?</router-link>
               </div>
               <div class="login-input-wrapper login-password-wrapper">
                 <input v-model="password" :type="showPassword ? 'text' : 'password'"
@@ -93,7 +93,7 @@
 
           </form>
 
-          <p class="signup-prompt">New to PMO Portal? <router-link to="/signup">Create an account</router-link></p>
+          <p class="signup-prompt">New to PMO Portal? <router-link to="/signup">Create an account</router-link> · <router-link to="/resend-verification">Verify email</router-link></p>
 
           <!-- Support Footer -->
           <div class="login-footer">
