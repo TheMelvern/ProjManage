@@ -164,6 +164,15 @@ const router = createRouter({
   ]
 })
 
+// Protect client-side routes in API mode. Server-side guards remain authoritative.
+router.beforeEach((to) => {
+  if (to.meta.requiresLayout && import.meta.env.VITE_USE_LIVE_API === 'true' &&
+      !localStorage.getItem('access_token')) {
+    return '/login';
+  }
+  return true;
+});
+
 // Create and mount app
 const app = createApp(App)
 
