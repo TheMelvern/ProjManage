@@ -28,6 +28,12 @@ const errors=[];
 page.on('pageerror',e=>errors.push(e.message));
 try {
   await page.goto('http://localhost:5174/#/login',{waitUntil:'networkidle'});
+  // Catch missing global login styles: the split screen must be a flex layout.
+  const layout=await page.locator('.login-split-screen').evaluate(el=>getComputedStyle(el).display);
+  assert.equal(layout,'flex','Login stylesheet was not loaded');
+  const panel=await page.locator('.login-auth-panel').evaluate(el=>getComputedStyle(el).backgroundColor);
+  assert.equal(panel,'rgb(255, 255, 255)','Login authentication panel CSS was not applied');
+
   await page.getByRole('link',{name:'Forgot password?'}).click();
   await page.getByRole('heading',{name:'Reset your password'}).waitFor();
   await page.getByRole('link',{name:'Resend verification'}).click();
