@@ -365,6 +365,16 @@ export class ReviewsController {
         data: { organizationId: review.organizationId, actorId: req.principal.userId,
           action: 'REVIEW_' + body.decision, entityType: review.kind, entityId: review.id }
       });
+      if (review.makerId && review.makerId !== req.principal.userId) {
+        await tx.notification.create({ data: {
+          organizationId: review.organizationId,
+          recipientId: review.makerId,
+          kind: 'REVIEW_DECISION',
+          title: 'Request ' + body.decision.toLowerCase(),
+          body: review.summary.slice(0, 350),
+          link: '/approvals'
+        } });
+      }
       return updated;
     });
     return { success: true, data: safeRequest(result) };
