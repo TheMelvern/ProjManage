@@ -18,6 +18,11 @@
             <div><label for="leave-start">Start date</label><input id="leave-start" v-model="startDate" type="date" required /></div>
             <div><label for="leave-end">End date</label><input id="leave-end" v-model="endDate" type="date" :min="startDate" required /></div>
           </div>
+          <label for="leave-day-type">Leave duration</label>
+          <select id="leave-day-type" v-model="dayType">
+            <option value="FULL">Full working day(s)</option><option value="AM">Morning half day (single date)</option>
+            <option value="PM">Afternoon half day (single date)</option>
+          </select>
           <label for="leave-reason">Reason / handover details</label>
           <textarea id="leave-reason" v-model.trim="reason" rows="4" minlength="3" maxlength="500" required placeholder="Reason and coverage plan"></textarea>
           <button type="submit" :disabled="busy || !startDate || !endDate || !reason"> {{ busy ? 'Submitting…' : 'Submit for check' }} </button>
@@ -28,7 +33,7 @@
         <p v-if="loading">Loading your leave records…</p><p v-else-if="!requests.length">No leave applications yet.</p>
         <div v-else class="requests"><article v-for="item in requests" :key="item.id" class="request">
           <div class="request-title"><strong>{{ format(item.type) }}</strong><span class="pill" :class="item.status.toLowerCase()">{{ item.status }}</span></div>
-          <div class="date-text">{{ item.startDate }} → {{ item.endDate }}</div>
+          <div class="date-text">{{ item.startDate }} → {{ item.endDate }} · {{ item.dayType === 'FULL' ? 'Full day' : item.dayType === 'AM' ? 'Morning half' : 'Afternoon half' }}</div>
           <small>{{ item.reason }}</small>
           <p class="checker">Checker: {{ item.checkerId ? item.checkerId.slice(0, 8) : 'Awaiting assignment' }}</p>
         </article></div>
@@ -46,7 +51,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import axios from '../../../api/axiosConfig';
-const type=ref('ANNUAL'),startDate=ref(''),endDate=ref(''),reason=ref('');
+const type=ref('ANNUAL'),startDate=ref(''),endDate=ref(''),reason=ref(''),dayType=ref('FULL');
 const loading=ref(false),busy=ref(false),error=ref(''),success=ref(''),requests=ref([]),balance=ref(null);
 const pendingCount=computed(()=>requests.value.filter(v=>v.status==='PENDING').length);
 const approvedCount=computed(()=>requests.value.filter(v=>v.status==='APPROVED').length);
@@ -55,7 +60,7 @@ const format=v=>String(v).replaceAll('_',' ').toLowerCase().replace(/\b\w/g,x=>x
 function describe(e){const m=e.response?.data?.message;return Array.isArray(m)?m.join(', '):m||e.message||'Operation failed';}
 async function load(){error.value='';loading.value=true;try{const [mine,balances]=await Promise.all([axios.get('/leave/mine'),axios.get('/leave/balances')]);requests.value=mine.data.data;balance.value=balances.data.data;}catch(e){error.value=describe(e);}finally{loading.value=false;}}
 async function submit(){error.value='';success.value='';busy.value=true;try{
-  await axios.post('/leave',{type:type.value,startDate:startDate.value,endDate:endDate.value,reason:reason.value});
+  await axios.post('/leave',{type:type.value,startDate:startDate.value,endDate:endDate.value,reason:reason.value,dayType:dayType.value});
   success.value='Request submitted for independent approval. Your balance is not reduced while pending.';
   startDate.value='';endDate.value='';reason.value='';await load();
 }catch(e){error.value=describe(e);}finally{busy.value=false;}}
