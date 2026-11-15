@@ -26,7 +26,7 @@ class DecisionDto {
 
 function safeRequest(r: { payload: unknown; [key: string]: unknown }) {
   const { payload, ...safe } = r;
-  return { ...safe, proposed: ['PROJECT_UPDATE', 'PARAMETER_UPDATE', 'LEAVE_REQUEST'].includes(String(safe.kind)) ? payload : undefined };
+  return { ...safe, proposed: ['PROJECT_UPDATE', 'PARAMETER_UPDATE', 'LEAVE_REQUEST', 'MEMBERSHIP_UPDATE'].includes(String(safe.kind)) ? payload : undefined };
 }
 
 @Controller('auth')
@@ -74,7 +74,7 @@ export class ReviewsController {
       where: {
         organizationId: req.principal.organizationId,
         ...(role === 'ADMIN' ? {} : role === 'PMO' || role === 'PROJECT_MANAGER'
-          ? { kind: { notIn: ['REGISTRATION', 'PARAMETER_UPDATE'] } }
+          ? { kind: { notIn: ['REGISTRATION', 'PARAMETER_UPDATE', 'MEMBERSHIP_UPDATE'] } }
           : { makerId: req.principal.userId })
       },
       orderBy: { createdAt: 'desc' }, take: 150
@@ -118,7 +118,7 @@ export class ReviewsController {
       if (review.makerId === req.principal.userId) {
         throw new ForbiddenException('Makers cannot approve or review their own requests');
       }
-      if (review.kind === 'REGISTRATION' && req.principal.role !== 'ADMIN') {
+      if (['REGISTRATION', 'MEMBERSHIP_UPDATE'].includes(review.kind) && req.principal.role !== 'ADMIN') {
         throw new ForbiddenException('Only organization administrators can approve account registration');
       }
       if (review.kind === 'LEAVE_REQUEST' && !['ADMIN', 'PMO', 'PROJECT_MANAGER'].includes(req.principal.role)) {
@@ -135,6 +135,25 @@ export class ReviewsController {
           const status = payload.status as ProjectStatus | undefined;
           const health = payload.health as HealthStatus | undefined;
           await tx.project.update({ where: { id: project.id }, data: { status, health } });
+        } else if (review.kind === 'MEMBERSHIP_UPDATE') {
+          if (req.principal.role !== 'ADMIN') {
+            throw new ForbiddenException('Administrator checker required for role changes');
+          }
+          const membership = await tx.membership.findFirst({
+            where: { id: String(payload.membershipId), organizationId: review.organizationId }
+          });
+          if (!membership || membership.role !== payload.previousRole) {
+            throw new ConflictException('Membership changed; submit a new role proposal');
+          }
+          if (membership.role === 'ADMIN' && payload.newRole !== 'ADMIN') {
+            const count = await tx.membership.count({
+              where: { organizationId: review.organizationId, role: 'ADMIN' }
+            });
+            if (count <= 2) throw new ConflictException('At least two independent administrators must remain');
+          }
+          await tx.membership.update({
+            where: { id: membership.id }, data: { role: String(payload.newRole) }
+          });
         } else if (review.kind === 'PARAMETER_UPDATE') {
           if (req.principal.role !== 'ADMIN') {
             throw new ForbiddenException('Administrator checker required for parameter changes');
