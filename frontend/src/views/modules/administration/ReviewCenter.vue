@@ -24,10 +24,10 @@
         <tbody><tr v-for="review in filtered" :key="review.id">
           <td class="mono">{{ review.id.slice(0,8) }}</td>
           <td>{{ review.kind === 'REGISTRATION' ? 'Account registration' : 'Project delivery' }}</td>
-          <td><span class="avatar">{{ initials(review.makerId) }}</span>{{ review.makerId ? review.makerId.slice(0,8) : 'Applicant' }}</td>
+          <td><span class="avatar">{{ initials(review.makerName) }}</span>{{ review.makerName || 'Applicant' }}</td>
           <td>{{ review.summary }}</td>
           <td><span class="status" :class="review.status.toLowerCase()">{{ review.status }}</span></td>
-          <td>{{ review.checkerId ? review.checkerId.slice(0,8) : '—' }}</td>
+          <td><span v-if="review.checkerName" class="person"><span class="avatar">{{ initials(review.checkerName) }}</span>{{ review.checkerName }}</span><span v-else>—</span></td>
           <td><button class="text-button" @click="selectedId = review.id">Review</button></td>
         </tr></tbody></table></div>
     </section>
@@ -63,7 +63,7 @@ const metrics = computed(() => [
 ]);
 const currentUserId = computed(() => { try { return JSON.parse(localStorage.getItem('user') || '{}').id; } catch { return null; } });
 const canReview = computed(() => selected.value?.status === 'PENDING' && selected.value?.makerId !== currentUserId.value);
-const initials = value => value ? value.slice(0,2).toUpperCase() : 'RQ';
+const initials = value => value ? String(value).trim().split(/\\s+/).slice(0,2).map(s => s[0].toUpperCase()).join('') : 'RQ';
 function describe(e) { const m=e.response?.data?.message; return Array.isArray(m)?m.join(', '):m||e.message||'Request failed'; }
 async function load() {
   error.value = ''; loading.value = true;
@@ -85,6 +85,7 @@ async function decide(decision) {
 onMounted(load);
 </script>
 <style scoped>
+.person{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
 .review-page{background:#f4f7fb;min-height:100vh;padding:32px;display:grid;gap:22px;align-content:start;color:#18253c}.review-heading{display:flex;justify-content:space-between;align-items:center;gap:16px}.review-heading h1{font-size:30px;margin:6px 0}.review-heading p:not(.eyebrow){color:#64748b}.eyebrow{font-size:11px;letter-spacing:.08em;font-weight:800;color:#315ac4}.review-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:15px}.review-card{background:#fff;border:1px solid #e5ebf4;padding:24px;border-radius:16px}.metric{display:grid;gap:10px}.metric small{color:#64748b}.metric strong{font-size:30px}.rules{background:#eef3fe}.rules h2{color:#315ac4}.rules p,.info{color:#66758b;font-size:13px}.review-card h2{font-size:18px;margin:0 0 12px}.section-title{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:16px}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;text-align:left}th{background:#f0f3f8;font-size:11px;color:#65748b;padding:14px}td{border-bottom:1px solid #eef1f6;font-size:12px;padding:14px;white-space:nowrap}.mono{font-family:monospace}.avatar{display:inline-grid;place-items:center;border-radius:50%;height:29px;width:29px;margin-right:8px;background:#e6edfd;color:#315ac4;font-size:10px;font-weight:800}.status{font-size:10px;font-weight:800;padding:7px 10px;border-radius:20px;background:#eef2f7;color:#56677e}.status.pending{background:#fff1d7;color:#99661a}.status.approved{background:#e0f6ed;color:#197957}.status.rejected{background:#ffe8ed;color:#a63450}.status.returned{background:#fef2dc;color:#99661a}select,textarea{border:1px solid #d8e1ec;border-radius:9px;padding:10px;background:#f7f9fc;color:#18253c;font:inherit}.decision label{display:block;font-size:12px;font-weight:700;margin:16px 0 8px}.decision textarea{display:block;width:100%}.review-actions{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}button{cursor:pointer;border:0;border-radius:10px;background:#315ac4;color:#fff;font-weight:700;padding:11px 15px}button:disabled{opacity:.5;cursor:not-allowed}button.secondary{background:#edf2fb;color:#315ac4}button.danger{background:#ffe5eb;color:#a7314e}.text-button{background:none;color:#315ac4;padding:6px}.feedback{background:#e6f7ed;color:#157a57;padding:12px;border-radius:9px}.feedback.error{background:#ffe9ed;color:#a02a47}.diff pre{white-space:pre-wrap;background:#f6f8fc;border-radius:9px;padding:15px;font-size:12px}.empty{color:#64748b;padding:25px 0}
 @media(max-width:900px){.review-metrics{grid-template-columns:repeat(2,1fr)}.review-page{padding:20px}}@media(max-width:520px){.review-metrics{grid-template-columns:1fr 1fr}.review-heading{align-items:flex-start;flex-direction:column}}
 </style>
