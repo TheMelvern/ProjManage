@@ -15,6 +15,7 @@ import Leave from './views/modules/leaveTracker/Leave.vue'
 import ReportsView from './views/modules/projects/reports/ReportsView.vue'
 import PortfolioOverview from './views/modules/projects/pmoDashboard/PortfolioOverview.vue'
 import ProjectWorkspace from './views/modules/projects/ProjectWorkspace.vue'
+import RaidWorkspace from './views/modules/projects/RaidWorkspace.vue'
 
 // Project Modules
 import PmoDashboard from './views/modules/projects/pmoDashboard/PmoDashboard.vue'
@@ -128,6 +129,12 @@ const router = createRouter({
           meta: { requiresLayout: true }
         }
       ]
+    },
+    {
+      path: '/raid',
+      name: 'RaidWorkspace',
+      component: RaidWorkspace,
+      meta: { requiresLayout: true }
     },
     {
       path: '/workspace',
