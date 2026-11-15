@@ -41,7 +41,8 @@ const menuOpen = ref(false);
 const navigation = [
   { to: '/portfolio', label: 'Portfolio Overview', icon: 'dashboard' },
   { to: '/approvals', label: 'Approval Center', icon: 'rule' },
-  { to: '/workspace', label: 'Delivery Workspace', icon: 'task_alt' },
+  { to: '/workflows', label: 'Connected Workflows', icon: 'hub' },
+  { to: '/projects', label: 'Projects & Tasks', icon: 'task_alt' },
   { to: '/raid', label: 'RAID Register', icon: 'warning_amber' },
   { to: '/timesheets', label: 'Timesheets', icon: 'schedule' },
   { to: '/leave', label: 'Leave Tracker', icon: 'event_available' },
