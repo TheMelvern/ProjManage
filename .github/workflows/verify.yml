@@ -55,6 +55,8 @@ jobs:
           node-version: '22'
       - run: npm install --no-audit --no-fund
       - run: npm run db:generate
+      - name: Print initial versioned migration candidate
+        run: npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script
       - run: npx prisma db push --skip-generate
       - run: npm run db:seed
       - run: npm run build
