@@ -21,7 +21,7 @@
         </button>
         <div class="topbar-label">{{ pageTitle }}</div>
         <div class="topbar-right">
-          <span class="user-label">{{ currentUser }}</span>
+          <span class="profile-badge" :title="currentUser">{{ userInitials }}</span><span class="user-label">{{ currentUser }}</span>
           <button type="button" class="logout-btn" @click="logout">Sign out</button>
         </div>
       </header>
@@ -39,12 +39,13 @@ const router = useRouter();
 const menuOpen = ref(false);
 const navigation = [
   { to: '/portfolio', label: 'Portfolio Overview', icon: 'dashboard' },
+  { to: '/approvals', label: 'Approval Center', icon: 'rule' },
   { to: '/workspace', label: 'Delivery Workspace', icon: 'task_alt' },
   { to: '/raid', label: 'RAID Register', icon: 'warning_amber' },
   { to: '/timesheets', label: 'Timesheets', icon: 'schedule' },
   { to: '/reports', label: 'Executive Reports', icon: 'summarize' }
 ];
-const isLogin = computed(() => route.name === 'Login');
+const isLogin = computed(() => ['Login', 'Signup'].includes(route.name));
 const pageTitle = computed(() => navigation.find(item => item.to === route.path)?.label || 'PMO Portal');
 const currentUser = computed(() => {
   try {
@@ -52,6 +53,7 @@ const currentUser = computed(() => {
     return stored.name || stored.email || 'Signed in';
   } catch { return 'Signed in'; }
 });
+const userInitials = computed(() => currentUser.value.split(/[\\s@.]+/).slice(0,2).map(w => w.charAt(0).toUpperCase()).join('') || 'PM');
 function logout() {
   ['access_token', 'auth_token', 'auth-token', 'user'].forEach(key => localStorage.removeItem(key));
   menuOpen.value = false;
