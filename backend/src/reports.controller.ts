@@ -8,12 +8,34 @@ import { AuthGuard, AuthenticatedRequest } from './auth.guard';
 export class ReportsController {
   constructor(private readonly prisma: PrismaService, private readonly projects: ProjectsService) {}
 
+  @Get('published')
+  async published(@Req() req: AuthenticatedRequest) {
+    const released = await this.prisma.reviewRequest.findMany({
+      where: { organizationId: req.principal.organizationId, kind: 'REPORT_PUBLISH', status: 'APPROVED' },
+      orderBy: { reviewedAt: 'desc' }, take: 30
+    });
+    return { success: true, data: released.map(item => {
+      const payload = item.payload as Record<string, unknown>;
+      return { id: item.id, createdAt: item.createdAt, reviewedAt: item.reviewedAt,
+        makerId: item.makerId, checkerId: item.checkerId, summary: item.summary,
+        snapshot: payload.snapshot };
+    }) };
+  }
+
   @Get('portfolio')
   async portfolio(@Req() req: AuthenticatedRequest) {
     const projects = await this.prisma.project.findMany({
       where: { organizationId: req.principal.organizationId },
       include: { tasks: true, risks: true, issues: true, actions: true }, orderBy: { name: 'asc' }
     });
+    const parameter = await this.prisma.organizationParameter.findUnique({
+      where: { organizationId_key: { organizationId: req.principal.organizationId,
+        key: 'riskEscalationThreshold' } }
+    });
+    const threshold = String(parameter?.value || 'HIGH');
+    const critical = threshold === 'CRITICAL' ? ['CRITICAL'] :
+      threshold === 'MEDIUM' ? ['MEDIUM','HIGH','CRITICAL'] :
+      threshold === 'LOW' ? ['LOW','MEDIUM','HIGH','CRITICAL'] : ['HIGH','CRITICAL'];
     const now = new Date();
     const isOverdue = (task: { status: string; dueDate: Date | null }) =>
       task.status !== 'DONE' && !!task.dueDate && task.dueDate < now;

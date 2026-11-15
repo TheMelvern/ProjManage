@@ -1,26 +1,29 @@
-# Verification and release gates
+# PMO Portal verification and release gates
 
-## Automated GitHub Actions checks
+## GitHub Actions checks
 
-`.github/workflows/verify.yml` validates three independent areas:
-- Frontend: `npm ci` and a full Vite production build from `frontend/`.
-- Backend: PostgreSQL 16 service, committed Prisma migrations, seed, NestJS build and HTTP API lifecycle checks.
-- Dependency audit: `npm audit --omit=dev --audit-level=high` against the tracked frontend lockfile.
+`.github/workflows/verify.yml` is the mandatory merge gate. It performs:
+1. **Frontend build**: `npm ci` and Vite production build.
+2. **Production frontend dependency audit**: fail on high severity vulnerabilities.
+3. **Backend/PostgreSQL integration**: committed Prisma migrations and seed, NestJS build, real HTTP lifecycle in `backend/test/integration.mjs`. Verifies tenant isolation, signup pending/review, maker and independent checker, project and task CRUD through approval, RAID, timesheets, executive published snapshots, leave weekdays/half-day/cancellation, reviewed admin parameters and roles, audit events, session revocation and login lockout.
+4. **Browser E2E**: Chromium against a live API and PostgreSQL using `frontend/e2e/smoke.mjs`. Exercises login/signup, project/task/RAID/timesheet/report, leave and admin approvals, logout, and mobile menu. CI collects desktop/mobile screenshots.
 
-Backend smoke coverage includes unauthorized requests, valid JWT login, project/task creation and status updates, risk/issue/decision/action registration, timesheet storage, report generation, membership revocation, cross-tenant denial and read-only member authorization.
+## Merge policy
 
-## Verified browser smoke and remaining acceptance checks
+Only merge a feature branch into `main` when all four checks pass for the *exact latest feature branch commit*. Confirm the PR mergeability and head SHA before merging. Do not use stale successful runs from earlier commits.
 
-- Chromium CI verifies API-backed login, project creation, task persistence across refresh, RAID creation, timesheet/report navigation and logout.
-- Still required: expired session behavior, Firefox and WebKit compatibility, mobile form input QA.
-- Portfolio, project/task editing, RAID and timesheet forms across desktop/tablet/mobile.
-- Gantt/timeline import and export for CSV, JSON, Microsoft Project XML and XLSX.
-- Keyboard navigation, focus order, labels, contrast and assistive-technology behavior.
-- Repeated save/refresh without duplicate records and multi-user concurrency.
-- Legacy modules were intentionally removed from the active application; historical code remains accessible in Git history.
+## Supported scope
 
-## Remaining release blockers
+Active Framer PMO modules run as a local authenticated application with responsive sidebar and independently reviewed source writes. Existing retired mock-only claim/invoice/wiki screens are intentionally excluded.
 
-The original localStorage/mock modules and unsupported screens have been removed from the active source tree. The five remaining PMO views are API-backed. Responsive browser coverage outside Chromium, token refresh/revocation, sign-in throttling, production access controls, persistent audit logging, observability, tenant-level QA and deployment infrastructure remain outstanding.
+## Production readiness requirements (separate release gate)
 
-**Release policy:** Successful CI validates the scoped local MVP; it is not certification for public deployment. Merging the tested MVP into `main` is separate from production release. Keep automatic deployment disabled until operational and security controls are completed.
+- Email verification, recovery and MFA for high-privilege identities.
+- Distributed/edge rate limiting for multiple API processes; HTTPS, secure secret storage.
+- Independent security review of RBAC, object-level scope, token storage, CORS and input validation.
+- HR holiday calendars and accrual/pro-rating, additional approval routing and delegation.
+- Notifications, escalation SLAs, operational monitoring and protected database backups.
+- Complete keyboard/screen-reader WCAG review and Firefox/WebKit browser coverage.
+- Deployment staging, incident response, privacy assessment and capacity/load tests.
+
+**Note:** Passing CI proves the targeted local workflows, not regulatory certification or production deployment readiness. Continuous deployment remains disabled.

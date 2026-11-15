@@ -93,6 +93,8 @@
 
           </form>
 
+          <p class="signup-prompt">New to PMO Portal? <router-link to="/signup">Create an account</router-link></p>
+
           <!-- Support Footer -->
           <div class="login-footer">
             <div class="login-footer-links">
@@ -194,7 +196,7 @@ export default {
       const hoursDiff = (now - lastLogin) / (1000 * 60 * 60)
       
       if (hoursDiff < 1) {
-        this.$router.push('/dashboard')
+        this.$router.push('/portfolio')
       }
     }
   }
@@ -202,6 +204,7 @@ export default {
 </script>
 
 <style scoped>
+.signup-prompt{margin:18px 0;color:#64748b;font-size:13px}.signup-prompt a{color:#315ac4;text-decoration:none;font-weight:800}
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
 @import '../../../styles/views/authenticate/login.css';

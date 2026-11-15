@@ -15,12 +15,16 @@ export class AuthGuard implements CanActivate {
     const match = /^Bearer (\S+)$/.exec(req.headers.authorization || '');
     if (!match) throw new UnauthorizedException('Bearer token required');
     try {
-      const claims = await this.jwt.verifyAsync<{ sub: string; org: string; role: string }>(match[1]);
+      const claims = await this.jwt.verifyAsync<{ sub: string; org: string; role: string; ver: number }>(match[1]);
       if (!claims.sub || !claims.org) throw new Error('Missing tenant claims');
       const membership = await this.prisma.membership.findUnique({
         where: { organizationId_userId: { organizationId: claims.org, userId: claims.sub } }
       });
       if (!membership) throw new Error('Membership revoked');
+      const user = await this.prisma.user.findUnique({
+        where: { id: claims.sub }, select: { sessionVersion: true }
+      });
+      if (!user || user.sessionVersion !== claims.ver) throw new Error('Session revoked');
       req.principal = { userId: claims.sub, organizationId: membership.organizationId, role: membership.role };
       return true;
     } catch {

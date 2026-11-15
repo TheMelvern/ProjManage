@@ -24,7 +24,36 @@ async function main() {
       data: { organizationId: org.id, userId: user.id, role: 'ADMIN' }
     });
   }
-  console.log('Bootstrap user prepared; credentials are not printed.');
+  // The first two administrators are provisioned through explicit local bootstrap credentials.
+  // The running API never bypasses the independent-checker review requirement.
+  const reviewerEmail = process.env.BOOTSTRAP_REVIEWER_EMAIL?.trim().toLowerCase();
+  const reviewerPassword = process.env.BOOTSTRAP_REVIEWER_PASSWORD;
+  if (reviewerEmail || reviewerPassword) {
+    if (!reviewerEmail || !reviewerPassword || reviewerPassword.length < 12 || reviewerEmail === email) {
+      throw new Error('Set a distinct BOOTSTRAP_REVIEWER_EMAIL and a password of at least 12 characters');
+    }
+    const targetOrg = existing?.organization || await prisma.membership.findFirst({
+      where: { userId: user.id }, include: { organization: true }
+    }).then(m => m?.organization);
+    if (!targetOrg) throw new Error('Bootstrap organization not found');
+    const reviewer = await prisma.user.upsert({
+      where: { email: reviewerEmail },
+      update: {},
+      create: { email: reviewerEmail, name: 'PMO Independent Administrator',
+        passwordHash: await hash(reviewerPassword, 12) }
+    });
+    const reviewerMembership = await prisma.membership.findUnique({
+      where: { organizationId_userId: { organizationId: targetOrg.id, userId: reviewer.id } }
+    });
+    if (!reviewerMembership) {
+      await prisma.membership.create({
+        data: { organizationId: targetOrg.id, userId: reviewer.id, role: 'ADMIN' }
+      });
+    } else if (reviewerMembership.role !== 'ADMIN') {
+      throw new Error('Reviewer has an existing non-admin membership; change it through maker-checker approval');
+    }
+  }
+  console.log('Bootstrap users prepared; credentials are not printed.');
 }
 main().catch((error) => { console.error(error); process.exitCode = 1; })
   .finally(() => prisma.$disconnect());

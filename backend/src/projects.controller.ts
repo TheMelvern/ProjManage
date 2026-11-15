@@ -1,4 +1,4 @@
-import { Body, Controller, ForbiddenException, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, ForbiddenException, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import { IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
 import { HealthStatus, ProjectStatus } from '@prisma/client';
 import { ProjectsService } from './projects.service';
@@ -45,13 +45,11 @@ export class ProjectsController {
 
   @Post()
   create(@Req() req: AuthenticatedRequest, @Body() body: CreateProjectDto) {
-    this.assertCanEdit(req);
-    return this.projects.create(req.principal.organizationId, body);
+    throw new ForbiddenException('Changes must be submitted as an independent maker-checker review');
   }
 
   @Patch(':id')
   update(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Body() body: UpdateProjectDto) {
-    this.assertCanEdit(req);
-    return this.projects.update(req.principal.organizationId, id, body);
+    throw new ForbiddenException('Changes must be submitted as an independent maker-checker review');
   }
 }

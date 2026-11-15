@@ -3,7 +3,7 @@
     <header class="page-heading">
       <div><p class="eyebrow">RESOURCE MANAGEMENT</p><h1>Project timesheets</h1>
         <p>Log effort against projects and review your saved time entries.</p></div>
-      <router-link to="/workspace">Delivery workspace</router-link>
+      <div class="module-shortcuts"><router-link to="/timesheets/detail">View details</router-link><router-link to="/workspace">Delivery workspace</router-link></div>
     </header>
     <p v-if="!liveMode" class="notice" role="status">Enable VITE_USE_LIVE_API=true and sign in to log time.</p>
     <p v-if="error" class="notice error" role="alert">{{ error }}</p>
@@ -24,7 +24,7 @@
         <div class="field full"><label for="timesheet-description">Work completed</label>
           <textarea id="timesheet-description" v-model.trim="description" rows="3" maxlength="1000"
             placeholder="Describe your work for the project" :disabled="!liveMode || busy"></textarea></div>
-        <div class="field full form-bottom"><button type="submit" :disabled="!liveMode || busy || !projectId">Save entry</button>
+        <div class="field full form-bottom"><button type="submit" :disabled="!liveMode || busy || !projectId">Submit for check</button>
           <span>Entries are associated with your authenticated account.</span></div>
       </form>
     </section>
@@ -85,19 +85,20 @@ async function submit() {
   error.value = '';
   message.value = '';
   try {
-    await axiosInstance.post('/projects/' + encodeURIComponent(projectId.value) + '/timesheets', {
-      workDate: new Date(workDate.value + 'T12:00:00').toISOString(),
-      hours: Number(hours.value),
-      description: description.value || undefined
+    await axiosInstance.post('/reviews/operations', {
+      kind: 'TIMESHEET_CREATE', projectId: projectId.value,
+      summary: 'Log ' + Number(hours.value) + ' hours for ' + workDate.value,
+      values: { workDate: new Date(workDate.value + 'T12:00:00').toISOString(),
+        hours: Number(hours.value), description: description.value }
     });
     description.value = '';
-    message.value = 'Timesheet entry saved.';
-    await loadEntries();
+    message.value = 'Timesheet submitted for independent approval.';
   } catch (cause) { reportError(cause); } finally { busy.value = false; }
 }
 onMounted(loadProjects);
 </script>
 <style scoped>
+.module-shortcuts{display:flex;gap:12px;flex-wrap:wrap}
 .timesheets{padding:34px;background:#f4f7fb;min-height:100vh;color:#1c2a43}
 .page-heading{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:26px}
 .eyebrow{font-size:11px;color:#4865af;font-weight:800;letter-spacing:.1em}

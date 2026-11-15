@@ -76,6 +76,7 @@
         </p>
       </section>
     </div>
+    <div class="portfolio-crosslinks"><router-link to="/projects">Manage projects</router-link><router-link to="/raid">Review RAID</router-link><router-link to="/timesheets">Team effort</router-link><router-link to="/reports">Reports</router-link><router-link to="/workflows">Connected workflows</router-link></div>
     <p class="portfolio-timestamp" v-if="report">Report generated {{ generatedLabel }}</p>
   </main>
 </template>
@@ -142,6 +143,7 @@ onMounted(load);
 </script>
 
 <style scoped>
+.portfolio-crosslinks{display:flex;gap:10px;flex-wrap:wrap;margin:23px 0}.portfolio-crosslinks a{padding:11px 14px;background:#eaf0fd;color:#315ac4;border-radius:9px;text-decoration:none;font-size:12px;font-weight:750}
 .portfolio-page { padding:34px 36px 44px; background:#f4f7fb; min-height:100vh; color:#18253c; }
 .portfolio-header { background:#fff; border-radius:18px; padding:22px 30px; display:flex; justify-content:space-between; gap:18px; align-items:center; }
 .portfolio-header h1 { font-size:30px; line-height:1.2; font-weight:750; margin:0 0 8px; }

@@ -12,6 +12,11 @@ import { TasksController } from './tasks.controller';
 import { ReportsController } from './reports.controller';
 import { RaidController } from './raid.controller';
 import { TimesheetsController } from './timesheets.controller';
+import { RegistrationController, ReviewsController } from './reviews.controller';
+import { LeaveController, ParametersController } from './workflow-modules.controller';
+import { AdministrationController } from './administration.controller';
+import { OperationProposalsController } from './proposals.controller';
+import { ThrottleService } from './throttle.service';
 
 @Module({
   imports: [
@@ -26,7 +31,7 @@ import { TimesheetsController } from './timesheets.controller';
       }
     })
   ],
-  controllers: [HealthController, AuthController, ProjectsController, TasksController, ReportsController, RaidController, TimesheetsController],
-  providers: [PrismaService, ProjectsService, AuthService, AuthGuard]
+  controllers: [HealthController, AuthController, ProjectsController, TasksController, ReportsController, RaidController, TimesheetsController, RegistrationController, ReviewsController, LeaveController, ParametersController, AdministrationController, OperationProposalsController],
+  providers: [PrismaService, ProjectsService, AuthService, AuthGuard, ThrottleService]
 })
 export class AppModule {}

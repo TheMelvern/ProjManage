@@ -66,79 +66,39 @@ export class RaidController {
 
   @Post('risks')
   async createRisk(@Req() req: AuthenticatedRequest, @Param('projectId') projectId: string, @Body() body: RegisterDto) {
-    await this.authorize(req, projectId, true);
-    const risk = await this.prisma.risk.create({
-      data: { projectId, title: body.title, description: body.description, severity: body.severity,
-        mitigation: body.mitigation, ownerName: body.ownerName,
-        targetDate: body.targetDate ? new Date(body.targetDate) : undefined }
-    });
-    return { success: true, data: risk };
+    throw new ForbiddenException('Changes must be submitted as an independent maker-checker review');
   }
 
   @Patch('risks/:id')
   async patchRisk(@Req() req: AuthenticatedRequest, @Param('projectId') projectId: string,
     @Param('id') id: string, @Body() body: RegisterPatchDto) {
-    await this.authorize(req, projectId, true);
-    const existing = await this.prisma.risk.findFirst({ where: { id, projectId } });
-    if (!existing) throw new NotFoundException('Risk not found');
-    const risk = await this.prisma.risk.update({ where: { id }, data: {
-      title: body.title, description: body.description, severity: body.severity,
-      status: body.status, mitigation: body.mitigation, ownerName: body.ownerName,
-      targetDate: body.targetDate ? new Date(body.targetDate) : undefined
-    } });
-    return { success: true, data: risk };
+    throw new ForbiddenException('Changes must be submitted as an independent maker-checker review');
   }
 
   @Post('issues')
   async createIssue(@Req() req: AuthenticatedRequest, @Param('projectId') projectId: string, @Body() body: RegisterDto) {
-    await this.authorize(req, projectId, true);
-    const issue = await this.prisma.issue.create({
-      data: { projectId, title: body.title, description: body.description, severity: body.severity,
-        resolution: body.resolution, ownerName: body.ownerName,
-        targetDate: body.targetDate ? new Date(body.targetDate) : undefined }
-    });
-    return { success: true, data: issue };
+    throw new ForbiddenException('Changes must be submitted as an independent maker-checker review');
   }
 
   @Patch('issues/:id')
   async patchIssue(@Req() req: AuthenticatedRequest, @Param('projectId') projectId: string,
     @Param('id') id: string, @Body() body: RegisterPatchDto) {
-    await this.authorize(req, projectId, true);
-    const existing = await this.prisma.issue.findFirst({ where: { id, projectId } });
-    if (!existing) throw new NotFoundException('Issue not found');
-    const issue = await this.prisma.issue.update({ where: { id }, data: {
-      title: body.title, description: body.description, severity: body.severity,
-      status: body.status, resolution: body.resolution, ownerName: body.ownerName,
-      targetDate: body.targetDate ? new Date(body.targetDate) : undefined
-    } });
-    return { success: true, data: issue };
+    throw new ForbiddenException('Changes must be submitted as an independent maker-checker review');
   }
 
   @Post('decisions')
   async createDecision(@Req() req: AuthenticatedRequest, @Param('projectId') projectId: string, @Body() body: DecisionDto) {
-    await this.authorize(req, projectId, true);
-    const decision = await this.prisma.decision.create({ data: { projectId, title: body.title,
-      rationale: body.rationale, decidedBy: body.decidedBy } });
-    return { success: true, data: decision };
+    throw new ForbiddenException('Changes must be submitted as an independent maker-checker review');
   }
 
   @Post('actions')
   async createAction(@Req() req: AuthenticatedRequest, @Param('projectId') projectId: string, @Body() body: ActionDto) {
-    await this.authorize(req, projectId, true);
-    const action = await this.prisma.actionItem.create({
-      data: { projectId, title: body.title, ownerName: body.ownerName,
-        dueDate: body.dueDate ? new Date(body.dueDate) : undefined }
-    });
-    return { success: true, data: action };
+    throw new ForbiddenException('Changes must be submitted as an independent maker-checker review');
   }
 
   @Patch('actions/:id')
   async patchAction(@Req() req: AuthenticatedRequest, @Param('projectId') projectId: string,
     @Param('id') id: string, @Body() body: ActionPatchDto) {
-    await this.authorize(req, projectId, true);
-    const existing = await this.prisma.actionItem.findFirst({ where: { id, projectId } });
-    if (!existing) throw new NotFoundException('Action not found');
-    const action = await this.prisma.actionItem.update({ where: { id }, data: body });
-    return { success: true, data: action };
+    throw new ForbiddenException('Changes must be submitted as an independent maker-checker review');
   }
 }
