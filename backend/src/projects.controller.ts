@@ -45,12 +45,13 @@ export class ProjectsController {
 
   @Post()
   create(@Req() req: AuthenticatedRequest, @Body() body: CreateProjectDto) {
-    this.assertCanEdit(req);
+    throw new ForbiddenException('Submit project creation to the independent review workflow');
     return this.projects.create(req.principal.organizationId, body);
   }
 
   @Patch(':id')
   update(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Body() body: UpdateProjectDto) {
+    throw new ForbiddenException('Submit project edits to the independent review workflow');
     this.assertCanEdit(req);
     if (body.status !== undefined || body.health !== undefined) {
       throw new BadRequestException('Project status and health changes require maker-checker approval via POST /api/reviews/projects');
