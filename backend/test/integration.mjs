@@ -59,6 +59,8 @@ for (let i=0;i<35;i++) {
 assert.ok(ready, 'API did not start');
 try {
   await request('GET','/projects',null,undefined,401);
+  // Signup must be mounted: invalid payload is 400, never an endpoint 404.
+  await request('POST','/auth/register',null,{},400);
   const maker=await login('admin@pmo.test','local-test-password-12345');
   const organization=await db.organization.findFirst({where:{name:'PMO Development'}});
   assert.ok(organization);
