@@ -199,6 +199,20 @@ try {
   const halfBal=(await request('GET','/leave/balances',member,undefined,200)).data;
   assert.equal(halfBal.used.ANNUAL,beforeBalance.used.ANNUAL+3);
 
+  // Cancellation is maker-only, only before approval, and must not spend leave balance.
+  const cancelling = (await request('POST','/leave',member,{
+    type:'ANNUAL',startDate:y+'-12-17',endDate:y+'-12-17',
+    reason:'Cancelled annual leave request'
+  },201)).data;
+  await request('POST','/leave/'+cancelling.id+'/cancel',outsider,{},404);
+  const beforeCancel=(await request('GET','/leave/balances',member,undefined,200)).data.used.ANNUAL;
+  const cancelled=await request('POST','/leave/'+cancelling.id+'/cancel',member,{},201);
+  assert.equal(cancelled.data.status,'CANCELLED');
+  await request('POST','/leave/'+cancelling.id+'/cancel',member,{},409);
+  await request('POST','/reviews/'+cancelling.id+'/decision',checker,{decision:'APPROVED'},409);
+  assert.equal((await request('GET','/leave/balances',member,undefined,200)).data.used.ANNUAL,beforeCancel);
+  assert.ok((await request('GET','/leave/mine',member,undefined,200)).data.some(r=>r.id===cancelling.id&&r.status==='CANCELLED'));
+
   // Governed admin parameters, user roles, audited decisions.
   await request('GET','/admin/parameters',member,undefined,403);
   const param=(await request('POST','/admin/parameters/proposals',maker,{
