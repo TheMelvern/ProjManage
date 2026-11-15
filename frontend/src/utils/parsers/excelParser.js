@@ -1,95 +1,62 @@
 // utils/parsers/excelParser.js
-import * as XLSX from 'xlsx';
+import readXlsxFile from 'read-excel-file';
 
 export class ExcelParser {
   static async parse(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      
-      reader.onload = (e) => {
-        try {
-          const data = new Uint8Array(e.target.result);
-          const workbook = XLSX.read(data, { type: 'array' });
-          
-          // Assume first sheet contains timeline data
-          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-          const rows = XLSX.utils.sheet_to_json(firstSheet);
-          
-          const groups = new Map();
-          const tasks = [];
-          
-          rows.forEach((row, index) => {
-            // Map Excel columns to task properties
-            const task = {
-              id: `imported-${Date.now()}-${index}-${Math.random()}`,
-              name: row['Task Name'] || row['Name'] || row['Task'] || `Task ${index + 1}`,
-              startDate: this.parseExcelDate(row['Start Date'] || row['Start']),
-              endDate: this.parseExcelDate(row['End Date'] || row['End'] || row['Finish']),
-              durationDays: parseInt(row['Duration'] || row['Days'] || 0),
-              progress: parseInt(row['Progress'] || row['% Complete'] || 0),
-              isMilestone: (row['Type'] === 'Milestone' || row['Milestone'] === 'Yes'),
-              owner: row['Owner'] || row['Assigned To'] || '',
-              relationships: []
-            };
-            
-            // Calculate duration if not provided
-            if (!task.durationDays && task.startDate && task.endDate) {
-              const start = new Date(task.startDate);
-              const end = new Date(task.endDate);
-              const diffTime = Math.abs(end - start);
-              task.durationDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-              task.duration = `${task.durationDays} days`;
-            } else {
-              task.duration = `${task.durationDays} days`;
-            }
-            
-            // Group by swimlane/phase column
-            const groupName = row['Swimlane'] || row['Phase'] || row['Group'] || 'Imported Tasks';
-            
-            if (!groups.has(groupName)) {
-              groups.set(groupName, []);
-            }
-            groups.get(groupName).push(task);
-            tasks.push(task);
-          });
-          
-          // Convert to timeline groups format
-          const timelineGroups = [];
-          let groupIndex = 0;
-          
-          for (const [groupName, groupTasks] of groups) {
-            timelineGroups.push({
-              id: `swimlane-${Date.now()}-${groupIndex++}`,
-              name: groupName,
-              expanded: true,
-              subGroups: [],
-              tasks: groupTasks
-            });
-          }
-          
-          const summary = {
-            totalTasks: tasks.length,
-            totalDuration: tasks.reduce((sum, t) => sum + (t.durationDays || 0), 0),
-            overallProgress: tasks.length > 0 
-              ? Math.round(tasks.reduce((sum, t) => sum + (t.progress || 0), 0) / tasks.length)
-              : 0,
-            milestoneCount: tasks.filter(t => t.isMilestone).length
-          };
-          
-          resolve({ groups: timelineGroups, summary });
-        } catch (error) {
-          reject(error);
-        }
+    if (!file || !/\.xlsx$/i.test(file.name || '')) {
+      throw new Error('Please upload a modern Excel .xlsx workbook. Legacy .xls is not supported.');
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      throw new Error('Workbook exceeds the 10 MB import limit.');
+    }
+    const matrix = await readXlsxFile(file);
+    if (!matrix.length) throw new Error('Workbook contains no rows.');
+    if (matrix.length > 5001) throw new Error('Workbook exceeds the 5,000 task import limit.');
+    const headers = matrix[0].map(value => String(value ?? '').trim());
+    const groups = new Map();
+    const tasks = [];
+    for (const [index, cells] of matrix.slice(1).entries()) {
+      if (cells.every(value => value === null || value === '')) continue;
+      const row = Object.fromEntries(headers.map((header, i) => [header, cells[i]]));
+      const task = {
+        id: `imported-${Date.now()}-${index}-${Math.random()}`,
+        name: row['Task Name'] || row['Name'] || row['Task'] || `Task ${index + 1}`,
+        startDate: this.parseExcelDate(row['Start Date'] || row['Start']),
+        endDate: this.parseExcelDate(row['End Date'] || row['End'] || row['Finish']),
+        durationDays: Number.parseInt(row['Duration'] || row['Days'] || 0, 10) || 0,
+        progress: Math.max(0, Math.min(100, Number.parseInt(row['Progress'] || row['% Complete'] || 0, 10) || 0)),
+        isMilestone: (row['Type'] === 'Milestone' || row['Milestone'] === 'Yes'),
+        owner: row['Owner'] || row['Assigned To'] || '',
+        relationships: []
       };
-      
-      reader.onerror = () => reject(new Error('Failed to read file'));
-      reader.readAsArrayBuffer(file);
-    });
+      if (!task.durationDays && task.startDate && task.endDate) {
+        const diff = new Date(task.endDate) - new Date(task.startDate);
+        task.durationDays = Math.max(0, Math.ceil(diff / 86400000));
+      }
+      task.duration = `${task.durationDays} days`;
+      const groupName = row['Swimlane'] || row['Phase'] || row['Group'] || 'Imported Tasks';
+      if (!groups.has(groupName)) groups.set(groupName, []);
+      groups.get(groupName).push(task);
+      tasks.push(task);
+    }
+    const timelineGroups = [...groups].map(([name, groupedTasks], index) => ({
+      id: `swimlane-${Date.now()}-${index}`,
+      name, expanded: true, subGroups: [], tasks: groupedTasks
+    }));
+    const summary = {
+      totalTasks: tasks.length,
+      totalDuration: tasks.reduce((sum, task) => sum + task.durationDays, 0),
+      overallProgress: tasks.length
+        ? Math.round(tasks.reduce((sum, task) => sum + task.progress, 0) / tasks.length) : 0,
+      milestoneCount: tasks.filter(task => task.isMilestone).length
+    };
+    return { groups: timelineGroups, summary };
   }
-  
+
   static parseExcelDate(dateValue) {
     if (!dateValue) return '';
     
+    if (dateValue instanceof Date) return Number.isNaN(dateValue.getTime()) ? '' : dateValue.toISOString().slice(0,10);
     // If it's a string, try to parse it
     if (typeof dateValue === 'string') {
       const parsed = new Date(dateValue);
