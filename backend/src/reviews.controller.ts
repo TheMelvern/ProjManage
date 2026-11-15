@@ -115,6 +115,10 @@ export class ReviewsController {
           previousUpdatedAt: project.updatedAt.toISOString() }
       }
     });
+    await this.prisma.auditEvent.create({ data: {
+      organizationId: req.principal.organizationId, actorId: req.principal.userId,
+      action: 'REVIEW_SUBMITTED', entityType: 'PROJECT_UPDATE', entityId: change.id
+    } });
     return { success: true, data: safeRequest(change) };
   }
 
