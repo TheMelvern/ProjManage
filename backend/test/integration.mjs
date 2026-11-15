@@ -65,6 +65,10 @@ try {
   await db.membership.create({data:{userId:outsiderUser.id,organizationId:outsiderOrg.id,role:'MEMBER'}});
   const outsider=await login(outsiderUser.email,'outsider-password-1234');
 
+  // Notification endpoints reject anonymous and tenant-crossing access.
+  await request('GET','/notifications',null,undefined,401);
+  const emptyInbox=(await request('GET','/notifications',member,undefined,200)).data;
+  assert.equal(emptyInbox.unread,0);
   // Account registration remains pending until second administrator approval.
   const registrant='new-'+suffix+'@pmo.test';
   const signup=await request('POST','/auth/register',null,{
@@ -91,7 +95,24 @@ try {
   await request('POST','/reviews/'+projectProposal.id+'/decision',maker,{decision:'APPROVED'},403);
   const preProjects=(await request('GET','/projects',maker,undefined,200)).data;
   assert.ok(!preProjects.some(x=>x.name==='Approved Project '+suffix));
+  // Maker receives outcome only after independent checker action.
+  const checkerBefore=(await request('GET','/notifications',checker,undefined,200)).data;
+  assert.ok(checkerBefore.items.some(n=>n.kind==='REVIEW_PENDING'));
   await approve(checker,projectProposal.id);
+  const makerInbox=(await request('GET','/notifications',maker,undefined,200)).data;
+  const decisionNotice=makerInbox.items.find(n=>n.kind==='REVIEW_DECISION' && n.body.includes('Create approved integration project'));
+  assert.ok(decisionNotice,'Maker must receive an approved-decision notification');
+  const outsiderInbox=(await request('GET','/notifications',outsider,undefined,200)).data;
+  assert.ok(!outsiderInbox.items.some(n=>n.id===decisionNotice.id));
+  const otherMemberInbox=(await request('GET','/notifications',member,undefined,200)).data;
+  assert.ok(!otherMemberInbox.items.some(n=>n.id===decisionNotice.id));
+  const unauthorizedRead=await request('PATCH','/notifications/'+decisionNotice.id+'/read',outsider,{},200);
+  assert.equal(unauthorizedRead.data.updated,0);
+  const notified=(await request('GET','/notifications',maker,undefined,200)).data;
+  assert.ok(notified.items.some(n=>n.id===decisionNotice.id && !n.readAt));
+  const marked=await request('PATCH','/notifications/'+decisionNotice.id+'/read',maker,{},200);
+  assert.equal(marked.data.updated,1);
+  assert.equal((await request('PATCH','/notifications/'+decisionNotice.id+'/read',maker,{},200)).data.updated,0);
   const projects=(await request('GET','/projects',maker,undefined,200)).data;
   const project=projects.find(x=>x.name==='Approved Project '+suffix);
   assert.ok(project,'Project not effective after approval');
@@ -221,6 +242,23 @@ try {
   await approve(checker,param.id);
   const parameters=(await request('GET','/admin/parameters',maker,undefined,200)).data;
   assert.equal(parameters.find(x=>x.key==='currency').value,'MYR');
+  // Approved holiday policy changes leave-day counting consistently at application and review time.
+  const holidayDate=y+'-12-18';
+  const holidayReview=(await request('POST','/admin/parameters/proposals',maker,{
+    key:'leavePublicHolidays',value:holidayDate,summary:'Configure company public holiday'
+  },201)).data;
+  await approve(checker,holidayReview.id);
+  const balanceWithHoliday=(await request('GET','/leave/balances',member,undefined,200)).data;
+  assert.ok(balanceWithHoliday.holidays.includes(holidayDate));
+  await request('POST','/leave',member,{
+    type:'ANNUAL',startDate:holidayDate,endDate:holidayDate,reason:'Holiday must not be booked'
+  },400);
+  const holidaySpanning=(await request('POST','/leave',member,{
+    type:'ANNUAL',startDate:holidayDate,endDate:y+'-12-21',reason:'One eligible weekday only'
+  },201)).data;
+  await approve(checker,holidaySpanning.id);
+  const afterHolidayLeave=(await request('GET','/leave/balances',member,undefined,200)).data;
+  assert.equal(afterHolidayLeave.used.ANNUAL,balanceWithHoliday.used.ANNUAL+1);
   const users=(await request('GET','/admin/users',maker,undefined,200)).data;
   const target=users.find(x=>x.userId===memberUser.id);
   assert.ok(target);
@@ -243,6 +281,10 @@ try {
   }}});
   await request('GET','/projects',refreshedMember,undefined,401);
   assert.equal((await request('GET','/projects',outsider,undefined,200)).data.length,0);
+  const checkAll=await request('PATCH','/notifications/read-all',checker,{},200);
+  assert.ok(checkAll.data.updated>=1);
+  const afterAll=(await request('GET','/notifications',checker,undefined,200)).data;
+  assert.equal(afterAll.unread,0);
   const freshLogin=await login(checkerUser.email,'checker-password-12345');
   await request('POST','/auth/logout',freshLogin,{},201);
   await request('GET','/projects',freshLogin,undefined,401);

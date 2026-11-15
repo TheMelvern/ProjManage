@@ -37,6 +37,7 @@ model Organization {
   auditEvents AuditEvent[]
   reviewRequests ReviewRequest[]
   parameters OrganizationParameter[]
+  notifications Notification[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 }
@@ -50,6 +51,7 @@ model User {
   lockedUntil DateTime?
   sessionVersion Int @default(0)
   memberships Membership[]
+  notifications Notification[]
   createdAt   DateTime     @default(now())
 }
 
@@ -232,4 +234,21 @@ model OrganizationParameter {
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@unique([organizationId, key])
+}
+
+model Notification {
+  id             String       @id @default(uuid())
+  organizationId String
+  recipientId    String
+  kind           String
+  title          String
+  body           String
+  link           String?
+  readAt         DateTime?
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  recipient      User         @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, recipientId, createdAt])
+  @@index([recipientId, readAt])
 }

@@ -55,6 +55,7 @@ const allowed=[
 {key:'leaveApprovalSlaDays',name:'Leave approval SLA (days)'},
 {key:'leaveAnnualEntitlement',name:'Annual leave entitlement (days)'},
 {key:'leaveMedicalEntitlement',name:'Medical leave entitlement (days)'},
+{key:'leavePublicHolidays',name:'Public holiday calendar (YYYY-MM-DD, comma-separated)'},
 {key:'riskEscalationThreshold',name:'Risk escalation severity'},
 {key:'sessionTimeoutMinutes',name:'Session idle timeout (minutes)'}
 ];

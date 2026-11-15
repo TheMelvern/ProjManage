@@ -4,8 +4,9 @@ import { IsEmail, IsEnum, IsIn, IsOptional, IsString, IsUUID, MaxLength, MinLeng
 import { hash } from 'bcryptjs';
 import { AuthGuard, AuthenticatedRequest } from './auth.guard';
 import { PrismaService } from './prisma.service';
-import { workdays } from './workflow-modules.controller';
+import { parseHolidays, workdays } from './workflow-modules.controller';
 import { ThrottleService } from './throttle.service';
+import { notifyReviewers } from './review-notifications';
 import type { Request } from 'express';
 
 class RegisterDto {
@@ -61,6 +62,7 @@ export class RegistrationController {
         payload: { email, name: input.name.trim(), passwordHash }
       }
     });
+    await notifyReviewers(this.prisma, org.id, null, 'New account registration awaiting approval', true);
     return { success: true, data: { id: request.id, status: request.status, message: 'Registration submitted for administrator approval' } };
   }
 }
@@ -128,6 +130,7 @@ export class ReviewsController {
       organizationId: req.principal.organizationId, actorId: req.principal.userId,
       action: 'REVIEW_SUBMITTED', entityType: 'PROJECT_UPDATE', entityId: change.id
     } });
+    await notifyReviewers(this.prisma, req.principal.organizationId, req.principal.userId, change.summary);
     return { success: true, data: safeRequest(change) };
   }
 
@@ -300,6 +303,10 @@ export class ReviewsController {
           if (!review.makerId) throw new BadRequestException('Leave requester missing');
           const start = String(payload.startDate), end = String(payload.endDate);
           const dayType = String(payload.dayType || 'FULL');
+          const holidaySetting = await tx.organizationParameter.findUnique({
+            where: { organizationId_key: { organizationId: review.organizationId, key: 'leavePublicHolidays' } }
+          });
+          const holidays = parseHolidays(holidaySetting?.value);
           const approved = await tx.reviewRequest.findMany({ where: {
             organizationId: review.organizationId, kind: 'LEAVE_REQUEST',
             makerId: review.makerId, status: 'APPROVED', id: { not: review.id }
@@ -324,14 +331,14 @@ export class ReviewsController {
             for (let year = Number(start.slice(0,4)); year <= Number(end.slice(0,4)); year++) {
               const lower = start < year + '-01-01' ? year + '-01-01' : start;
               const upper = end > year + '-12-31' ? year + '-12-31' : end;
-              const requestedDays = workdays(lower, upper, dayType);
+              const requestedDays = workdays(lower, upper, dayType, holidays);
               const alreadyUsed = approved.reduce((total, r) => {
                 const p = r.payload as Prisma.JsonObject;
                 if (String(p.type) !== leaveType) return total;
                 const a = String(p.startDate), b = String(p.endDate);
                 const first = a < year + '-01-01' ? year + '-01-01' : a;
                 const last = b > year + '-12-31' ? year + '-12-31' : b;
-                return total + (first <= last ? workdays(first,last,String(p.dayType || 'FULL')) : 0);
+                return total + (first <= last ? workdays(first,last,String(p.dayType || 'FULL'), holidays) : 0);
               }, 0);
               if (alreadyUsed + requestedDays > entitlement) {
                 throw new ConflictException('Insufficient leave entitlement at approval time');
@@ -365,6 +372,16 @@ export class ReviewsController {
         data: { organizationId: review.organizationId, actorId: req.principal.userId,
           action: 'REVIEW_' + body.decision, entityType: review.kind, entityId: review.id }
       });
+      if (review.makerId && review.makerId !== req.principal.userId) {
+        await tx.notification.create({ data: {
+          organizationId: review.organizationId,
+          recipientId: review.makerId,
+          kind: 'REVIEW_DECISION',
+          title: 'Request ' + body.decision.toLowerCase(),
+          body: review.summary.slice(0, 350),
+          link: '/approvals'
+        } });
+      }
       return updated;
     });
     return { success: true, data: safeRequest(result) };

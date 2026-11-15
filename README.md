@@ -17,6 +17,7 @@ Framer-aligned project-management workspace, implementing the [PMO Framer design
 | Approval Center | `/#/approvals` | Independently approve/reject/return changes; no self-approval |
 | Administration | `/#/admin/parameters`, `/#/admin/users`, `/#/admin/audit` | Reviewed organization parameters, role proposals, audit trails |
 | Connected Workflows | `/#/workflows` | Cross-module navigation and data lifecycle |
+| Notification Center | `/#/notifications` | User-private pending approval and checker decision notifications |
 
 Project, RAID, timesheet and report detail subpages are under `/#/projects/detail`, `/#/raid/detail`, `/#/timesheets/detail`, `/#/reports/detail`. Modules use responsive navigation and user profile avatar/role badges.
 
@@ -49,6 +50,6 @@ npm run dev
 
 ## Verification and deployment
 
-GitHub Actions runs the frontend build, frontend production dependency audit, real PostgreSQL migrations and API integration, and Chromium browser E2E (desktop and mobile screenshot artifacts). See [verification](docs/qa/verification.md) and [Framer parity map](docs/framer-parity-implementation.md).
+GitHub Actions runs the frontend build, frontend production dependency audit, real PostgreSQL migrations and API integration, and Chromium browser E2E (desktop and mobile screenshot artifacts). See [verification](docs/qa/verification.md), [Framer parity map](docs/framer-parity-implementation.md) and [operations and PostgreSQL backup/restore](docs/operations-and-backups.md).
 
 **Scope boundary:** This is a locally verified PMO application, not a certified public SaaS. Before internet-facing production launch, deploy with HTTPS and secret management, configure email ownership verification/MFA, use a distributed rate limiter, audit role/project access in your organization, add public-holiday and accrual policies, full WCAG/Firefox/WebKit coverage, notifications, monitoring/backups, and a production security review. Automatic deployment remains disabled. The intentionally retired legacy mock-only claims/invoice/wiki screens are recoverable via Git history, not active modules.

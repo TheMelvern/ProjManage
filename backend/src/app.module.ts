@@ -17,6 +17,7 @@ import { LeaveController, ParametersController } from './workflow-modules.contro
 import { AdministrationController } from './administration.controller';
 import { OperationProposalsController } from './proposals.controller';
 import { ThrottleService } from './throttle.service';
+import { NotificationsController } from './notifications.controller';
 
 @Module({
   imports: [
@@ -31,7 +32,7 @@ import { ThrottleService } from './throttle.service';
       }
     })
   ],
-  controllers: [HealthController, AuthController, ProjectsController, TasksController, ReportsController, RaidController, TimesheetsController, RegistrationController, ReviewsController, LeaveController, ParametersController, AdministrationController, OperationProposalsController],
+  controllers: [HealthController, AuthController, ProjectsController, TasksController, ReportsController, RaidController, TimesheetsController, RegistrationController, ReviewsController, LeaveController, ParametersController, AdministrationController, OperationProposalsController, NotificationsController],
   providers: [PrismaService, ProjectsService, AuthService, AuthGuard, ThrottleService]
 })
 export class AppModule {}

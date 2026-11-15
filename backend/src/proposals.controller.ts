@@ -3,6 +3,7 @@ import { IsIn, IsObject, IsOptional, IsString, MaxLength, MinLength } from 'clas
 import { Prisma } from '@prisma/client';
 import { AuthGuard, AuthenticatedRequest } from './auth.guard';
 import { PrismaService } from './prisma.service';
+import { notifyReviewers } from './review-notifications';
 
 const kinds = [
   'PROJECT_CREATE','TASK_CREATE','TASK_UPDATE','RISK_CREATE','RISK_UPDATE',
@@ -150,6 +151,8 @@ export class OperationProposalsController {
       organizationId: req.principal.organizationId, actorId: req.principal.userId,
       action: 'REVIEW_SUBMITTED', entityType: kind, entityId: review.id
     } });
+    await notifyReviewers(this.prisma, req.principal.organizationId, req.principal.userId,
+      input.summary, kind === 'REPORT_PUBLISH');
     return { success: true, data: { id: review.id, kind: review.kind, status: review.status } };
   }
 }

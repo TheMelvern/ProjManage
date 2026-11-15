@@ -2,6 +2,7 @@ import { Body, Controller, ForbiddenException, Get, Post, Req, UseGuards } from 
 import { IsIn, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
 import { AuthGuard, AuthenticatedRequest } from './auth.guard';
 import { PrismaService } from './prisma.service';
+import { notifyReviewers } from './review-notifications';
 
 class MembershipProposalDto {
   @IsUUID() membershipId!: string;
@@ -48,6 +49,7 @@ export class AdministrationController {
       organizationId: req.principal.organizationId, actorId: req.principal.userId,
       action: 'REVIEW_SUBMITTED', entityType: 'MEMBERSHIP_UPDATE', entityId: review.id
     } });
+    await notifyReviewers(this.prisma, req.principal.organizationId, req.principal.userId, review.summary, true);
     return { success: true, data: { id: review.id, status: review.status } };
   }
   @Get('audit')
