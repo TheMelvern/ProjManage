@@ -26,7 +26,7 @@ export function parseHolidays(raw: unknown): string[] {
   const input = raw.split(',').map(s => s.trim()).filter(Boolean);
   if (input.length > 500) throw new BadRequestException('Holiday calendar exceeds 500 dates');
   for (const date of input) {
-    if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(date) ||
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) ||
       !Number.isFinite(Date.parse(date + 'T00:00:00.000Z')) ||
       new Date(date + 'T00:00:00.000Z').toISOString().slice(0,10) !== date) {
       throw new BadRequestException('Holiday dates must use YYYY-MM-DD');
