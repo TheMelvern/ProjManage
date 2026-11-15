@@ -6,6 +6,7 @@ import { AuthGuard, AuthenticatedRequest } from './auth.guard';
 import { PrismaService } from './prisma.service';
 import { workdays } from './workflow-modules.controller';
 import { ThrottleService } from './throttle.service';
+import { notifyReviewers } from './review-notifications';
 import type { Request } from 'express';
 
 class RegisterDto {
@@ -61,6 +62,7 @@ export class RegistrationController {
         payload: { email, name: input.name.trim(), passwordHash }
       }
     });
+    await notifyReviewers(this.prisma, org.id, null, 'New account registration awaiting approval', true);
     return { success: true, data: { id: request.id, status: request.status, message: 'Registration submitted for administrator approval' } };
   }
 }
@@ -128,6 +130,7 @@ export class ReviewsController {
       organizationId: req.principal.organizationId, actorId: req.principal.userId,
       action: 'REVIEW_SUBMITTED', entityType: 'PROJECT_UPDATE', entityId: change.id
     } });
+    await notifyReviewers(this.prisma, req.principal.organizationId, req.principal.userId, change.summary);
     return { success: true, data: safeRequest(change) };
   }
 
