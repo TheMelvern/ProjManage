@@ -118,7 +118,10 @@ export class OperationProposalsController {
       where: { organizationId: req.principal.organizationId },
       select: { id: true, name: true, status: true, health: true, client: true,
         tasks: { select: { status: true, dueDate: true } },
-        risks: { select: { status: true, severity: true } } },
+        risks: { select: { status: true, severity: true } },
+        issues: { select: { status: true } },
+        actions: { select: { status: true, dueDate: true } },
+        timesheets: { select: { hours: true } } },
       orderBy: { name: 'asc' }
     }).then(projects => ({
       generatedAt: new Date().toISOString(),
@@ -127,7 +130,11 @@ export class OperationProposalsController {
         totalTasks: p.tasks.length, completedTasks: p.tasks.filter(t => t.status === 'DONE').length,
         progressPercent: p.tasks.length ? Math.round(p.tasks.filter(t => t.status === 'DONE').length / p.tasks.length * 100) : 0,
         overdueTasks: p.tasks.filter(t => t.status !== 'DONE' && t.dueDate && t.dueDate < new Date()).length,
-        highRisks: p.risks.filter(r => r.status !== 'CLOSED' && ['HIGH','CRITICAL'].includes(r.severity)).length
+        highRisks: p.risks.filter(r => r.status !== 'CLOSED' && ['HIGH','CRITICAL'].includes(r.severity)).length,
+        openRisks: p.risks.filter(r => r.status !== 'CLOSED').length,
+        openIssues: p.issues.filter(i => i.status !== 'CLOSED').length,
+        overdueActions: p.actions.filter(a => a.status !== 'CLOSED' && a.dueDate && a.dueDate < new Date()).length,
+        approvedHours: p.timesheets.reduce((sum,t) => sum + Number(t.hours),0)
       }))
     })) : null;
     const review = await this.prisma.reviewRequest.create({
