@@ -50,6 +50,8 @@ model User {
   failedLogins Int @default(0)
   lockedUntil DateTime?
   sessionVersion Int @default(0)
+  emailVerifiedAt DateTime?
+  emailTokens EmailToken[]
   memberships Membership[]
   notifications Notification[]
   createdAt   DateTime     @default(now())
@@ -251,4 +253,16 @@ model Notification {
 
   @@index([organizationId, recipientId, createdAt])
   @@index([recipientId, readAt])
+}
+
+model EmailToken {
+  id         String    @id @default(uuid())
+  userId     String
+  purpose    String
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, purpose, expiresAt])
 }
