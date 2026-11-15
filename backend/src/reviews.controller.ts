@@ -16,6 +16,9 @@ class ProjectReviewDto {
   @IsUUID() projectId!: string;
   @IsOptional() @IsEnum(ProjectStatus) status?: ProjectStatus;
   @IsOptional() @IsEnum(HealthStatus) health?: HealthStatus;
+  @IsOptional() @IsString() @MinLength(2) @MaxLength(140) name?: string;
+  @IsOptional() @IsString() @MaxLength(140) client?: string;
+  @IsOptional() @IsString() @MaxLength(1500) description?: string;
   @IsString() @MinLength(5) @MaxLength(400) summary!: string;
 }
 
@@ -87,7 +90,10 @@ export class ReviewsController {
   @Post('projects')
   async submitProject(@Req() req: AuthenticatedRequest, @Body() input: ProjectReviewDto) {
     this.assertChecker(req);
-    if (!input.status && !input.health) throw new BadRequestException('Provide a project status or health change');
+    if (input.status === undefined && input.health === undefined && input.name === undefined &&
+      input.client === undefined && input.description === undefined) {
+      throw new BadRequestException('Provide at least one project change');
+    }
     const project = await this.prisma.project.findFirst({
       where: { id: input.projectId, organizationId: req.principal.organizationId }
     });
@@ -99,7 +105,10 @@ export class ReviewsController {
         kind: 'PROJECT_UPDATE',
         entityId: project.id,
         summary: input.summary.trim(),
-        payload: { status: input.status, health: input.health, previousStatus: project.status, previousHealth: project.health }
+        payload: { status: input.status, health: input.health, name: input.name,
+          client: input.client, description: input.description,
+          previousStatus: project.status, previousHealth: project.health,
+          previousUpdatedAt: project.updatedAt.toISOString() }
       }
     });
     return { success: true, data: safeRequest(change) };
@@ -220,12 +229,17 @@ export class ReviewsController {
         } else if (review.kind === 'PROJECT_UPDATE') {
           const project = await tx.project.findFirst({ where: { id: review.entityId || '', organizationId: review.organizationId } });
           if (!project) throw new NotFoundException('Target project not found');
-          if (project.status !== payload.previousStatus || project.health !== payload.previousHealth) {
+          if (project.status !== payload.previousStatus || project.health !== payload.previousHealth ||
+            project.updatedAt.toISOString() !== payload.previousUpdatedAt) {
             throw new ConflictException('The source project changed. A new approval must be submitted');
           }
           const status = payload.status as ProjectStatus | undefined;
           const health = payload.health as HealthStatus | undefined;
-          await tx.project.update({ where: { id: project.id }, data: { status, health } });
+          await tx.project.update({ where: { id: project.id }, data: { status, health,
+            name: typeof payload.name === 'string' ? payload.name : undefined,
+            client: typeof payload.client === 'string' ? payload.client : undefined,
+            description: typeof payload.description === 'string' ? payload.description : undefined
+          } });
         } else if (review.kind === 'MEMBERSHIP_UPDATE') {
           if (req.principal.role !== 'ADMIN') {
             throw new ForbiddenException('Administrator checker required for role changes');
