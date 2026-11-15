@@ -29,3 +29,6 @@ button:focus-visible,a:focus-visible{outline:3px solid #86a8ff;outline-offset:3p
 .profile-badge{display:inline-grid;place-items:center;flex:none;width:33px;height:33px;border-radius:50%;background:#e0e9fc;color:#315ac4;font-size:11px;font-weight:800;border:2px solid #fff;box-shadow:0 0 0 1px #dce5f2}
 .app-topbar{min-height:74px}
 .sidebar-links a{transition:background .15s ease}
+
+.profile-role{font-size:10px;letter-spacing:.04em;font-weight:800;color:#3256ae;background:#ecf2fe;border-radius:14px;padding:6px 9px}
+@media(max-width:680px){.profile-role{display:none}}
