@@ -150,6 +150,19 @@ export class OperationProposalsController {
       organizationId: req.principal.organizationId, actorId: req.principal.userId,
       action: 'REVIEW_SUBMITTED', entityType: kind, entityId: review.id
     } });
+    const reviewers = await this.prisma.membership.findMany({
+      where: { organizationId: req.principal.organizationId,
+        role: { in: kind === 'REPORT_PUBLISH' ? ['ADMIN', 'PMO'] : ['ADMIN', 'PMO', 'PROJECT_MANAGER'] },
+        userId: { not: req.principal.userId } },
+      select: { userId: true }
+    });
+    if (reviewers.length) {
+      await this.prisma.notification.createMany({ data: reviewers.map(({ userId }) => ({
+        organizationId: req.principal.organizationId, recipientId: userId,
+        kind: 'REVIEW_PENDING', title: 'New approval request',
+        body: input.summary.slice(0, 350), link: '/approvals'
+      })) });
+    }
     return { success: true, data: { id: review.id, kind: review.kind, status: review.status } };
   }
 }
