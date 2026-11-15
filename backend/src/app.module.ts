@@ -20,6 +20,7 @@ import { ThrottleService } from './throttle.service';
 import { NotificationsController } from './notifications.controller';
 import { EmailService } from './email.service';
 import { EmailTokenService } from './email-token.service';
+import { MfaService } from './mfa.service';
 
 @Module({
   imports: [
@@ -35,6 +36,6 @@ import { EmailTokenService } from './email-token.service';
     })
   ],
   controllers: [HealthController, AuthController, ProjectsController, TasksController, ReportsController, RaidController, TimesheetsController, RegistrationController, ReviewsController, LeaveController, ParametersController, AdministrationController, OperationProposalsController, NotificationsController],
-  providers: [PrismaService, ProjectsService, AuthService, AuthGuard, ThrottleService, EmailService, EmailTokenService]
+  providers: [PrismaService, ProjectsService, AuthService, AuthGuard, ThrottleService, EmailService, EmailTokenService, MfaService]
 })
 export class AppModule {}

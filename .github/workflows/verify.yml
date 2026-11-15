@@ -59,6 +59,7 @@ jobs:
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/pmo_test?schema=public
       JWT_SECRET: local-ci-only-secret-please-do-not-use-outside-tests-123
+      MFA_ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
       BOOTSTRAP_ADMIN_EMAIL: admin@pmo.test
       BOOTSTRAP_ADMIN_PASSWORD: local-test-password-12345
       NODE_ENV: test
@@ -103,6 +104,7 @@ jobs:
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/pmo_browser?schema=public
       JWT_SECRET: local-browser-ci-test-secret-never-use-outside-ci-1234
+      MFA_ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
       BOOTSTRAP_ADMIN_EMAIL: admin@pmo.test
       BOOTSTRAP_ADMIN_PASSWORD: local-test-password-12345
       NODE_ENV: test

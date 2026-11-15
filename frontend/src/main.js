@@ -14,6 +14,7 @@ import LeaveRecords from './views/modules/people/LeaveRecords.vue';
 import DetailWorkspace from './views/modules/projects/DetailWorkspace.vue';
 import ConnectedWorkflows from './views/modules/administration/ConnectedWorkflows.vue';
 import NotificationCenter from './views/modules/administration/NotificationCenter.vue';
+import SecuritySettings from './views/modules/administration/SecuritySettings.vue';
 import PortfolioOverview from './views/modules/projects/pmoDashboard/PortfolioOverview.vue';
 import ProjectWorkspace from './views/modules/projects/ProjectWorkspace.vue';
 import RaidWorkspace from './views/modules/projects/RaidWorkspace.vue';
@@ -32,6 +33,7 @@ const router = createRouter({
     { path: '/forgot-password', name: 'ForgotPassword', component: AccountAccess, meta: { public: true } },
     { path: '/reset-password', name: 'ResetPassword', component: AccountAccess, meta: { public: true } },
     { path: '/notifications', name: 'Notifications', component: NotificationCenter },
+    { path: '/profile/security', name: 'SecuritySettings', component: SecuritySettings },
     { path: '/approvals', name: 'Approvals', component: ReviewCenter },
     { path: '/approvals/detail', name: 'ApprovalDetail', component: ReviewCenter },
     { path: '/workflows', name: 'ConnectedWorkflows', component: ConnectedWorkflows },

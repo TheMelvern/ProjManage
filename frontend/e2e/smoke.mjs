@@ -42,6 +42,11 @@ try {
   await page.getByRole('button',{name:/Sign In/i}).click();
   await page.waitForURL('**/#/portfolio',{timeout:15000});
   await page.getByRole('heading',{name:'Portfolio Overview'}).waitFor();
+  await page.getByRole('link',{name:'Security Settings'}).first().click();
+  await page.getByRole('heading',{name:'Security Settings'}).waitFor();
+  await page.getByText('Two-factor protection').waitFor();
+  await page.getByRole('link',{name:'Back to Portfolio'}).click();
+  await page.getByRole('heading',{name:'Portfolio Overview'}).waitFor();
 
   await page.getByRole('link',{name:/Projects & Tasks/}).click();
   await page.getByRole('heading',{name:'Projects & tasks'}).waitFor();

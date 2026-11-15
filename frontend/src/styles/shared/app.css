@@ -36,3 +36,5 @@ button:focus-visible,a:focus-visible{outline:3px solid #86a8ff;outline-offset:3p
 .notification-shortcut{display:inline-flex;align-items:center;justify-content:center;position:relative;width:36px;height:36px;border-radius:9px;background:#edf2fc;text-decoration:none;color:#315ac4}
 .notification-shortcut .material-symbols-outlined{font-size:21px}
 .notification-count{position:absolute;top:-6px;right:-7px;min-width:19px;height:19px;display:inline-grid;place-items:center;background:#cb3a54;color:white;border-radius:10px;padding:0 4px;font-size:10px;font-weight:800}
+
+.security-avatar-link{text-decoration:none;cursor:pointer}.security-avatar-link:focus-visible{outline:3px solid #6f91e6;outline-offset:3px}
