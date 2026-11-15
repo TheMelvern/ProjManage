@@ -6,7 +6,7 @@ try {
   if(!org) throw new Error('Seeded organization not found');
   const email='checker@pmo.test';
   const user=await db.user.upsert({where:{email},
-    create:{email,name:'Independent Browser Checker',passwordHash:await bcryptjs.hash('checker-test-password-123',12)},
+    create:{email,name:'Independent Browser Checker',emailVerifiedAt:new Date(),passwordHash:await bcryptjs.hash('checker-test-password-123',12)},
     update:{passwordHash:await bcryptjs.hash('checker-test-password-123',12)}});
   await db.membership.upsert({
     where:{organizationId_userId:{organizationId:org.id,userId:user.id}},
