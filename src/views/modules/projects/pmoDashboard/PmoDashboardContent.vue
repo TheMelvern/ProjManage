@@ -143,7 +143,7 @@
 
 <script>
 import { ref, computed, onMounted } from 'vue'
-import { projectService } from '../../../services/projectService'
+import { projectService } from '../../../../services/projectService'
 
 export default {
   name: 'PMODashboardHome',
