@@ -149,3 +149,10 @@ jobs:
       - name: Browser lifecycle
         working-directory: frontend
         run: node e2e/smoke.mjs
+      - name: Upload visual verification captures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pmo-browser-captures
+          path: frontend/test-results/*.png
+          if-no-files-found: ignore
