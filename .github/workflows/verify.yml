@@ -225,8 +225,14 @@ jobs:
               body: JSON.stringify({ name: 'Pending Colleague', email: 'pending@pmo.test',
                 password: 'safe-pending-password-2026', organization: 'PMO Development' })
             });
-            // Seeded org name may differ; this route must fail closed if org does not exist.
-            assert.ok([201, 400].includes(registerRequest.status));
+            assert.equal(registerRequest.status, 201);
+            const signup = (await registerRequest.json()).data;
+            assert.equal(signup.status, 'PENDING');
+            const beforeSignupApproval = await fetch(base + '/auth/login', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email: 'pending@pmo.test', password: 'safe-pending-password-2026' })
+            });
+            assert.equal(beforeSignupApproval.status, 401);
             const reviewerUser = await db.user.create({ data: {
               email: 'checker@pmo.test', name: 'Independent Checker',
               passwordHash: await hash('checker-test-password-123', 12)
@@ -245,6 +251,59 @@ jobs:
             assert.equal(approval.status, 201);
             const updatedProject = await fetch(base + '/projects/' + project.id, { headers });
             assert.equal((await updatedProject.json()).data.status, 'ACTIVE');
+            const registrationApproval = await fetch(base + '/reviews/' + signup.id + '/decision', {
+              method: 'POST', headers: reviewerHeaders, body: JSON.stringify({ decision: 'APPROVED' })
+            });
+            assert.equal(registrationApproval.status, 201);
+            const newUserLogin = await fetch(base + '/auth/login', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email: 'pending@pmo.test', password: 'safe-pending-password-2026' })
+            });
+            assert.equal(newUserLogin.status, 201);
+            const newUserToken = (await newUserLogin.json()).data.accessToken;
+            const newUserHeaders = { Authorization: 'Bearer ' + newUserToken, 'Content-Type': 'application/json' };
+            const unauthorizedParam = await fetch(base + '/admin/parameters', { headers: newUserHeaders });
+            assert.equal(unauthorizedParam.status, 403);
+            const leave = await fetch(base + '/leave', { method: 'POST', headers: newUserHeaders,
+              body: JSON.stringify({ type: 'ANNUAL', startDate: '2026-12-10', endDate: '2026-12-11',
+                reason: 'Planned annual leave' })
+            });
+            assert.equal(leave.status, 201);
+            const leaveId = (await leave.json()).data.id;
+            const leaveOverlap = await fetch(base + '/leave', { method: 'POST', headers: newUserHeaders,
+              body: JSON.stringify({ type: 'ANNUAL', startDate: '2026-12-11', endDate: '2026-12-12',
+                reason: 'Overlapping leave' })
+            });
+            assert.equal(leaveOverlap.status, 400);
+            const leaveSelfReview = await fetch(base + '/reviews/' + leaveId + '/decision', {
+              method: 'POST', headers: newUserHeaders, body: JSON.stringify({ decision: 'APPROVED' })
+            });
+            assert.equal(leaveSelfReview.status, 403);
+            const leaveApproved = await fetch(base + '/reviews/' + leaveId + '/decision', {
+              method: 'POST', headers: reviewerHeaders, body: JSON.stringify({ decision: 'APPROVED' })
+            });
+            assert.equal(leaveApproved.status, 201);
+            const leaveHistory = await fetch(base + '/leave/mine', { headers: newUserHeaders });
+            assert.equal(leaveHistory.status, 200);
+            assert.equal((await leaveHistory.json()).data.find(l => l.id === leaveId).status, 'APPROVED');
+            const parameterProposal = await fetch(base + '/admin/parameters/proposals', {
+              method: 'POST', headers, body: JSON.stringify({
+                key: 'timezone', value: 'Asia/Kuala_Lumpur', summary: 'Standardize reporting timezone'
+              })
+            });
+            assert.equal(parameterProposal.status, 201);
+            const parameterId = (await parameterProposal.json()).data.id;
+            const parameterApproved = await fetch(base + '/reviews/' + parameterId + '/decision', {
+              method: 'POST', headers: reviewerHeaders, body: JSON.stringify({ decision: 'APPROVED' })
+            });
+            assert.equal(parameterApproved.status, 201);
+            const parameters = await fetch(base + '/admin/parameters', { headers });
+            assert.equal(parameters.status, 200);
+            assert.equal((await parameters.json()).data.find(p => p.key === 'timezone').value, 'Asia/Kuala_Lumpur');
+            const auditTrail = await db.auditEvent.findMany({
+              where: { organizationId: orgId, action: 'REVIEW_APPROVED' }
+            });
+            assert.ok(auditTrail.length >= 4);
             const duplicateApproval = await fetch(base + '/reviews/' + proposal.id + '/decision', {
               method: 'POST', headers: reviewerHeaders, body: JSON.stringify({ decision: 'APPROVED' })
             });
