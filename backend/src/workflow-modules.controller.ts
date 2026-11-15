@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, ForbiddenException, Get, Post, Req, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, ConflictException, Controller, ForbiddenException, Get, NotFoundException, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { IsDateString, IsIn, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 import { AuthGuard, AuthenticatedRequest } from './auth.guard';
@@ -110,6 +110,31 @@ export class LeaveController {
       startDate: (r.payload as Prisma.JsonObject).startDate,
       endDate: (r.payload as Prisma.JsonObject).endDate
     })) };
+  }
+
+  @Post(':id/cancel')
+  async cancel(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
+    const updated = await this.prisma.$transaction(async tx => {
+      const existing = await tx.reviewRequest.findFirst({
+        where: { id, organizationId: req.principal.organizationId,
+          makerId: req.principal.userId, kind: 'LEAVE_REQUEST' }
+      });
+      if (!existing) throw new NotFoundException('Leave request not found');
+      if (existing.status !== 'PENDING') {
+        throw new ConflictException('Only pending leave requests can be cancelled');
+      }
+      const result = await tx.reviewRequest.updateMany({
+        where: { id: existing.id, status: 'PENDING' },
+        data: { status: 'CANCELLED', comment: 'Cancelled by applicant', reviewedAt: new Date() }
+      });
+      if (result.count !== 1) throw new ConflictException('Request has already changed');
+      await tx.auditEvent.create({
+        data: { organizationId: req.principal.organizationId, actorId: req.principal.userId,
+          action: 'REVIEW_CANCELLED', entityType: 'LEAVE_REQUEST', entityId: existing.id }
+      });
+      return existing.id;
+    });
+    return { success: true, data: { id: updated, status: 'CANCELLED' } };
   }
 
   @Post()
