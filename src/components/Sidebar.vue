@@ -270,8 +270,8 @@ export default {
         );
 
         if (confirmed) {
-          localStorage.clear();
-          window.location.href = "/login";
+          ['access_token', 'auth_token', 'auth-token'].forEach((key) => localStorage.removeItem(key));
+          window.location.hash = '#/login';
         }
       } catch (error) {
         console.error("Logout error:", error);
