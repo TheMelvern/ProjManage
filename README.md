@@ -31,7 +31,7 @@ ProjManage/
    npm run dev
    ```
    Edit `.env.local` to set `VITE_USE_LIVE_API=true` and `VITE_API_BASE_URL=http://127.0.0.1:3000/api`. Restart Vite if you change environment variables.
-5. Open `http://localhost:5173`, sign in with your bootstrap administrator, then use the Portfolio, Delivery Workspace, RAID Register, Timesheets and Executive Reports sections.
+5. Open `http://localhost:5174`, sign in with your bootstrap administrator, then use the Portfolio, Delivery Workspace, RAID Register, Timesheets and Executive Reports sections.
 
 See `backend/README.md` for API details and `docs/qa/verification.md` for acceptance criteria.
 
