@@ -13,7 +13,6 @@ import AccessManagement from './views/modules/accessControls/AccessManagement.vu
 import Wiki from './views/modules/wikis/wikiDump.vue'
 import Leave from './views/modules/leaveTracker/Leave.vue'
 import ReportsView from './views/modules/projects/reports/ReportsView.vue'
-import Analytics from './views/modules/analytics/Analytics.vue'
 
 // Project Modules
 import PmoDashboard from './views/modules/projects/pmoDashboard/PmoDashboard.vue'
@@ -136,9 +135,7 @@ const router = createRouter({
     },
     {
       path: '/analytics',
-      name: 'Analytics',
-      component: Analytics,
-      meta: { requiresLayout: true }
+      redirect: '/reports'
     },
     {
       path: '/leave',
