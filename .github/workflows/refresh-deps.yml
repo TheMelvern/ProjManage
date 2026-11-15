@@ -1,0 +1,33 @@
+name: Refresh frontend lockfile on feature branch
+on:
+  pull_request:
+    branches: [main]
+jobs:
+  refresh:
+    if: github.head_ref == 'feat/pmo-foundation-audit'
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/pmo-foundation-audit
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Reconcile frontend dependency lockfile
+        working-directory: frontend
+        run: |
+          npm uninstall xlsx --no-audit --no-fund
+          npm install read-excel-file --no-audit --no-fund
+          npm audit fix --omit=dev --no-fund || true
+      - name: Commit only dependency manifests to feature branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add frontend/package.json frontend/package-lock.json
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(deps): replace legacy xlsx and refresh lockfile"
+            git push origin HEAD:feat/pmo-foundation-audit
+          fi
