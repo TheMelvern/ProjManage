@@ -9,6 +9,7 @@ class LeaveDto {
   @IsDateString() startDate!: string;
   @IsDateString() endDate!: string;
   @IsString() @MinLength(3) @MaxLength(500) reason!: string;
+  @IsOptional() @IsIn(['FULL', 'AM', 'PM']) dayType?: string;
 }
 
 class ParameterDto {
@@ -19,7 +20,7 @@ class ParameterDto {
 }
 
 
-function workdays(start: string, end: string) {
+export function workdays(start: string, end: string, dayType = 'FULL') {
   const first = new Date(start + 'T00:00:00.000Z');
   const last = new Date(end + 'T00:00:00.000Z');
   if (!Number.isFinite(first.valueOf()) || !Number.isFinite(last.valueOf())) return 0;
@@ -28,7 +29,7 @@ function workdays(start: string, end: string) {
     const weekday = new Date(day).getUTCDay();
     if (weekday !== 0 && weekday !== 6) count++;
   }
-  return count;
+  return dayType !== 'FULL' && start === end ? count / 2 : count;
 }
 
 @Controller('leave')
@@ -45,6 +46,7 @@ export class LeaveController {
     return { success: true, data: records.map(r => ({
       id: r.id, type: (r.payload as Prisma.JsonObject).type, startDate: (r.payload as Prisma.JsonObject).startDate,
       endDate: (r.payload as Prisma.JsonObject).endDate, reason: (r.payload as Prisma.JsonObject).reason,
+      dayType: (r.payload as Prisma.JsonObject).dayType || 'FULL',
       status: r.status, checkerId: r.checkerId, createdAt: r.createdAt
     })) };
   }
@@ -77,7 +79,7 @@ export class LeaveController {
       const from = String(p.startDate), to = String(p.endDate);
       const lower = from < year + '-01-01' ? year + '-01-01' : from;
       const upper = to > year + '-12-31' ? year + '-12-31' : to;
-      if (lower <= upper) used[type] += workdays(lower, upper);
+      if (lower <= upper) used[type] += workdays(lower, upper, String(p.dayType || 'FULL'));
     }
     const remaining = {
       ANNUAL: Math.max(0, entitlements.ANNUAL - used.ANNUAL),
@@ -119,7 +121,11 @@ export class LeaveController {
     if ((end.getTime() - start.getTime()) / 86400000 > 60) {
       throw new BadRequestException('Requests longer than 60 days must be handled by HR');
     }
-    if (workdays(body.startDate, body.endDate) === 0) {
+    const dayType = body.dayType || 'FULL';
+    if (dayType !== 'FULL' && body.startDate !== body.endDate) {
+      throw new BadRequestException('Half-day leave must start and end on the same day');
+    }
+    if (workdays(body.startDate, body.endDate, dayType) === 0) {
       throw new BadRequestException('A leave request must include at least one weekday');
     }
     const overlapping = await this.prisma.reviewRequest.findMany({
@@ -128,18 +134,23 @@ export class LeaveController {
     });
     if (overlapping.some(r => {
       const p = r.payload as Prisma.JsonObject;
-      return String(p.startDate) <= body.endDate && String(p.endDate) >= body.startDate;
+      if (String(p.startDate) > body.endDate || String(p.endDate) < body.startDate) return false;
+      // Opposite AM/PM sessions on a single date may coexist.
+      if (body.startDate === body.endDate && String(p.startDate) === String(p.endDate) &&
+        dayType !== 'FULL' && String(p.dayType || 'FULL') !== 'FULL' &&
+        dayType !== String(p.dayType)) return false;
+      return true;
     })) throw new BadRequestException('This request overlaps an existing pending or approved absence');
     const balances = await this.balances(req);
     const remaining = balances.data.remaining as Record<string, number>;
     if (['ANNUAL', 'MEDICAL'].includes(body.type) &&
-      workdays(body.startDate, body.endDate) > (remaining[body.type] ?? 0)) {
+      workdays(body.startDate, body.endDate, dayType) > (remaining[body.type] ?? 0)) {
       throw new BadRequestException('Insufficient approved leave balance');
     }
     const request = await this.prisma.reviewRequest.create({
       data: { organizationId: req.principal.organizationId, makerId: req.principal.userId,
         kind: 'LEAVE_REQUEST', summary: body.type + ' leave: ' + body.startDate + ' to ' + body.endDate,
-        payload: { type: body.type, startDate: body.startDate, endDate: body.endDate, reason: body.reason } }
+        payload: { type: body.type, startDate: body.startDate, endDate: body.endDate, reason: body.reason, dayType } }
     });
     return { success: true, data: { id: request.id, status: request.status } };
   }
