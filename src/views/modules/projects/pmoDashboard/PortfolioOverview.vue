@@ -99,7 +99,7 @@ const kpis = computed(() => [
   { label: 'On track', value: report.value ? projects.value.filter(p => p.health === 'GREEN').length : '—', detail: 'Green project health', tone: 'green' },
   { label: 'At risk', value: report.value ? projects.value.filter(p => p.health === 'AMBER').length : '—', detail: 'Need timely review', tone: 'amber' },
   { label: 'Critical', value: report.value ? projects.value.filter(p => p.health === 'RED').length : '—', detail: 'Immediate escalation', tone: 'red' }
-]));
+]);
 
 const priorities = computed(() => {
   const ranked = projects.value
