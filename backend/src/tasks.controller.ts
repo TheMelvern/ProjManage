@@ -37,6 +37,7 @@ export class TasksController {
 
   @Post()
   async create(@Req() req: AuthenticatedRequest, @Param('projectId') projectId: string, @Body() body: CreateTaskDto) {
+    throw new ForbiddenException('Task changes require an independent maker-checker proposal');
     this.assertEditor(req);
     await this.projects.findOne(req.principal.organizationId, projectId);
     const task = await this.prisma.task.create({
@@ -49,6 +50,7 @@ export class TasksController {
   @Patch(':id')
   async update(@Req() req: AuthenticatedRequest, @Param('projectId') projectId: string,
     @Param('id') id: string, @Body() body: UpdateTaskDto) {
+    throw new ForbiddenException('Task changes require an independent maker-checker proposal');
     this.assertEditor(req);
     await this.projects.findOne(req.principal.organizationId, projectId);
     const existing = await this.prisma.task.findFirst({ where: { id, projectId } });
