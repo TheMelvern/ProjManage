@@ -152,7 +152,9 @@ jobs:
           exit 1
       - name: Browser lifecycle
         working-directory: frontend
-        run: node e2e/smoke.mjs
+        run: |
+          node e2e/smoke.mjs
+          node e2e/auth-flow.mjs
       - name: Upload visual verification captures
         if: always()
         uses: actions/upload-artifact@v4
