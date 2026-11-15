@@ -90,5 +90,22 @@ jobs:
           assert.equal(list.status, 200);
           const projects = (await list.json()).data;
           assert.ok(projects.some((p) => p.id === project.id));
-          console.log('API smoke passed: authorization, login, creation, persistence');
+          const taskCreated = await fetch(base + '/projects/' + project.id + '/tasks', {
+            method: 'POST', headers, body: JSON.stringify({ title: 'Define rollout plan' })
+          });
+          assert.equal(taskCreated.status, 201);
+          const task = (await taskCreated.json()).data;
+          const markedDone = await fetch(base + '/projects/' + project.id + '/tasks/' + task.id, {
+            method: 'PATCH', headers, body: JSON.stringify({ status: 'DONE' })
+          });
+          assert.equal(markedDone.status, 200);
+          const tasksResponse = await fetch(base + '/projects/' + project.id + '/tasks', { headers });
+          const tasks = (await tasksResponse.json()).data;
+          assert.equal(tasks.find((entry) => entry.id === task.id).status, 'DONE');
+          const reportResponse = await fetch(base + '/reports/portfolio', { headers });
+          assert.equal(reportResponse.status, 200);
+          const report = (await reportResponse.json()).data;
+          assert.equal(report.projects.find((entry) => entry.id === project.id).progressPercent, 100);
+          assert.ok(report.summary.completedTasks >= 1);
+          console.log('API smoke passed: authorization, login, project/task CRUD, persistence, reporting');
           JS
