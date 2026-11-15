@@ -46,6 +46,12 @@
         <span class="sidebar-item-text">Wiki</span>
       </router-link>
 
+      <router-link to="/portfolio" class="sidebar-item"
+        :class="{ 'sidebar-item-active': currentRoute === '/portfolio' }" @click="closeAllDropdowns">
+        <span class="material-symbols-outlined sidebar-item-icon">account_tree</span>
+        <span class="sidebar-item-text">Portfolio Overview</span>
+      </router-link>
+
       <!-- Projects Dropdown - UPDATED WITH SIMPLIFIED ROUTES -->
       <div class="sidebar-group">
         <div class="sidebar-group-header" :class="{ 'sidebar-group-open': isProjectsOpen }"
