@@ -50,7 +50,7 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue';
-import axios from '../../api/axiosConfig';
+import axios from '../../../api/axiosConfig';
 const reviews = ref([]), loading = ref(false), busy = ref(false), error = ref(''), notice = ref('');
 const selectedId = ref(''), comment = ref(''), filter = ref('ALL');
 const selected = computed(() => reviews.value.find(r => r.id === selectedId.value));
