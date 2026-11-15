@@ -315,7 +315,7 @@ export default {
           }));
           if (this.rememberMe) localStorage.setItem('rememberedEmail', this.email);
           else localStorage.removeItem('rememberedEmail');
-          this.$router.push('/dashboard');
+          this.$router.push('/portfolio');
           return;
         }
         if (!this.demoAuthEnabled) {
