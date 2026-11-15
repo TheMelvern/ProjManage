@@ -27,16 +27,6 @@ export class TimesheetsController {
 
   @Post()
   async create(@Req() req: AuthenticatedRequest, @Param('projectId') projectId: string, @Body() body: NewTimesheetDto) {
-    throw new ForbiddenException('Timesheet submission requires independent checker approval');
-    await this.projects.findOne(req.principal.organizationId, projectId);
-    const date = new Date(body.workDate);
-    if (date.getTime() > Date.now() + 86400000) {
-      throw new BadRequestException('Timesheets cannot be submitted for future dates');
-    }
-    const entry = await this.prisma.timesheetEntry.create({
-      data: { projectId, userId: req.principal.userId, workDate: date,
-        hours: body.hours, description: body.description }
-    });
-    return { success: true, data: entry };
+    throw new ForbiddenException('Changes must be submitted as an independent maker-checker review');
   }
 }
