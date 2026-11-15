@@ -43,7 +43,9 @@ const navigation = [
   { to: '/workspace', label: 'Delivery Workspace', icon: 'task_alt' },
   { to: '/raid', label: 'RAID Register', icon: 'warning_amber' },
   { to: '/timesheets', label: 'Timesheets', icon: 'schedule' },
-  { to: '/reports', label: 'Executive Reports', icon: 'summarize' }
+  { to: '/leave', label: 'Leave Tracker', icon: 'event_available' },
+  { to: '/reports', label: 'Executive Reports', icon: 'summarize' },
+  { to: '/admin/parameters', label: 'Admin Parameters', icon: 'settings' }
 ];
 const isLogin = computed(() => ['Login', 'Signup'].includes(route.name));
 const pageTitle = computed(() => navigation.find(item => item.to === route.path)?.label || 'PMO Portal');
