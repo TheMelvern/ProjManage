@@ -52,6 +52,13 @@ model User {
   sessionVersion Int @default(0)
   emailVerifiedAt DateTime?
   emailTokens EmailToken[]
+  mfaCiphertext String?
+  mfaPendingCiphertext String?
+  mfaPendingCreatedAt DateTime?
+  mfaEnabledAt DateTime?
+  mfaLastStep Int?
+  mfaChallenges MfaChallenge[]
+  mfaRecoveryCodes MfaRecoveryCode[]
   memberships Membership[]
   notifications Notification[]
   createdAt   DateTime     @default(now())
@@ -265,4 +272,26 @@ model EmailToken {
   createdAt  DateTime  @default(now())
   user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@index([userId, purpose, expiresAt])
+}
+
+model MfaChallenge {
+  id         String   @id @default(uuid())
+  userId     String
+  tokenHash  String   @unique
+  expiresAt  DateTime
+  consumedAt DateTime?
+  attempts   Int      @default(0)
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, expiresAt])
+}
+
+model MfaRecoveryCode {
+  id         String    @id @default(uuid())
+  userId     String
+  codeHash   String    @unique
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, consumedAt])
 }
