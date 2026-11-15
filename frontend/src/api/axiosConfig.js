@@ -32,7 +32,7 @@ axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      ['access_token', 'auth_token', 'auth-token'].forEach((key) => localStorage.removeItem(key));
+      ['access_token', 'auth_token', 'auth-token', 'user'].forEach((key) => localStorage.removeItem(key));
       if (window.location.hash !== '#/login') {
         window.location.hash = '#/login';
       }
