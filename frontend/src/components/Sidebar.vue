@@ -52,6 +52,12 @@
         <span class="sidebar-item-text">Portfolio Overview</span>
       </router-link>
 
+      <router-link to="/raid" class="sidebar-item"
+        :class="{ 'sidebar-item-active': currentRoute === '/raid' }" @click="closeAllDropdowns">
+        <span class="material-symbols-outlined sidebar-item-icon">warning_amber</span>
+        <span class="sidebar-item-text">RAID Register</span>
+      </router-link>
+
       <router-link to="/workspace" class="sidebar-item"
         :class="{ 'sidebar-item-active': currentRoute === '/workspace' }" @click="closeAllDropdowns">
         <span class="material-symbols-outlined sidebar-item-icon">task_alt</span>
