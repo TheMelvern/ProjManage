@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, ForbiddenException, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { IsISO8601, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
 import { PrismaService } from './prisma.service';
 import { ProjectsService } from './projects.service';
@@ -27,6 +27,7 @@ export class TimesheetsController {
 
   @Post()
   async create(@Req() req: AuthenticatedRequest, @Param('projectId') projectId: string, @Body() body: NewTimesheetDto) {
+    throw new ForbiddenException('Timesheet submission requires independent checker approval');
     await this.projects.findOne(req.principal.organizationId, projectId);
     const date = new Date(body.workDate);
     if (date.getTime() > Date.now() + 86400000) {
