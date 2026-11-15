@@ -44,6 +44,12 @@ try {
   await page.getByRole('button',{name:'Submit project'}).click();
   await page.getByText(/Project proposal submitted/).waitFor({timeout:15000});
   await approve('PROJECT_CREATE','Approved Browser Project');
+  await page.getByRole('link',{name:'Notification Center'}).first().click();
+  await page.getByRole('heading',{name:'Notification Center'}).waitFor();
+  await page.getByText('Request approved').first().waitFor({timeout:15000});
+  await page.getByRole('button',{name:'Mark all read'}).click();
+  await page.getByText('No notifications yet.').count().then(count => assert.equal(count,0));
+  await page.getByRole('link',{name:/Projects & Tasks/}).click();
   await page.reload();
   await page.getByText('Approved Browser Project').first().waitFor({timeout:15000});
   await page.getByRole('button',{name:/Approved Browser Project/}).click();
