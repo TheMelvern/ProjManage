@@ -26,7 +26,7 @@ const page=await browser.newPage({viewport:{width:1440,height:900},acceptDownloa
 const errors=[];
 page.on('pageerror',e=>errors.push(e.message));
 try {
-  await page.goto('http://localhost:5173/#/login',{waitUntil:'networkidle'});
+  await page.goto('http://localhost:5174/#/login',{waitUntil:'networkidle'});
   await page.getByRole('link',{name:'Create an account'}).click();
   await page.getByRole('heading',{name:'Create your account'}).waitFor();
   await page.getByRole('link',{name:'Sign in'}).click();
