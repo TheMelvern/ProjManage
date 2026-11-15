@@ -1,6 +1,6 @@
 import { BadRequestException, Body, Controller, ForbiddenException, NotFoundException, Post, Req, UseGuards } from '@nestjs/common';
 import { IsIn, IsObject, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
-import { Prisma, PrismaClient } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { AuthGuard, AuthenticatedRequest } from './auth.guard';
 import { PrismaService } from './prisma.service';
 
@@ -114,13 +114,29 @@ export class OperationProposalsController {
       if (!record) throw new NotFoundException('Target record not found');
       previousUpdatedAt = record.updatedAt.toISOString();
     }
+    const snapshot = kind === 'REPORT_PUBLISH' ? await this.prisma.project.findMany({
+      where: { organizationId: req.principal.organizationId },
+      select: { id: true, name: true, status: true, health: true, client: true,
+        tasks: { select: { status: true, dueDate: true } },
+        risks: { select: { status: true, severity: true } } },
+      orderBy: { name: 'asc' }
+    }).then(projects => ({
+      generatedAt: new Date().toISOString(),
+      projects: projects.map(p => ({
+        id: p.id, name: p.name, client: p.client, status: p.status, health: p.health,
+        totalTasks: p.tasks.length, completedTasks: p.tasks.filter(t => t.status === 'DONE').length,
+        progressPercent: p.tasks.length ? Math.round(p.tasks.filter(t => t.status === 'DONE').length / p.tasks.length * 100) : 0,
+        overdueTasks: p.tasks.filter(t => t.status !== 'DONE' && t.dueDate && t.dueDate < new Date()).length,
+        highRisks: p.risks.filter(r => r.status !== 'CLOSED' && ['HIGH','CRITICAL'].includes(r.severity)).length
+      }))
+    })) : null;
     const review = await this.prisma.reviewRequest.create({
       data: {
         organizationId: req.principal.organizationId, makerId: req.principal.userId,
         kind, entityId: input.targetId || input.projectId || null,
         summary: input.summary.trim(),
         payload: { projectId: input.projectId || null, targetId: input.targetId || null,
-          values: values as Prisma.InputJsonValue, previousUpdatedAt: previousUpdatedAt || null }
+          values: values as Prisma.InputJsonValue, snapshot, previousUpdatedAt: previousUpdatedAt || null }
       }
     });
     return { success: true, data: { id: review.id, kind: review.kind, status: review.status } };
