@@ -45,7 +45,7 @@
           </div>
 
           <!-- Login Form -->
-          <form class="login-form" @submit.prevent="handleLogin">
+          <form v-if="!mfaChallenge" class="login-form" @submit.prevent="handleLogin">
             <!-- Email Field -->
             <div class="login-form-group">
               <label class="login-form-label">Work Email</label>
@@ -93,6 +93,19 @@
 
           </form>
 
+          <form v-else class="login-form mfa-form" @submit.prevent="completeMfa">
+            <p class="mfa-explainer">Your account is protected by two-factor authentication. Enter your six-digit authenticator code or an unused recovery code.</p>
+            <div class="login-form-group">
+              <label for="mfa-login-code" class="login-form-label">Authenticator or recovery code</label>
+              <input id="mfa-login-code" v-model.trim="mfaCode" class="login-form-input" autocomplete="one-time-code"
+                placeholder="123456 or recovery code" required maxlength="32"/>
+            </div>
+            <button type="submit" class="login-submit-btn" :disabled="isLoading || !mfaCode">
+              {{ isLoading ? 'Verifying…' : 'Verify and sign in' }}
+            </button>
+            <button type="button" class="mfa-back" @click="cancelMfa">Use another account</button>
+          </form>
+
           <p class="signup-prompt">New to PMO Portal? <router-link to="/signup">Create an account</router-link> · <router-link to="/resend-verification">Verify email</router-link></p>
 
           <!-- Support Footer -->
@@ -128,6 +141,8 @@ export default {
     return {
       email: '',
       password: '',
+      mfaChallenge: '',
+      mfaCode: '',
       showPassword: false,
       rememberMe: false,
       isLoading: false,
@@ -153,9 +168,22 @@ export default {
           email: this.email, password: this.password
         });
         const payload = response.data.data;
+        if (payload?.requiresMfa && payload.challengeToken) {
+          this.mfaChallenge = payload.challengeToken;
+          this.mfaCode = '';
+          return;
+        }
         if (!payload?.accessToken || !payload?.user) {
           throw new Error('Unexpected authentication response');
         }
+        this.storeSession(payload);
+      } catch (error) {
+        this.showError(error.response?.data?.message || 'Unable to sign in. Check your API and credentials.');
+      } finally {
+        this.isLoading = false;
+      }
+    },
+    storeSession(payload) {
         localStorage.setItem('access_token', payload.accessToken);
         localStorage.setItem('user', JSON.stringify({
           ...payload.user, lastLogin: new Date().toISOString()
@@ -163,11 +191,25 @@ export default {
         if (this.rememberMe) localStorage.setItem('rememberedEmail', this.email);
         else localStorage.removeItem('rememberedEmail');
         this.$router.push('/portfolio');
+    },
+    async completeMfa() {
+      this.isLoading = true;
+      try {
+        const response = await axiosInstance.post('/auth/mfa/complete', {
+          challengeToken: this.mfaChallenge, code: this.mfaCode
+        });
+        if (!response.data?.data?.accessToken) throw new Error('Unexpected MFA response');
+        this.storeSession(response.data.data);
+        this.mfaChallenge = '';
+        this.mfaCode = '';
       } catch (error) {
-        this.showError(error.response?.data?.message || 'Unable to sign in. Check your API and credentials.');
-      } finally {
-        this.isLoading = false;
-      }
+        this.showError(error.response?.data?.message || 'Invalid or expired authenticator code');
+      } finally { this.isLoading = false; }
+    },
+    cancelMfa() {
+      this.mfaChallenge = '';
+      this.mfaCode = '';
+      this.password = '';
     },
     showError(message) {
       window.alert(message);
@@ -204,6 +246,7 @@ export default {
 </script>
 
 <style scoped>
+.mfa-explainer{color:#607086;font-size:13px;line-height:1.6;margin:8px 0 20px}.mfa-form{margin-top:16px}.mfa-back{background:transparent;border:0;color:#315ac4;text-align:center;font-weight:750;padding:11px;cursor:pointer}
 .signup-prompt{margin:18px 0;color:#64748b;font-size:13px}.signup-prompt a{color:#315ac4;text-decoration:none;font-weight:800}
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
