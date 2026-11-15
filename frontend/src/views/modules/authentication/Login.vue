@@ -46,30 +46,6 @@
             <p class="login-auth-subtitle">Please enter your credentials to access the system.</p>
           </div>
 
-          <!-- Demo Credentials Section -->
-          <div class="demo-credentials" v-if="showDemoCredentials && demoAuthEnabled">
-            <div class="demo-header">
-              <span class="material-symbols-outlined demo-icon">info</span>
-              <h3>Demo Accounts</h3>
-            </div>
-            <p class="demo-description">Use any of these test accounts to login:</p>
-            <div class="demo-accounts">
-              <div v-for="account in demoCredentials" :key="account.email" class="demo-account" @click="fillCredentials(account)">
-                <div class="demo-account-icon">
-                  <span class="material-symbols-outlined">{{ account.icon }}</span>
-                </div>
-                <div class="demo-account-info">
-                  <div class="demo-account-email">{{ account.email }}</div>
-                  <div class="demo-account-role">{{ account.role }}</div>
-                </div>
-                <div class="demo-account-password">Password: {{ account.password }}</div>
-              </div>
-            </div>
-            <button @click="showDemoCredentials = false" class="demo-hide-btn">
-              Hide Demo Accounts
-            </button>
-          </div>
-
           <!-- Login Form -->
           <form class="login-form" @submit.prevent="handleLogin">
             <!-- Email Field -->
@@ -85,7 +61,7 @@
             <div class="login-form-group">
               <div class="login-form-header">
                 <label class="login-form-label">Password</label>
-                <a class="login-form-link" href="#" @click.prevent="toggleForgotPassword">Forgot Password?</a>
+<span class="login-form-hint">Contact your administrator to reset access</span>
               </div>
               <div class="login-input-wrapper login-password-wrapper">
                 <input v-model="password" :type="showPassword ? 'text' : 'password'"
@@ -98,31 +74,13 @@
               </div>
             </div>
 
-            <!-- Role Selection (Only for demo mode) -->
-            <div class="login-form-group" v-if="showRoleSelection">
-              <label class="login-form-label">Select Role</label>
-              <div class="role-selection">
-                <div v-for="role in roles" :key="role.id" 
-                     :class="['role-option', { 'selected': selectedRole === role.id }]"
-                     @click="selectRole(role.id)">
-                  <span class="material-symbols-outlined role-icon">{{ role.icon }}</span>
-                  <div class="role-info">
-                    <div class="role-name">{{ role.name }}</div>
-                    <div class="role-description">{{ role.description }}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
             <!-- Remember Me Checkbox -->
             <div class="login-remember">
               <input v-model="rememberMe" id="remember-me" type="checkbox" class="login-checkbox" />
               <label for="remember-me" class="login-checkbox-label">
                 Remember me
               </label>
-              <button type="button" v-if="demoAuthEnabled" @click="showDemoCredentials = true" class="demo-toggle-btn">
-                Show Demo Accounts
-              </button>
+              
             </div>
 
             <!-- Login Button -->
@@ -135,18 +93,6 @@
               <span class="material-symbols-outlined login-submit-icon">login</span>
             </button>
 
-            <!-- Divider -->
-            <div class="login-divider">
-              <div class="login-divider-line"></div>
-              <span class="login-divider-text">Or continue with</span>
-              <div class="login-divider-line"></div>
-            </div>
-
-            <!-- SSO Button -->
-            <button @click="handleSSO" type="button" class="login-sso-btn" :disabled="isLoading">
-              <span class="material-symbols-outlined login-sso-icon">security</span>
-              <span>Sign in with Single Sign-On (SSO)</span>
-            </button>
           </form>
 
           <!-- Support Footer -->
@@ -157,7 +103,7 @@
             </div>
             <div class="login-system-status">
               <div class="login-status-indicator"></div>
-              <span class="login-status-text">System Operational</span>
+              <span class="login-status-text">Secure sign-in</span>
             </div>
           </div>
         </div>
@@ -165,7 +111,7 @@
         <!-- Global Footer for bottom edge -->
         <div class="login-copyright">
           <p class="login-copyright-text">
-            © {{ currentYear }} PMO Portal · {{ demoAuthEnabled ? 'Development demo' : 'Secure workspace' }}
+            © {{ currentYear }} PMO Portal · Secure workspace
           </p>
         </div>
       </div>
@@ -182,202 +128,49 @@ export default {
     return {
       email: '',
       password: '',
-      demoAuthEnabled: import.meta.env.DEV && import.meta.env.VITE_ENABLE_DEMO_AUTH === 'true',
-      selectedRole: '',
       showPassword: false,
-      showRoleSelection: false,
-      showDemoCredentials: false,
       rememberMe: false,
       isLoading: false,
-      currentYear: new Date().getFullYear(),
-
-      // Mock user database
-      mockUsers: [
-        {
-          id: 1,
-          email: 'admin@cardzone.com',
-          password: 'admin123',
-          name: 'System Administrator',
-          role: 'admin',
-          department: 'IT',
-          permissions: ['all'],
-          lastLogin: null,
-          icon: 'admin_panel_settings'
-        },
-        {
-          id: 2,
-          email: 'pmo@cardzone.com',
-          password: 'pmo123',
-          name: 'PMO Director',
-          role: 'pmo-director',
-          department: 'Project Management',
-          permissions: ['view_all', 'create_project', 'approve_budget'],
-          lastLogin: null,
-          icon: 'monitoring'
-        },
-        {
-          id: 3,
-          email: 'manager@cardzone.com',
-          password: 'manager123',
-          name: 'Project Manager',
-          role: 'project-manager',
-          department: 'Operations',
-          permissions: ['view_assigned', 'create_task', 'update_status'],
-          lastLogin: null,
-          icon: 'assignment'
-        },
-        {
-          id: 4,
-          email: 'user@cardzone.com',
-          password: 'user123',
-          name: 'Team Member',
-          role: 'team-member',
-          department: 'Development',
-          permissions: ['view_tasks', 'update_tasks'],
-          lastLogin: null,
-          icon: 'group'
-        },
-        {
-          id: 5,
-          email: 'finance@cardzone.com',
-          password: 'finance123',
-          name: 'Finance Manager',
-          role: 'finance',
-          department: 'Finance',
-          permissions: ['view_financials', 'approve_budget', 'generate_reports'],
-          lastLogin: null,
-          icon: 'account_balance'
-        }
-      ],
-
-      // Available roles for selection
-      roles: [
-        { id: 'admin', name: 'Administrator', description: 'Full system access', icon: 'admin_panel_settings' },
-        { id: 'pmo-director', name: 'PMO Director', description: 'Portfolio management', icon: 'monitoring' },
-        { id: 'project-manager', name: 'Project Manager', description: 'Project execution', icon: 'assignment' },
-        { id: 'team-member', name: 'Team Member', description: 'Task execution', icon: 'group' },
-        { id: 'finance', name: 'Finance Manager', description: 'Budget & financials', icon: 'account_balance' }
-      ],
-
-      // Demo credentials for easy access
-      demoCredentials: [
-        { email: 'admin@cardzone.com', password: 'admin123', role: 'Administrator', icon: 'admin_panel_settings' },
-        { email: 'pmo@cardzone.com', password: 'pmo123', role: 'PMO Director', icon: 'monitoring' },
-        { email: 'manager@cardzone.com', password: 'manager123', role: 'Project Manager', icon: 'assignment' },
-        { email: 'user@cardzone.com', password: 'user123', role: 'Team Member', icon: 'group' },
-        { email: 'finance@cardzone.com', password: 'finance123', role: 'Finance Manager', icon: 'account_balance' }
-      ]
-    }
+      currentYear: new Date().getFullYear()
+    };
   },
   methods: {
-    // Fill credentials from demo account click
-    fillCredentials(account) {
-      this.email = account.email
-      this.password = account.password
-      this.showDemoCredentials = false
-    },
-
-    // Toggle password visibility
     togglePasswordVisibility() {
-      this.showPassword = !this.showPassword
+      this.showPassword = !this.showPassword;
     },
-
-    // Toggle forgot password (mock)
-    toggleForgotPassword() {
-      alert('Password reset feature is in demo mode. Contact system administrator in production.')
-    },
-
-    // Select role
-    selectRole(roleId) {
-      this.selectedRole = roleId
-    },
-
-    // Live API authentication is enabled with VITE_USE_LIVE_API=true.
-    // Demo login is intentionally restricted to explicit local development mode.
     async handleLogin() {
       if (!this.email || !this.password) {
         this.showError('Please enter both email and password');
         return;
       }
+      if (import.meta.env.VITE_USE_LIVE_API !== 'true') {
+        this.showError('API login is not configured. Set VITE_USE_LIVE_API=true.');
+        return;
+      }
       this.isLoading = true;
       try {
-        if (import.meta.env.VITE_USE_LIVE_API === 'true') {
-          const response = await axiosInstance.post('/auth/login', {
-            email: this.email,
-            password: this.password
-          });
-          const payload = response.data.data;
-          if (!payload?.accessToken || !payload?.user) throw new Error('Unexpected authentication response');
-          localStorage.setItem('access_token', payload.accessToken);
-          localStorage.setItem('user', JSON.stringify({
-            ...payload.user,
-            lastLogin: new Date().toISOString()
-          }));
-          if (this.rememberMe) localStorage.setItem('rememberedEmail', this.email);
-          else localStorage.removeItem('rememberedEmail');
-          this.$router.push('/portfolio');
-          return;
+        const response = await axiosInstance.post('/auth/login', {
+          email: this.email, password: this.password
+        });
+        const payload = response.data.data;
+        if (!payload?.accessToken || !payload?.user) {
+          throw new Error('Unexpected authentication response');
         }
-        if (!this.demoAuthEnabled) {
-          this.showError('API login is not configured. Set VITE_USE_LIVE_API=true.');
-          return;
-        }
-        const user = this.mockUsers.find((entry) =>
-          entry.email.toLowerCase() === this.email.toLowerCase() &&
-          entry.password === this.password
-        );
-        if (!user) {
-          this.showError('Invalid development demo credentials');
-          return;
-        }
+        localStorage.setItem('access_token', payload.accessToken);
         localStorage.setItem('user', JSON.stringify({
-          id: user.id, email: user.email, name: user.name,
-          role: user.role, lastLogin: new Date().toISOString()
+          ...payload.user, lastLogin: new Date().toISOString()
         }));
         if (this.rememberMe) localStorage.setItem('rememberedEmail', this.email);
         else localStorage.removeItem('rememberedEmail');
-        this.$router.push('/dashboard');
+        this.$router.push('/portfolio');
       } catch (error) {
-        this.showError(error.response?.data?.message || 'Unable to sign in. Check the API and credentials.');
+        this.showError(error.response?.data?.message || 'Unable to sign in. Check your API and credentials.');
       } finally {
         this.isLoading = false;
       }
     },
-
-    // Redirect to appropriate dashboard
-    redirectToDashboard(role) {
-      const routes = {
-        'admin': '/dashboard',
-        'pmo-director': '/dashboard',
-        'project-manager': '/projects',
-        'team-member': '/tasks',
-        'finance': '/finance'
-      }
-      
-      this.$router.push(routes[role] || '/dashboard')
-    },
-
-    // Handle SSO (mock)
-    handleSSO() {
-      this.isLoading = true
-      setTimeout(() => {
-        this.isLoading = false
-        alert('SSO authentication is in demo mode. Use regular login for testing.')
-      }, 1000)
-    },
-
-    // Show success message
-    showSuccess(message) {
-      // You can replace this with a proper notification component
-      console.log('Success:', message)
-      // For now, use alert
-      alert(message)
-    },
-
-    // Show error message
     showError(message) {
-      console.error('Error:', message)
-      alert(message)
+      window.alert(message);
     }
   },
   mounted() {
