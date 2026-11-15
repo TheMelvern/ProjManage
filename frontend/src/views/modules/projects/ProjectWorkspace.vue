@@ -28,7 +28,7 @@
           <label for="project-client">Client (optional)</label>
           <input id="project-client" v-model.trim="newClient" maxlength="140"
             placeholder="Organization name" :disabled="!liveMode || busy" />
-          <button type="submit" :disabled="!liveMode || busy || newProjectName.length < 2">Create project</button>
+          <button type="submit" :disabled="!liveMode || busy || newProjectName.length < 2">Submit project</button>
         </form>
         <div v-if="loading" class="loading" role="status">Loading projects…</div>
         <div v-else-if="projects.length === 0" class="loading">No projects created yet.</div>
@@ -72,7 +72,7 @@
               minlength="2" maxlength="200" required :disabled="!liveMode || busy" />
             <label for="task-due">Due date (optional)</label>
             <input id="task-due" v-model="newTaskDue" type="date" :disabled="!liveMode || busy" />
-            <button type="submit" :disabled="!liveMode || busy || newTaskTitle.length < 2">Add task</button>
+            <button type="submit" :disabled="!liveMode || busy || newTaskTitle.length < 2">Submit task</button>
           </form>
           <ul class="tasks">
             <li v-for="task in tasks" :key="task.id">
@@ -151,15 +151,13 @@ async function selectProject(id) {
 async function createProject() {
   busy.value = true;
   try {
-    const response = await axiosInstance.post('/projects', {
-      name: newProjectName.value, client: newClient.value || undefined
+    await axiosInstance.post('/reviews/operations', {
+      kind: 'PROJECT_CREATE', summary: 'Create project ' + newProjectName.value,
+      values: { name: newProjectName.value, client: newClient.value }
     });
     newProjectName.value = '';
     newClient.value = '';
-    selectedId.value = response.data.data.id;
-    await loadProjects();
-    await selectProject(selectedId.value);
-    showSuccess('Project created and saved to PostgreSQL.');
+    showSuccess('Project proposal submitted for independent approval.');
   } catch (cause) { showError(cause); } finally { busy.value = false; }
 }
 async function saveProject() {
@@ -177,22 +175,27 @@ async function createTask() {
   if (!selectedId.value) return;
   busy.value = true;
   try {
-    await axiosInstance.post('/projects/' + encodeURIComponent(selectedId.value) + '/tasks', {
-      title: newTaskTitle.value,
-      dueDate: newTaskDue.value ? new Date(newTaskDue.value + 'T12:00:00').toISOString() : undefined
+    await axiosInstance.post('/reviews/operations', {
+      kind: 'TASK_CREATE', projectId: selectedId.value,
+      summary: 'Create task ' + newTaskTitle.value,
+      values: {
+        title: newTaskTitle.value,
+        ...(newTaskDue.value ? { dueDate: new Date(newTaskDue.value + 'T12:00:00').toISOString() } : {})
+      }
     });
     newTaskTitle.value = '';
     newTaskDue.value = '';
-    await loadTasks();
-    showSuccess('Task created.');
+    showSuccess('Task proposal submitted for independent approval.');
   } catch (cause) { showError(cause); } finally { busy.value = false; }
 }
 async function changeTaskStatus(task, status) {
   busy.value = true;
   try {
-    await axiosInstance.patch('/projects/' + encodeURIComponent(selectedId.value) + '/tasks/' + encodeURIComponent(task.id), { status });
-    await loadTasks();
-    showSuccess('Task status updated.');
+    await axiosInstance.post('/reviews/operations', {
+      kind: 'TASK_UPDATE', projectId: selectedId.value, targetId: task.id,
+      summary: 'Update task status for ' + task.title, values: { status }
+    });
+    showSuccess('Task change submitted for independent approval.');
   } catch (cause) { showError(cause); } finally { busy.value = false; }
 }
 onMounted(loadProjects);
