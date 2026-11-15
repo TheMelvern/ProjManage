@@ -1,70 +1,42 @@
-# Framer → Vue / NestJS implementation map
+# Framer → Vue / NestJS parity and integration
 
-Design source: [PMO in Framer](https://framer.com/projects/STom7jCmgSh7YkuQlZOB)
+**Design reference:** [PMO workspace in Framer](https://framer.com/projects/STom7jCmgSh7YkuQlZOB). Native editable Framer layers are not directly NestJS/Vue/Prisma code: UI was implemented in the existing Vue codebase, with PostgreSQL-backed NestJS workflows.
 
-The Framer project uses native editable layers and prototype links, **not a directly exportable Vue 3/NestJS/PostgreSQL codebase**. Implement its component hierarchy and visual language in the existing application rather than deploying the Framer design as the API.
+## Screen/route parity
 
-## Implemented in this branch
+| Framer design | App route | Live backend |
+|---|---|---|
+| Login | `/#/login` | JWT sign-in and account lockout |
+| Signup | `/#/signup` | New account pending admin check |
+| Portfolio | `/#/portfolio` | Approved project, RAID and task reporting |
+| Projects & Tasks | `/#/projects`, `/#/projects/detail` | Project/task create/update approval; versions |
+| RAID | `/#/raid`, `/#/raid/detail` | Risk/issue/decision/action maker proposal and checker |
+| Timesheets | `/#/timesheets`, `/#/timesheets/detail` | Effort submission, approved history |
+| Executive reports | `/#/reports`, `/#/reports/detail` | Executive KPIs and approved snapshot CSV export |
+| Leave Tracker | `/#/leave`, `/#/leave/records`, `/#/leave/approvals`, `/#/leave/team` | Entitlement, half-day, cancellation, approved calendar |
+| Approval Center | `/#/approvals`, `/#/approvals/detail` | Independent decisions, review state and audit |
+| Admin Parameters | `/#/admin`, `/#/admin/parameters`, `/#/admin/workflows` | Approved master settings and policy values |
+| Users & Roles | `/#/admin/users`, `/#/admin/access` | Membership directory, maker/second-admin checker |
+| Audit & Security | `/#/admin/audit` | Audit event viewer |
+| Connected Workflows | `/#/workflows` | Cross-module navigation and record relationships |
 
-| Framer workflow | Vue route | NestJS route | Persistence |
-| --- | --- | --- | --- |
-| Sign In | `/#/login` | `POST /api/auth/login` | User / Membership |
-| Sign Up | `/#/signup` | `POST /api/auth/register` | Pending ReviewRequest (password hashed) |
-| Portfolio | `/#/portfolio` | Project and report APIs | Projects, Tasks, RAID |
-| Projects & Tasks | `/#/workspace` | Project and task APIs | Project, Task |
-| Project status / health review | Project workspace / approval queue | `POST /api/reviews/projects` | ReviewRequest, then approved Project |
-| RAID | `/#/raid` | Project RAID API | Risk, Issue, Decision, ActionItem |
-| Timesheets | `/#/timesheets` | Project timesheet API | TimesheetEntry |
-| Reports | `/#/reports` | `GET /api/reports/portfolio` | Derived from project records |
-| Leave Tracker | `/#/leave` | `GET /api/leave/mine`, `POST /api/leave` | ReviewRequest |
-| Approval Center | `/#/approvals` | `GET /api/reviews`, `POST /api/reviews/:id/decision` | ReviewRequest + AuditEvent |
-| Admin Parameters | `/#/admin/parameters` | `GET /api/admin/parameters`, `POST /api/admin/parameters/proposals` | OrganizationParameter once approved |
+Every app module links to related modules and uses a common responsive sidebar. Initials avatar badges and role labels appear in user records. A `/#/` hash prefix is expected in Vue but not Framer prototype URLs. Frontend is **localhost:5174**, backend 127.0.0.1:3000.
 
-The shared Vue sidebar contains the new modules. A user avatar badge is displayed in the application header.
+## Shared data rules
 
-## Reviewer policy
+- `organizationId` separates tenants; `projectId` joins projects/tasks/RAID/timesheets/reports.
+- Membership is rechecked on each authenticated API call and roles constrain maker/checker actions.
+- `ReviewRequest` stores maker, checker, kind, target, proposed value, previous version, decision and time.
+- Unapproved proposals do **not** modify source records or live reports.
+- Approved project/task/RAID/timesheet changes recalculate the dashboard from PostgreSQL on refresh.
+- Executive publication uses the captured snapshot at submission; CSV export is only allowed after independent approval.
+- Leave requests have approval state, entitled weekdays and half-day handling; only approved leave affects balance and team availability.
+- Audit events capture proposal and checker decisions. Role changes revoke old JWTs.
 
-- Approval is **server-enforced**, not just a UI label.
-- Reviewers must have an appropriate organization membership; only admins may approve registrations and parameter updates.
-- A maker may not approve their own request.
-- Project status/health writes must use a review; direct project PATCH attempts are rejected.
-- A pending review leaves the previously approved project or parameter unchanged.
-- Review decisions are persisted with checker ID, status, review time and an AuditEvent.
-- Project status/health approvals compare prior values to prevent stale proposals from overwriting newer changes.
-- Registration produces no account session until independently approved.
+## Local verification
 
-## Local run
+`.github/workflows/verify.yml` runs frontend build, production frontend package audit, database migrations and server integration, plus Chromium E2E on desktop/mobile with screenshots. Run both apps with `VITE_USE_LIVE_API=true` and two independent admin accounts.
 
-First pull the branch or merge the reviewed PR. Configure `backend/.env` from the tracked example and make sure PostgreSQL is running.
+## Constraints before internet-facing production
 
-```powershell
-cd backend
-npm install
-npm run db:generate
-npm run db:deploy
-npm run db:seed
-npm run build
-npm start
-```
-
-In another PowerShell window:
-
-```powershell
-cd frontend
-npm ci
-npm run dev
-```
-
-Set `VITE_USE_LIVE_API=true` and `VITE_API_BASE_URL` to the actual backend origin in `frontend/.env`. Use different ports for frontend and backend. Browser navigation uses Vue Router hash history.
-
-## Still missing before full Framer parity
-
-1. Responsive tablet/mobile versions and all detailed Framer subpages.
-2. Full backend maker–checker gates for all task, RAID, timesheet and report mutations. Current enforcement covers project status/health, registration, leave and administrator parameters.
-3. Leave balances, entitlement accrual, calendar views, holidays, handover and multi-step leave workflow rules.
-4. User invitations, verified-email onboarding, MFA, session revocation and login throttling.
-5. Configurable role matrix, independent checker assignment, role-scoped field access and workflow SLAs.
-6. Project-level permissions, status reconciliation, notifications and event-driven realtime updates.
-7. Full audit detail API, report publication controls, data export governance and accessibility/regression coverage.
-
-Do not claim the Framer prototype itself has backend functionality. Development permissions and local tests are not a production security audit.
+This implementation covers active Framer PMO modules as a **locally tested application MVP**, not a finished public SaaS compliance implementation. Email ownership validation, recovery/MFA, distributed login throttling, holiday calendars and entitlement accrual rules, delegated approval configurations, notifications/escalation timers, detailed project-level permission scoping, Firefox/WebKit and assistive-technology testing, backups/monitoring, and security/privacy reviews remain separate production work. These should not be represented as operational merely because Framer contains a design for them. Auto-deploy is disabled.
