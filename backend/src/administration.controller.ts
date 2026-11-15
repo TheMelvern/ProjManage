@@ -44,6 +44,10 @@ export class AdministrationController {
         payload: { userId: existing.userId, membershipId: existing.id,
           previousRole: existing.role, newRole: body.role } }
     });
+    await this.prisma.auditEvent.create({ data: {
+      organizationId: req.principal.organizationId, actorId: req.principal.userId,
+      action: 'REVIEW_SUBMITTED', entityType: 'MEMBERSHIP_UPDATE', entityId: review.id
+    } });
     return { success: true, data: { id: review.id, status: review.status } };
   }
   @Get('audit')
