@@ -207,11 +207,14 @@ try {
   assert.ok(audit.some(e=>e.entityId===membership.id));
   await request('GET','/admin/audit',outsider,undefined,403);
   await request('POST','/reviews/'+membership.id+'/decision',checker,{decision:'APPROVED'},409);
-  await request('GET','/projects',member,undefined,200);
+  // Role changes revoke the old JWT and require a new login.
+  await request('GET','/projects',member,undefined,401);
+  const refreshedMember=await login(memberUser.email,'member-password-123456');
+  await request('GET','/projects',refreshedMember,undefined,200);
   await db.membership.delete({where:{organizationId_userId:{
     organizationId:organization.id,userId:memberUser.id
   }}});
-  await request('GET','/projects',member,undefined,401);
+  await request('GET','/projects',refreshedMember,undefined,401);
   assert.equal((await request('GET','/projects',outsider,undefined,200)).data.length,0);
   console.log('PASS: tenant isolation, registration, projects/tasks, RAID, timesheets, reports, leave, parameters, users, role approvals, audit, JWT revocation');
 } finally { await db.$disconnect(); }
