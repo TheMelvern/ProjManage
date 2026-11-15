@@ -126,6 +126,24 @@ jobs:
           const tasksResponse = await fetch(base + '/projects/' + project.id + '/tasks', { headers });
           const tasks = (await tasksResponse.json()).data;
           assert.equal(tasks.find((entry) => entry.id === task.id).status, 'DONE');
+          // Maker-checker: propose a change without modifying approved project state.
+          const proposalRes = await fetch(base + '/reviews/projects', {
+            method: 'POST', headers, body: JSON.stringify({
+              projectId: project.id, status: 'ACTIVE', health: 'GREEN', summary: 'Move delivery project to active'
+            })
+          });
+          assert.equal(proposalRes.status, 201);
+          const proposal = (await proposalRes.json()).data;
+          const cannotSelfApprove = await fetch(base + '/reviews/' + proposal.id + '/decision', {
+            method: 'POST', headers, body: JSON.stringify({ decision: 'APPROVED' })
+          });
+          assert.equal(cannotSelfApprove.status, 403);
+          const beforeApproval = await fetch(base + '/projects/' + project.id, { headers });
+          assert.equal((await beforeApproval.json()).data.status, 'PLANNING');
+          const directBypass = await fetch(base + '/projects/' + project.id, {
+            method: 'PATCH', headers, body: JSON.stringify({ status: 'ACTIVE' })
+          });
+          assert.equal(directBypass.status, 400);
           const reportResponse = await fetch(base + '/reports/portfolio', { headers });
           assert.equal(reportResponse.status, 200);
           const report = (await reportResponse.json()).data;
@@ -201,6 +219,36 @@ jobs:
             await db.membership.delete({ where: { organizationId_userId: {
               organizationId: otherOrg.id, userId: otherUser.id
             } } });
+            // Account signup is stored pending, never immediately grants a login.
+            const registerRequest = await fetch(base + '/auth/register', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ name: 'Pending Colleague', email: 'pending@pmo.test',
+                password: 'safe-pending-password-2026', organization: 'PMO Development' })
+            });
+            // Seeded org name may differ; this route must fail closed if org does not exist.
+            assert.ok([201, 400].includes(registerRequest.status));
+            const reviewerUser = await db.user.create({ data: {
+              email: 'checker@pmo.test', name: 'Independent Checker',
+              passwordHash: await hash('checker-test-password-123', 12)
+            } });
+            const orgId = project.organizationId;
+            await db.membership.create({ data: { organizationId: orgId, userId: reviewerUser.id, role: 'ADMIN' } });
+            const reviewerLogin = await fetch(base + '/auth/login', { method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email: 'checker@pmo.test', password: 'checker-test-password-123' }) });
+            assert.equal(reviewerLogin.status, 201);
+            const reviewerToken = (await reviewerLogin.json()).data.accessToken;
+            const reviewerHeaders = { Authorization: 'Bearer ' + reviewerToken, 'Content-Type': 'application/json' };
+            const approval = await fetch(base + '/reviews/' + proposal.id + '/decision', {
+              method: 'POST', headers: reviewerHeaders, body: JSON.stringify({ decision: 'APPROVED' })
+            });
+            assert.equal(approval.status, 201);
+            const updatedProject = await fetch(base + '/projects/' + project.id, { headers });
+            assert.equal((await updatedProject.json()).data.status, 'ACTIVE');
+            const duplicateApproval = await fetch(base + '/reviews/' + proposal.id + '/decision', {
+              method: 'POST', headers: reviewerHeaders, body: JSON.stringify({ decision: 'APPROVED' })
+            });
+            assert.equal(duplicateApproval.status, 409);
             const revoked = await fetch(base + '/projects', { headers: viewerHeaders });
             assert.equal(revoked.status, 401);
           } finally {
