@@ -22,7 +22,7 @@
         <div class="topbar-label">{{ pageTitle }}</div>
         <div class="topbar-right">
           <router-link to="/notifications" class="notification-shortcut" title="Notification Center" aria-label="Notification Center"><span class="material-symbols-outlined">notifications</span><span v-if="unreadCount" class="notification-count">{{ unreadCount > 99 ? "99+" : unreadCount }}</span></router-link>
-          <span class="profile-badge" :title="currentUser">{{ userInitials }}</span><span class="user-label">{{ currentUser }}</span><span class="profile-role">{{ currentRole }}</span>
+          <router-link to="/profile/security" class="profile-badge security-avatar-link" :title="currentUser + ' · Security settings'" aria-label="Account security settings">{{ userInitials }}</router-link><span class="user-label">{{ currentUser }}</span><span class="profile-role">{{ currentRole }}</span>
           <button type="button" class="logout-btn" @click="logout">Sign out</button>
         </div>
       </header>
@@ -51,6 +51,7 @@ const navigation = [
   { to: '/portfolio', label: 'Portfolio Overview', icon: 'dashboard' },
   { to: '/approvals', label: 'Approval Center', icon: 'rule' },
   { to: '/notifications', label: 'Notification Center', icon: 'notifications' },
+  { to: '/profile/security', label: 'Security Settings', icon: 'shield_lock' },
   { to: '/workflows', label: 'Connected Workflows', icon: 'hub' },
   { to: '/projects', label: 'Projects & Tasks', icon: 'task_alt' },
   { to: '/raid', label: 'RAID Register', icon: 'warning_amber' },
