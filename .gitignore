@@ -6,3 +6,8 @@ node_modules/
 .env.development.local
 .env.test.local
 .env.production.local
+# Build output
+frontend/dist/
+backend/dist/
+backend/*.tsbuildinfo
+coverage/

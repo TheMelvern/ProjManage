@@ -4,13 +4,13 @@ import { resolve } from 'path'
 
 export default defineConfig({
   plugins: [vue()],
-  base: '/czintranet/',
+  base: process.env.VITE_BASE_PATH || '/',
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src')
     }
   },
   server: {
-    port: 3000
+    port: 5173
   }
 })
