@@ -5,6 +5,8 @@ import { hash } from 'bcryptjs';
 import { AuthGuard, AuthenticatedRequest } from './auth.guard';
 import { PrismaService } from './prisma.service';
 import { workdays } from './workflow-modules.controller';
+import { ThrottleService } from './throttle.service';
+import type { Request } from 'express';
 
 class RegisterDto {
   @IsString() @MinLength(2) @MaxLength(140) name!: string;
@@ -37,11 +39,12 @@ function safeRequest(r: { payload: unknown; [key: string]: unknown }) {
 
 @Controller('auth')
 export class RegistrationController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly throttle: ThrottleService) {}
 
   // Requests never issue a token. Organization administrators independently approve membership.
   @Post('register')
-  async register(@Body() input: RegisterDto) {
+  async register(@Body() input: RegisterDto, @Req() req: Request) {
+    this.throttle.limit('register:' + req.ip, 5, 600_000);
     const email = input.email.trim().toLowerCase();
     const org = await this.prisma.organization.findFirst({ where: { name: { equals: input.organization.trim(), mode: 'insensitive' } } });
     if (!org) throw new BadRequestException('Organization not found. Ask your administrator for the correct organization name.');
