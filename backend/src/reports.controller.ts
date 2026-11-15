@@ -28,6 +28,14 @@ export class ReportsController {
       where: { organizationId: req.principal.organizationId },
       include: { tasks: true, risks: true, issues: true, actions: true }, orderBy: { name: 'asc' }
     });
+    const parameter = await this.prisma.organizationParameter.findUnique({
+      where: { organizationId_key: { organizationId: req.principal.organizationId,
+        key: 'riskEscalationThreshold' } }
+    });
+    const threshold = String(parameter?.value || 'HIGH');
+    const critical = threshold === 'CRITICAL' ? ['CRITICAL'] :
+      threshold === 'MEDIUM' ? ['MEDIUM','HIGH','CRITICAL'] :
+      threshold === 'LOW' ? ['LOW','MEDIUM','HIGH','CRITICAL'] : ['HIGH','CRITICAL'];
     const now = new Date();
     const isOverdue = (task: { status: string; dueDate: Date | null }) =>
       task.status !== 'DONE' && !!task.dueDate && task.dueDate < now;
