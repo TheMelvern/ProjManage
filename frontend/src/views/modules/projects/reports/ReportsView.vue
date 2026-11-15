@@ -7,7 +7,7 @@
         <p class="report-description">Portfolio health calculated from saved projects and task completion.</p>
       </div>
       <div class="report-actions">
-        <button type="button" @click="loadReport" :disabled="loading">Refresh</button>
+        <router-link to="/reports/detail" class="report-detail-link">View details</router-link><button type="button" @click="loadReport" :disabled="loading">Refresh</button>
         <button type="button" class="primary" @click="submitPublication" :disabled="!report || publishing">Submit report for check</button>
         <button type="button" @click="downloadCSV" :disabled="!selectedPublication">Export approved CSV</button>
       </div>
@@ -154,6 +154,7 @@ onMounted(loadReport);
 </script>
 
 <style scoped>
+.report-detail-link{display:inline-flex;align-items:center;padding:10px 15px;background:#edf2fe;color:#315ac4;border-radius:9px;font-size:12px;font-weight:750;text-decoration:none}
 .executive-reports { padding: 32px; background: #f5f7fb; min-height: 100vh; color: #1c2940; }
 .report-heading { display:flex; justify-content:space-between; gap:24px; align-items:center; margin-bottom:24px; }
 .report-heading h1 { font-size: 29px; font-weight: 750; margin:4px 0 8px; }
