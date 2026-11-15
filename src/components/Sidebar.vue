@@ -94,11 +94,7 @@
         <span class="sidebar-item-text">My Schedule & Claim</span>
       </router-link>
 
-      <router-link to="/analytics" class="sidebar-item"
-        :class="{ 'sidebar-item-active': currentRoute === '/analytics' }" @click="closeAllDropdowns">
-        <span class="material-symbols-outlined sidebar-item-icon">analytics</span>
-        <span class="sidebar-item-text">Analytic Report</span>
-      </router-link>
+
     </nav>
 
     <!-- Sidebar Footer -->
