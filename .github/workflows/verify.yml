@@ -208,3 +208,72 @@ jobs:
           }
           console.log('API smoke passed: project-task/RAID/timesheet/report lifecycle, cross-tenant isolation and role enforcement');
           JS
+
+  browser-e2e:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: pmo_browser
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d pmo_browser"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/pmo_browser?schema=public
+      JWT_SECRET: local-browser-ci-test-secret-never-use-outside-ci-1234
+      BOOTSTRAP_ADMIN_EMAIL: admin@pmo.test
+      BOOTSTRAP_ADMIN_PASSWORD: local-test-password-12345
+      API_HOST: 127.0.0.1
+      API_PORT: 3000
+      FRONTEND_ORIGIN: http://localhost:5173
+      VITE_API_BASE_URL: http://127.0.0.1:3000/api
+      VITE_USE_LIVE_API: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install backend
+        working-directory: backend
+        run: npm install --no-audit --no-fund
+      - name: Prepare PostgreSQL
+        working-directory: backend
+        run: |
+          npm run db:generate
+          npm run db:deploy
+          npm run db:seed
+          npm run build
+      - name: Launch API
+        working-directory: backend
+        run: |
+          nohup node dist/main.js >/tmp/pmo-api-browser.log 2>&1 &
+      - name: Install frontend and Playwright
+        working-directory: frontend
+        run: |
+          npm ci
+          npm install --no-save --no-audit --no-fund playwright
+          npx playwright install --with-deps chromium
+      - name: Launch frontend
+        working-directory: frontend
+        run: |
+          nohup npm run dev -- --host 127.0.0.1 >/tmp/pmo-vite-browser.log 2>&1 &
+      - name: Wait for services
+        run: |
+          for i in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:3000/api/health >/dev/null && curl -fsS http://localhost:5173 >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/pmo-api-browser.log /tmp/pmo-vite-browser.log
+          exit 1
+      - name: Browser lifecycle
+        working-directory: frontend
+        run: node e2e/smoke.mjs
