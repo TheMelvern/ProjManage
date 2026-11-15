@@ -28,11 +28,14 @@ const errors=[];
 page.on('pageerror',e=>errors.push(e.message));
 try {
   await page.goto('http://localhost:5174/#/login',{waitUntil:'networkidle'});
-  // Catch missing global login styles: the split screen must be a flex layout.
-  const layout=await page.locator('.login-split-screen').evaluate(el=>getComputedStyle(el).display);
-  assert.equal(layout,'flex','Login stylesheet was not loaded');
-  const panel=await page.locator('.login-auth-panel').evaluate(el=>getComputedStyle(el).backgroundColor);
-  assert.equal(panel,'rgb(255, 255, 255)','Login authentication panel CSS was not applied');
+  // Login uses the same design tokens and layout conventions as signup and dashboard.
+  const layout=await page.locator('.auth-layout').evaluate(el=>getComputedStyle(el).display);
+  assert.equal(layout,'grid','Unified PMO authentication layout CSS was not applied');
+  const panel=await page.locator('.auth-form-card').evaluate(el=>getComputedStyle(el).backgroundColor);
+  assert.equal(panel,'rgb(255, 255, 255)','Unified PMO login card CSS was not applied');
+  const story=await page.locator('.auth-story').evaluate(el=>getComputedStyle(el).backgroundColor);
+  assert.equal(story,'rgb(20, 34, 61)','PMO navy brand color does not match application sidebar');
+  assert.equal(await page.getByText('Illustrative').isVisible(),true,'Sample dashboard preview must be labelled');
 
   await page.getByRole('link',{name:'Forgot password?'}).click();
   await page.getByRole('heading',{name:'Reset your password'}).waitFor();
@@ -137,6 +140,9 @@ try {
   const mobile=await browser.newPage({viewport:{width:390,height:844}});
   mobile.on('pageerror',e=>errors.push(e.message));
   await mobile.goto('http://localhost:5174/#/login',{waitUntil:'networkidle'});
+  const mobileLayout=await mobile.locator('.auth-layout').evaluate(el=>getComputedStyle(el).display);
+  assert.equal(mobileLayout,'block','Mobile login should use a fluid single-column layout');
+  assert.equal(await mobile.locator('.auth-story').isVisible(),false,'Mobile login must hide decorative brand panel');
   await mobile.getByPlaceholder('name@company.com').fill('admin@pmo.test');
   await mobile.getByPlaceholder('••••••••').fill('local-test-password-12345');
   await mobile.getByRole('button',{name:/Sign In/i}).click();
