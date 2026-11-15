@@ -1,8 +1,26 @@
 import assert from 'node:assert/strict';
 import { PrismaClient } from '@prisma/client';
 import bcryptjs from 'bcryptjs';
+import { createServer } from 'node:http';
 
 const db = new PrismaClient();
+const delivered = [];
+const mailServer = createServer((req,res)=>{
+  let text='';
+  req.on('data',chunk=>text+=chunk);
+  req.on('end',()=>{
+    try { delivered.push(JSON.parse(text)); res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({id:'local-ci-mock'})); }
+    catch { res.writeHead(400);res.end(); }
+  });
+});
+await new Promise(resolve=>mailServer.listen(39222,'127.0.0.1',resolve));
+const tokenFromMail = (email,kind) => {
+  const message=delivered.filter(e=>e.to?.includes(email) && e.subject?.includes(kind)).at(-1);
+  assert.ok(message,'Missing email for '+email+' '+kind);
+  const match=/[?&]token=([a-f0-9]{64})/.exec(message.text);
+  assert.ok(match,'Missing one-time token in delivered link');
+  return match[1];
+};
 const base = 'http://127.0.0.1:3000/api';
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 const jsonHeaders = { 'Content-Type': 'application/json' };
@@ -47,12 +65,14 @@ try {
   const suffix=String(Date.now());
   const memberUser=await db.user.create({data:{
     email:'member-'+suffix+'@pmo.test',name:'Team Member',
+    emailVerifiedAt:new Date(),
     passwordHash:await bcryptjs.hash('member-password-123456',12)
   }});
   await db.membership.create({data:{userId:memberUser.id,organizationId:organization.id,role:'MEMBER'}});
   const member=await login(memberUser.email,'member-password-123456');
   const checkerUser=await db.user.create({data:{
     email:'checker-'+suffix+'@pmo.test',name:'Independent Reviewer',
+    emailVerifiedAt:new Date(),
     passwordHash:await bcryptjs.hash('checker-password-12345',12)
   }});
   await db.membership.create({data:{userId:checkerUser.id,organizationId:organization.id,role:'ADMIN'}});
@@ -60,6 +80,7 @@ try {
   const outsiderOrg=await db.organization.create({data:{name:'Other tenant '+suffix}});
   const outsiderUser=await db.user.create({data:{
     email:'outsider-'+suffix+'@pmo.test',name:'External User',
+    emailVerifiedAt:new Date(),
     passwordHash:await bcryptjs.hash('outsider-password-1234',12)
   }});
   await db.membership.create({data:{userId:outsiderUser.id,organizationId:outsiderOrg.id,role:'MEMBER'}});
@@ -82,7 +103,15 @@ try {
   const visible=queue.data.find(r=>r.id===signup.data.id);
   assert.equal(visible.proposed,undefined,'Password must never appear in API review payload');
   await approve(checker,signup.data.id);
-  await login(registrant,'new-user-password-1234');
+  await request('POST','/auth/login',null,{email:registrant,password:'new-user-password-1234'},403);
+  const firstLink=tokenFromMail(registrant,'Verify');
+  await request('POST','/auth/resend-verification',null,{email:registrant},201);
+  const verificationToken=tokenFromMail(registrant,'Verify');
+  assert.notEqual(firstLink,verificationToken);
+  await request('POST','/auth/verify-email',null,{token:firstLink},400);
+  await request('POST','/auth/verify-email',null,{token:verificationToken},201);
+  await request('POST','/auth/verify-email',null,{token:verificationToken},400);
+  const registrantSession=await login(registrant,'new-user-password-1234');
 
   // Project creation cannot be performed directly or by a MEMBER.
   await request('POST','/projects',maker,{name:'Bypass project'},403);
@@ -285,11 +314,24 @@ try {
   assert.ok(checkAll.data.updated>=1);
   const afterAll=(await request('GET','/notifications',checker,undefined,200)).data;
   assert.equal(afterAll.unread,0);
+  await request('POST','/auth/request-password-reset',null,{email:'does-not-exist-'+suffix+'@pmo.test'},201);
+  const beforeUnknown=delivered.length;
+  await request('POST','/auth/request-password-reset',null,{email:'absent-'+suffix+'@pmo.test'},201);
+  assert.equal(delivered.length,beforeUnknown);
+  await request('POST','/auth/request-password-reset',null,{email:registrant},201);
+  const resetToken=tokenFromMail(registrant,'Reset');
+  await request('POST','/auth/verify-email',null,{token:resetToken},400);
+  await request('POST','/auth/reset-password',null,{token:resetToken,password:'updated-password-123456'},201);
+  await request('GET','/projects',registrantSession,undefined,401);
+  await request('POST','/auth/reset-password',null,{token:resetToken,password:'another-password-123456'},400);
+  await request('POST','/auth/login',null,{email:registrant,password:'new-user-password-1234'},401);
+  await login(registrant,'updated-password-123456');
   const freshLogin=await login(checkerUser.email,'checker-password-12345');
   await request('POST','/auth/logout',freshLogin,{},201);
   await request('GET','/projects',freshLogin,undefined,401);
   const lockedUser=await db.user.create({data:{
     email:'locked-'+suffix+'@pmo.test',name:'Login Protection Test',
+    emailVerifiedAt:new Date(),
     passwordHash:await bcryptjs.hash('correct-password-1234',12)
   }});
   await db.membership.create({data:{organizationId:organization.id,userId:lockedUser.id,role:'MEMBER'}});
@@ -300,4 +342,4 @@ try {
     email:lockedUser.email,password:'correct-password-1234'
   },429);
   console.log('PASS: tenant isolation, registration, projects/tasks, RAID, timesheets, reports, leave, parameters, users, role approvals, audit, JWT revocation');
-} finally { await db.$disconnect(); }
+} finally { await db.$disconnect(); await new Promise(resolve=>mailServer.close(resolve)); }
