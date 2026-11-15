@@ -12,6 +12,8 @@ import Dashboard from './views/modules/dashboards/adminDashboard.vue'
 import AccessManagement from './views/modules/accessControls/AccessManagement.vue'
 import Wiki from './views/modules/wikis/wikiDump.vue'
 import Leave from './views/modules/leaveTracker/Leave.vue'
+import ReportsView from './views/modules/projects/reports/ReportsView.vue'
+import Analytics from './views/modules/analytics/Analytics.vue'
 
 // Project Modules
 import PmoDashboard from './views/modules/projects/pmoDashboard/PmoDashboard.vue'
@@ -125,6 +127,18 @@ const router = createRouter({
           meta: { requiresLayout: true }
         }
       ]
+    },
+    {
+      path: '/reports',
+      name: 'Reports',
+      component: ReportsView,
+      meta: { requiresLayout: true }
+    },
+    {
+      path: '/analytics',
+      name: 'Analytics',
+      component: Analytics,
+      meta: { requiresLayout: true }
     },
     {
       path: '/leave',
