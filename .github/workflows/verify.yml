@@ -81,7 +81,8 @@ jobs:
           node --input-type=module <<'JS'
           import assert from 'node:assert/strict';
           import { PrismaClient } from '@prisma/client';
-          import { hash } from 'bcryptjs';
+          import bcryptjs from 'bcryptjs';
+          const { hash } = bcryptjs;
           const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
           let ready = false;
           for (let i = 0; i < 30; i++) {
