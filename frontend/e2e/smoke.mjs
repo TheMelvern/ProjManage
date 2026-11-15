@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { mkdir } from 'node:fs/promises';
 import { chromium } from 'playwright';
 
 const base='http://127.0.0.1:3000/api';
@@ -109,9 +110,25 @@ try {
   await page.reload();
   await page.getByText('Approved configuration').first().waitFor({timeout:15000});
 
+  await mkdir('test-results',{recursive:true});
+  await page.screenshot({path:'test-results/desktop-admin.png',fullPage:true});
   await page.getByRole('button',{name:'Sign out'}).click();
   await page.waitForURL('**/#/login',{timeout:15000});
   assert.equal(await page.evaluate(()=>localStorage.getItem('access_token')),null);
+  // Exercise responsive mobile sidebar, navigation and leave form.
+  const mobile=await browser.newPage({viewport:{width:390,height:844}});
+  mobile.on('pageerror',e=>errors.push(e.message));
+  await mobile.goto('http://localhost:5174/#/login',{waitUntil:'networkidle'});
+  await mobile.getByPlaceholder('name@company.com').fill('admin@pmo.test');
+  await mobile.getByPlaceholder('••••••••').fill('local-test-password-12345');
+  await mobile.getByRole('button',{name:/Sign In/i}).click();
+  await mobile.waitForURL('**/#/portfolio',{timeout:15000});
+  await mobile.getByRole('button',{name:'Toggle navigation'}).click();
+  await mobile.getByRole('link',{name:/Leave Tracker/}).click();
+  await mobile.getByRole('heading',{name:'Leave Tracker Management'}).waitFor();
+  await mobile.screenshot({path:'test-results/mobile-leave.png',fullPage:true});
+  assert.ok(await mobile.getByLabel('Leave duration').isVisible());
+  await mobile.close();
   assert.deepEqual(errors,[],'Browser runtime exceptions');
   console.log('Playwright PASS: signup, portfolio, project/task, RAID, timesheet, published reporting, leave, admin + checker API approvals');
 } finally {await browser.close();}
