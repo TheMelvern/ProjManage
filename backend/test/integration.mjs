@@ -319,6 +319,14 @@ try {
   await request('POST','/auth/request-password-reset',null,{email:'absent-'+suffix+'@pmo.test'},201);
   assert.equal(delivered.length,beforeUnknown);
   await request('POST','/auth/request-password-reset',null,{email:registrant},201);
+  const expiredToken=tokenFromMail(registrant,'Reset');
+  const { createHash } = await import('node:crypto');
+  await db.emailToken.update({
+    where: { tokenHash: createHash('sha256').update(expiredToken).digest('hex') },
+    data: { expiresAt: new Date(Date.now()-1000) }
+  });
+  await request('POST','/auth/reset-password',null,{token:expiredToken,password:'rejected-expired-password'},400);
+  await request('POST','/auth/request-password-reset',null,{email:registrant},201);
   const resetToken=tokenFromMail(registrant,'Reset');
   await request('POST','/auth/verify-email',null,{token:resetToken},400);
   await request('POST','/auth/reset-password',null,{token:resetToken,password:'updated-password-123456'},201);
