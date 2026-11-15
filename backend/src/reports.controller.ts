@@ -8,6 +8,20 @@ import { AuthGuard, AuthenticatedRequest } from './auth.guard';
 export class ReportsController {
   constructor(private readonly prisma: PrismaService, private readonly projects: ProjectsService) {}
 
+  @Get('published')
+  async published(@Req() req: AuthenticatedRequest) {
+    const released = await this.prisma.reviewRequest.findMany({
+      where: { organizationId: req.principal.organizationId, kind: 'REPORT_PUBLISH', status: 'APPROVED' },
+      orderBy: { reviewedAt: 'desc' }, take: 30
+    });
+    return { success: true, data: released.map(item => {
+      const payload = item.payload as Record<string, unknown>;
+      return { id: item.id, createdAt: item.createdAt, reviewedAt: item.reviewedAt,
+        makerId: item.makerId, checkerId: item.checkerId, summary: item.summary,
+        snapshot: payload.snapshot };
+    }) };
+  }
+
   @Get('portfolio')
   async portfolio(@Req() req: AuthenticatedRequest) {
     const projects = await this.prisma.project.findMany({
