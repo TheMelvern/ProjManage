@@ -34,6 +34,7 @@
 <script setup>
 import { computed, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import axiosInstance from './api/axiosConfig';
 const route = useRoute();
 const router = useRouter();
 const menuOpen = ref(false);
@@ -69,7 +70,12 @@ const currentUser = computed(() => {
   } catch { return 'Signed in'; }
 });
 const userInitials = computed(() => currentUser.value.split(/[\\s@.]+/).slice(0,2).map(w => w.charAt(0).toUpperCase()).join('') || 'PM');
-function logout() {
+async function logout() {
+  try {
+    if (localStorage.getItem('access_token')) await axiosInstance.post('/auth/logout');
+  } catch {
+    // Local sign-out must still clear the browser token if the API is offline.
+  }
   ['access_token', 'auth_token', 'auth-token', 'user'].forEach(key => localStorage.removeItem(key));
   menuOpen.value = false;
   router.replace({ name: 'Login' });
