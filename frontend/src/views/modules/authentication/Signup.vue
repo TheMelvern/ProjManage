@@ -42,7 +42,7 @@
 
 <script setup>
 import { ref } from 'vue';
-import axios from '../../api/axiosConfig';
+import axios from '../../../api/axiosConfig';
 const firstName = ref(''), lastName = ref(''), email = ref(''), organization = ref('');
 const password = ref(''), confirm = ref(''), consent = ref(false), busy = ref(false), error = ref(''), success = ref('');
 async function register() {
