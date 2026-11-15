@@ -8,6 +8,8 @@ import { HealthController } from './health.controller';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { AuthGuard } from './auth.guard';
+import { TasksController } from './tasks.controller';
+import { ReportsController } from './reports.controller';
 
 @Module({
   imports: [
@@ -22,7 +24,7 @@ import { AuthGuard } from './auth.guard';
       }
     })
   ],
-  controllers: [HealthController, AuthController, ProjectsController],
+  controllers: [HealthController, AuthController, ProjectsController, TasksController, ReportsController],
   providers: [PrismaService, ProjectsService, AuthService, AuthGuard]
 })
 export class AppModule {}
