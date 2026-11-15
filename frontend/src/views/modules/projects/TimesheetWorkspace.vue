@@ -3,7 +3,7 @@
     <header class="page-heading">
       <div><p class="eyebrow">RESOURCE MANAGEMENT</p><h1>Project timesheets</h1>
         <p>Log effort against projects and review your saved time entries.</p></div>
-      <router-link to="/workspace">Delivery workspace</router-link>
+      <div class="module-shortcuts"><router-link to="/timesheets/detail">View details</router-link><router-link to="/workspace">Delivery workspace</router-link></div>
     </header>
     <p v-if="!liveMode" class="notice" role="status">Enable VITE_USE_LIVE_API=true and sign in to log time.</p>
     <p v-if="error" class="notice error" role="alert">{{ error }}</p>
@@ -98,6 +98,7 @@ async function submit() {
 onMounted(loadProjects);
 </script>
 <style scoped>
+.module-shortcuts{display:flex;gap:12px;flex-wrap:wrap}
 .timesheets{padding:34px;background:#f4f7fb;min-height:100vh;color:#1c2a43}
 .page-heading{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:26px}
 .eyebrow{font-size:11px;color:#4865af;font-weight:800;letter-spacing:.1em}
