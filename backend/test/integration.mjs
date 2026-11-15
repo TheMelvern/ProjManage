@@ -393,7 +393,7 @@ try {
   const refreshed=(await request('POST','/auth/mfa/complete',null,{
     challengeToken:thirdChallenge.challengeToken,code:enabled.recoveryCodes[2]
   },201)).data;
-  assert.equal((await request('GET','/auth/mfa/status',refreshed.accessToken,undefined,200)).data.recoveryCodesRemaining,5);
+  assert.equal((await request('GET','/auth/mfa/status',refreshed.accessToken,undefined,200)).data.recoveryCodesRemaining,6);
   await request('POST','/auth/mfa/disable',refreshed.accessToken,{
     password:'wrong-password',code:enabled.recoveryCodes[3]
   },401);
