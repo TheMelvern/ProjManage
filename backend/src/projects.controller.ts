@@ -1,18 +1,14 @@
-import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
-import { IsEnum, IsOptional, IsString, IsUUID, MinLength } from 'class-validator';
+import { Body, Controller, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
 import { HealthStatus, ProjectStatus } from '@prisma/client';
 import { ProjectsService } from './projects.service';
-
-class OrganizationQuery {
-  @IsUUID() organizationId!: string;
-}
+import { AuthGuard, AuthenticatedRequest } from './auth.guard';
 
 class CreateProjectDto {
   @IsString() @MinLength(2) name!: string;
   @IsOptional() @IsString() description?: string;
   @IsOptional() @IsString() client?: string;
 }
-
 class UpdateProjectDto {
   @IsOptional() @IsString() @MinLength(2) name?: string;
   @IsOptional() @IsString() description?: string;
@@ -22,19 +18,32 @@ class UpdateProjectDto {
 }
 
 @Controller('projects')
+@UseGuards(AuthGuard)
 export class ProjectsController {
   constructor(private readonly projects: ProjectsService) {}
 
-  // TEMPORARY: disable mutation routes until authenticated organization
-  // membership guards are implemented. Do not trust client-supplied tenant IDs.
   @Get()
-  list(@Query() query: OrganizationQuery) { return this.projects.list(query.organizationId); }
+  list(@Req() req: AuthenticatedRequest) {
+    return this.projects.list(req.principal.organizationId);
+  }
 
   @Get('summary')
-  summary(@Query() query: OrganizationQuery) { return this.projects.summary(query.organizationId); }
+  summary(@Req() req: AuthenticatedRequest) {
+    return this.projects.summary(req.principal.organizationId);
+  }
 
   @Get(':id')
-  detail(@Query() query: OrganizationQuery, @Param('id') id: string) {
-    return this.projects.findOne(query.organizationId, id);
+  detail(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
+    return this.projects.findOne(req.principal.organizationId, id);
+  }
+
+  @Post()
+  create(@Req() req: AuthenticatedRequest, @Body() body: CreateProjectDto) {
+    return this.projects.create(req.principal.organizationId, body);
+  }
+
+  @Patch(':id')
+  update(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Body() body: UpdateProjectDto) {
+    return this.projects.update(req.principal.organizationId, id, body);
   }
 }
