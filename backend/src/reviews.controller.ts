@@ -26,7 +26,7 @@ class DecisionDto {
 
 function safeRequest(r: { payload: unknown; [key: string]: unknown }) {
   const { payload, ...safe } = r;
-  return { ...safe, proposed: safe.kind === 'PROJECT_UPDATE' ? payload : undefined };
+  return { ...safe, proposed: ['PROJECT_UPDATE', 'PARAMETER_UPDATE', 'LEAVE_REQUEST'].includes(String(safe.kind)) ? payload : undefined };
 }
 
 @Controller('auth')
@@ -126,6 +126,25 @@ export class ReviewsController {
           const status = payload.status as ProjectStatus | undefined;
           const health = payload.health as HealthStatus | undefined;
           await tx.project.update({ where: { id: project.id }, data: { status, health } });
+        } else if (review.kind === 'PARAMETER_UPDATE') {
+          if (req.principal.role !== 'ADMIN') {
+            throw new ForbiddenException('Administrator checker required for parameter changes');
+          }
+          const key = String(payload.key);
+          const current = await tx.organizationParameter.findUnique({
+            where: { organizationId_key: { organizationId: review.organizationId, key } }
+          });
+          if (JSON.stringify(current?.value ?? null) !== JSON.stringify(payload.previousValue ?? null)) {
+            throw new ConflictException('This parameter has changed; re-submit an updated proposal');
+          }
+          await tx.organizationParameter.upsert({
+            where: { organizationId_key: { organizationId: review.organizationId, key } },
+            create: { organizationId: review.organizationId, key, value: String(payload.value), updatedBy: req.principal.userId },
+            update: { value: String(payload.value), updatedBy: req.principal.userId }
+          });
+        } else if (review.kind === 'LEAVE_REQUEST') {
+          // The approved review request itself is the authoritative leave record.
+          // No user can publish a leave approval without passing this checker gate.
         } else if (review.kind === 'REGISTRATION') {
           const email = String(payload.email);
           const already = await tx.user.findUnique({ where: { email } });
