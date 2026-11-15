@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { IsDateString, IsIn, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 import { AuthGuard, AuthenticatedRequest } from './auth.guard';
 import { PrismaService } from './prisma.service';
+import { notifyReviewers } from './review-notifications';
 
 class LeaveDto {
   @IsIn(['ANNUAL', 'MEDICAL', 'EMERGENCY', 'UNPAID']) type!: string;
@@ -181,6 +182,7 @@ export class LeaveController {
       organizationId: req.principal.organizationId, actorId: req.principal.userId,
       action: 'REVIEW_SUBMITTED', entityType: 'LEAVE_REQUEST', entityId: request.id
     } });
+    await notifyReviewers(this.prisma, req.principal.organizationId, req.principal.userId, request.summary);
     return { success: true, data: { id: request.id, status: request.status } };
   }
 }
@@ -213,6 +215,7 @@ export class ParametersController {
       organizationId: req.principal.organizationId, actorId: req.principal.userId,
       action: 'REVIEW_SUBMITTED', entityType: 'PARAMETER_UPDATE', entityId: review.id
     } });
+    await notifyReviewers(this.prisma, req.principal.organizationId, req.principal.userId, review.summary, true);
     return { success: true, data: { id: review.id, status: review.status } };
   }
 }
