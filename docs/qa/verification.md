@@ -1,42 +1,25 @@
-# Verification plan and current limitations
+# Verification and release gates
 
-## Confirmed source changes
-- Existing Vue 3 application preserved.
-- Backend provides Prisma schema, local JWT login and organization-scoped project endpoints.
-- Vue API base URL uses Vite's `VITE_API_BASE_URL` and project/PMO views have opt-in live API data sources.
-- Existing demo authentication is available only when `import.meta.env.DEV && VITE_ENABLE_DEMO_AUTH=true`.
-- Framer contains a portfolio dashboard prototype with illustrative data.
+## Automated GitHub Actions checks
 
-## Local commands
-Frontend:
-```sh
-npm ci
-npm run build
-npm run dev
-```
+`.github/workflows/verify.yml` validates three independent areas:
+- Frontend: `npm ci` and a full Vite production build from `frontend/`.
+- Backend: PostgreSQL 16 service, committed Prisma migrations, seed, NestJS build and HTTP API lifecycle checks.
+- Dependency audit: `npm audit --omit=dev --audit-level=high` against the tracked frontend lockfile.
 
-Backend:
-```sh
-cd backend
-npm install
-npm run db:generate
-npm run db:migrate -- --name init
-npm run db:seed
-npm run build
-npm run dev
-```
+Backend smoke coverage includes unauthorized requests, valid JWT login, project/task creation and status updates, risk/issue/decision/action registration, timesheet storage, report generation, membership revocation, cross-tenant denial and read-only member authorization.
 
-Use PostgreSQL locally, with a dedicated database and permissions. Set the backend environment variables per `backend/.env.example`. For frontend API mode copy root `.env.example` to `.env.local` and set `VITE_USE_LIVE_API=true`. Restart Vite after changing environment variables.
+## Browser acceptance checks still required
 
-## Manual smoke checks
-1. `GET /api/health` returns `status: ok`.
-2. `POST /api/auth/login` rejects incorrect credentials and returns a bearer token on successful bootstrap login.
-3. `GET /api/projects` rejects missing/invalid/expired token.
-4. Create a project in the authenticated organization, refresh and verify it is persisted.
-5. Refresh `/pmo-dashboard` and `/projects` with API mode enabled; ensure data loads and no demo data is shown.
-6. An account from another organization cannot read project details by ID.
-7. A non-editor member cannot create or update projects.
-8. Logout clears authorization and protected API calls fail.
+- Login/logout, expired sessions and navigation in Chromium, Firefox and WebKit.
+- Portfolio, project/task editing, RAID and timesheet forms across desktop/tablet/mobile.
+- Gantt/timeline import and export for CSV, JSON, Microsoft Project XML and XLSX.
+- Keyboard navigation, focus order, labels, contrast and assistive-technology behavior.
+- Repeated save/refresh without duplicate records and multi-user concurrency.
+- Regression tests of existing legacy modules: claims, leave, invoices, wiki, role administration and Gantt workflows.
 
-## Important gaps
-This branch has not been installed, built, executed against PostgreSQL, or verified through a browser in the tool environment. The worker has no network access to clone GitHub or install npm packages. GitHub commits and Framer edits were made through their connected tools. CI, DB integration, broad coverage, production-ready security, status-report generation, complete task/RAID APIs, and responsive Framer breakpoints remain follow-on work. Avoid deployment until these are completed.
+## Remaining release blockers
+
+The original application includes several localStorage/mock flows that are not yet backed by the new API. Not all screens are redesigned in Framer or covered by responsive/browser E2E tests. Token refresh/revocation, production access controls, audit logging, operational monitoring, tenant-level QA and infrastructure configuration remain outstanding.
+
+**Policy:** Keep PR #1 as a draft and leave `main` unchanged until the full release checklist passes. Do not treat successful builds and API smoke tests alone as complete production validation.
