@@ -1,4 +1,4 @@
-import { HttpException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { ForbiddenException, HttpException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from './prisma.service';
 import { compare } from 'bcryptjs';
@@ -35,6 +35,7 @@ export class AuthService {
         where: { id: user.id }, data: { failedLogins: 0, lockedUntil: null }
       });
     }
+    if (!user.emailVerifiedAt) throw new ForbiddenException('Email verification required before sign-in');
     const membership = user.memberships[0];
     if (!membership) throw new UnauthorizedException('No organization membership');
     const configuredSession = await this.prisma.organizationParameter.findUnique({

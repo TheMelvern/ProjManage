@@ -19,7 +19,7 @@ Do not run `prisma db push` against a shared database. The seed is for local boo
 
 ## REST endpoints
 
-- Public: `GET /health`, `POST /auth/login`, `POST /auth/register`.
+- Public: `GET /health`, `POST /auth/login`, `POST /auth/register`, `POST /auth/verify-email`, `POST /auth/resend-verification`, `POST /auth/request-password-reset`, `POST /auth/reset-password`.
 - Auth: `POST /auth/logout` (revokes all existing tokens via sessionVersion).
 - Projects: `GET /projects`, `GET /projects/:id`, `GET /projects/summary`. Legacy direct POST/PATCH routes reject writes; submit `POST /reviews/operations` (`PROJECT_CREATE`) or `POST /reviews/projects` (status, health, name, client, description changes).
 - Tasks: `GET /projects/:id/tasks`, write through `/reviews/operations` (`TASK_CREATE`, `TASK_UPDATE`).
@@ -34,7 +34,7 @@ Do not run `prisma db push` against a shared database. The seed is for local boo
 
 A maker creates a pending ReviewRequest. Appropriate different checker approves/rejects/returns it. Approved effects are applied transactionally with the decision and audit event. Direct legacy source-mutation paths are disabled. Project and RAID updates use previously approved version checks. Membership role changes revoke existing JWTs. Leave revalidates overlap and entitlement when approved. Pending leave may be cancelled by its maker.
 
-Account signup is an approval request and only becomes a User and MEMBER after an admin checker approves. Review APIs never return the pending password hash. The application supports organization-scoped role checks and user account lockout (5 failed attempts for 15 minutes), with additional process-local IP throttling on public auth routes.
+Account signup is an approval request: the admin checker activates an unverified account, then the owner must redeem a one-time emailed verification token before sign-in. Password recovery uses a separately purposed one-time token and revokes active JWTs. See `../docs/email-security.md` for mail provider configuration. Review APIs never return the pending password hash. The application supports organization-scoped role checks and user account lockout (5 failed attempts for 15 minutes), with additional process-local IP throttling on public auth routes.
 
 ## Development tests and limitations
 

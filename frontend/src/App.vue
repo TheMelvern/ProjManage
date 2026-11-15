@@ -62,7 +62,7 @@ const navigation = [
   { to: '/admin/users', label: 'Users & Roles', icon: 'manage_accounts', adminOnly: true },
   { to: '/admin/audit', label: 'Audit & Security', icon: 'shield', adminOnly: true }
 ];
-const isLogin = computed(() => ['Login', 'Signup'].includes(route.name));
+const isLogin = computed(() => ['Login', 'Signup', 'VerifyEmail', 'ResendVerification', 'ForgotPassword', 'ResetPassword'].includes(route.name));
 const currentRole = computed(() => {
   route.path;
   try { return JSON.parse(localStorage.getItem('user') || '{}').role || 'MEMBER'; }

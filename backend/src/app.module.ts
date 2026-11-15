@@ -18,6 +18,8 @@ import { AdministrationController } from './administration.controller';
 import { OperationProposalsController } from './proposals.controller';
 import { ThrottleService } from './throttle.service';
 import { NotificationsController } from './notifications.controller';
+import { EmailService } from './email.service';
+import { EmailTokenService } from './email-token.service';
 
 @Module({
   imports: [
@@ -33,6 +35,6 @@ import { NotificationsController } from './notifications.controller';
     })
   ],
   controllers: [HealthController, AuthController, ProjectsController, TasksController, ReportsController, RaidController, TimesheetsController, RegistrationController, ReviewsController, LeaveController, ParametersController, AdministrationController, OperationProposalsController, NotificationsController],
-  providers: [PrismaService, ProjectsService, AuthService, AuthGuard, ThrottleService]
+  providers: [PrismaService, ProjectsService, AuthService, AuthGuard, ThrottleService, EmailService, EmailTokenService]
 })
 export class AppModule {}

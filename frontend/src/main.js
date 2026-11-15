@@ -3,6 +3,7 @@ import { createRouter, createWebHashHistory } from 'vue-router';
 import App from './App.vue';
 import Login from './views/modules/authentication/Login.vue';
 import Signup from './views/modules/authentication/Signup.vue';
+import AccountAccess from './views/modules/authentication/AccountAccess.vue';
 import ReviewCenter from './views/modules/administration/ReviewCenter.vue';
 import LeaveTracker from './views/modules/people/LeaveTracker.vue';
 import Parameters from './views/modules/administration/Parameters.vue';
@@ -26,6 +27,10 @@ const router = createRouter({
   routes: [
     { path: '/login', name: 'Login', component: Login, meta: { public: true } },
     { path: '/signup', name: 'Signup', component: Signup, meta: { public: true } },
+    { path: '/verify-email', name: 'VerifyEmail', component: AccountAccess, meta: { public: true } },
+    { path: '/resend-verification', name: 'ResendVerification', component: AccountAccess, meta: { public: true } },
+    { path: '/forgot-password', name: 'ForgotPassword', component: AccountAccess, meta: { public: true } },
+    { path: '/reset-password', name: 'ResetPassword', component: AccountAccess, meta: { public: true } },
     { path: '/notifications', name: 'Notifications', component: NotificationCenter },
     { path: '/approvals', name: 'Approvals', component: ReviewCenter },
     { path: '/approvals/detail', name: 'ApprovalDetail', component: ReviewCenter },
@@ -60,7 +65,7 @@ router.beforeEach((to) => {
   if (!to.meta.public && !hasToken) {
     return { name: 'Login', query: { redirect: to.fullPath } };
   }
-  if (['Login', 'Signup'].includes(to.name) && hasToken) return { name: 'Portfolio' };
+  if (['Login', 'Signup', 'VerifyEmail', 'ResendVerification', 'ForgotPassword', 'ResetPassword'].includes(to.name) && hasToken) return { name: 'Portfolio' };
   return true;
 });
 

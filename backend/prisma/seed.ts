@@ -13,7 +13,7 @@ async function main() {
   const user = await prisma.user.upsert({
     where: { email },
     update: { passwordHash: await hash(password, 12) },
-    create: { email, name: 'PMO Administrator', passwordHash: await hash(password, 12) }
+    create: { email, name: 'PMO Administrator', passwordHash: await hash(password, 12), emailVerifiedAt: new Date() }
   });
   const existing = await prisma.membership.findFirst({
     where: { userId: user.id }, include: { organization: true }
@@ -40,7 +40,7 @@ async function main() {
       where: { email: reviewerEmail },
       update: {},
       create: { email: reviewerEmail, name: 'PMO Independent Administrator',
-        passwordHash: await hash(reviewerPassword, 12) }
+        passwordHash: await hash(reviewerPassword, 12), emailVerifiedAt: new Date() }
     });
     const reviewerMembership = await prisma.membership.findUnique({
       where: { organizationId_userId: { organizationId: targetOrg.id, userId: reviewer.id } }

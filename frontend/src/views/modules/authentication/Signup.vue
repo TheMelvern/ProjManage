@@ -11,7 +11,7 @@
           <li>Leave and resource visibility</li>
           <li>Executive reporting</li>
         </ol>
-        <p class="auth-disclaimer">Accounts become active only after an organization administrator approves your request.</p>
+        <p class="auth-disclaimer">Account access requires administrator approval followed by email verification.</p>
       </aside>
       <section class="auth-form-card">
         <p class="auth-eyebrow">PMO PORTAL / ACCOUNT ACCESS</p>
@@ -28,7 +28,7 @@
             <label>Password <input v-model="password" type="password" autocomplete="new-password" placeholder="At least 12 characters" minlength="12" required /></label>
             <label>Confirm password <input v-model="confirm" type="password" autocomplete="new-password" minlength="12" required /></label>
           </div>
-          <p class="auth-tip">Use a unique password of at least 12 characters. No membership or access token is issued until approval.</p>
+          <p class="auth-tip">Use a unique password of at least 12 characters. No access token is issued until approval and email verification.</p>
           <label class="auth-consent"><input v-model="consent" type="checkbox" required /> I agree to the workspace access policy.</label>
           <p v-if="error" class="auth-alert" role="alert">{{ error }}</p>
           <p v-if="success" class="auth-success" role="status">{{ success }}</p>

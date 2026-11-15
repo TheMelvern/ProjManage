@@ -28,6 +28,12 @@ const errors=[];
 page.on('pageerror',e=>errors.push(e.message));
 try {
   await page.goto('http://localhost:5174/#/login',{waitUntil:'networkidle'});
+  await page.getByRole('link',{name:'Forgot password?'}).click();
+  await page.getByRole('heading',{name:'Reset your password'}).waitFor();
+  await page.getByRole('link',{name:'Resend verification'}).click();
+  await page.getByRole('heading',{name:'Resend verification'}).waitFor();
+  await page.getByRole('link',{name:'Back to sign in'}).click();
+  await page.waitForURL('**/#/login');
   await page.getByRole('link',{name:'Create an account'}).click();
   await page.getByRole('heading',{name:'Create your account'}).waitFor();
   await page.getByRole('link',{name:'Sign in'}).click();
