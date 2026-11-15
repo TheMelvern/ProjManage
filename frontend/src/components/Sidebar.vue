@@ -296,7 +296,7 @@ export default {
         );
 
         if (confirmed) {
-          ['access_token', 'auth_token', 'auth-token'].forEach((key) => localStorage.removeItem(key));
+          ['access_token', 'auth_token', 'auth-token', 'user'].forEach((key) => localStorage.removeItem(key));
           window.location.hash = '#/login';
         }
       } catch (error) {
