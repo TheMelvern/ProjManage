@@ -199,6 +199,7 @@ enum ReviewStatus {
   APPROVED
   REJECTED
   RETURNED
+  CANCELLED
 }
 
 model ReviewRequest {
