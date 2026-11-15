@@ -105,6 +105,10 @@ jobs:
       JWT_SECRET: local-browser-ci-test-secret-never-use-outside-ci-1234
       BOOTSTRAP_ADMIN_EMAIL: admin@pmo.test
       BOOTSTRAP_ADMIN_PASSWORD: local-test-password-12345
+      NODE_ENV: test
+      RESEND_API_KEY: ci-mock-only-key
+      MAIL_FROM: pmo@ci.invalid
+      MAIL_API_URL: http://127.0.0.1:39222/emails
       API_HOST: 127.0.0.1
       API_PORT: 3000
       FRONTEND_ORIGIN: http://localhost:5174
