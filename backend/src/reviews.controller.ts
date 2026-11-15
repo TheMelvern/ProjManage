@@ -26,7 +26,9 @@ class DecisionDto {
 
 function safeRequest(r: { payload: unknown; [key: string]: unknown }) {
   const { payload, ...safe } = r;
-  return { ...safe, proposed: ['PROJECT_UPDATE', 'PARAMETER_UPDATE', 'LEAVE_REQUEST', 'MEMBERSHIP_UPDATE'].includes(String(safe.kind)) ? payload : undefined };
+  return { ...safe, proposed: ['PROJECT_UPDATE', 'PARAMETER_UPDATE', 'LEAVE_REQUEST', 'MEMBERSHIP_UPDATE',
+    'PROJECT_CREATE','TASK_CREATE','TASK_UPDATE','RISK_CREATE','RISK_UPDATE','ISSUE_CREATE','ISSUE_UPDATE',
+    'ACTION_CREATE','ACTION_UPDATE','DECISION_CREATE','TIMESHEET_CREATE','REPORT_PUBLISH'].includes(String(safe.kind)) ? payload : undefined };
 }
 
 @Controller('auth')
@@ -126,7 +128,89 @@ export class ReviewsController {
       }
       const payload = review.payload as Prisma.JsonObject;
       if (body.decision === 'APPROVED') {
-        if (review.kind === 'PROJECT_UPDATE') {
+        if (review.kind === 'PROJECT_CREATE') {
+          const values = (payload.values || {}) as Prisma.JsonObject;
+          await tx.project.create({ data: {
+            organizationId: review.organizationId, name: String(values.name),
+            client: typeof values.client === 'string' ? values.client : undefined,
+            description: typeof values.description === 'string' ? values.description : undefined
+          } });
+        } else if (['TASK_CREATE', 'TASK_UPDATE', 'RISK_CREATE', 'RISK_UPDATE',
+          'ISSUE_CREATE', 'ISSUE_UPDATE', 'ACTION_CREATE', 'ACTION_UPDATE',
+          'DECISION_CREATE', 'TIMESHEET_CREATE', 'REPORT_PUBLISH'].includes(review.kind)) {
+          const values = (payload.values || {}) as Prisma.JsonObject;
+          const projectId = String(payload.projectId || '');
+          const project = projectId ? await tx.project.findFirst({
+            where: { id: projectId, organizationId: review.organizationId }
+          }) : null;
+          if (review.kind !== 'REPORT_PUBLISH' && !project) {
+            throw new NotFoundException('Source project no longer exists');
+          }
+          const str = (key: string) => typeof values[key] === 'string' ? String(values[key]) : undefined;
+          const date = (key: string) => str(key) ? new Date(str(key)!) : undefined;
+          const targetId = String(payload.targetId || '');
+          const version = String(payload.previousUpdatedAt || '');
+          const assertVersion = (record: { updatedAt: Date } | null) => {
+            if (!record || record.updatedAt.toISOString() !== version)
+              throw new ConflictException('Source record changed. Re-submit your proposal');
+          };
+          if (review.kind === 'TASK_CREATE') {
+            await tx.task.create({ data: { projectId, title: str('title')!,
+              description: str('description'), dueDate: date('dueDate') } });
+          } else if (review.kind === 'TASK_UPDATE') {
+            const current = await tx.task.findFirst({ where: { id: targetId, projectId } });
+            assertVersion(current);
+            await tx.task.update({ where: { id: targetId }, data: {
+              title: str('title'), description: str('description'),
+              dueDate: date('dueDate'), status: str('status') as any
+            } });
+          } else if (review.kind === 'RISK_CREATE') {
+            await tx.risk.create({ data: { projectId, title: str('title')!,
+              description: str('description'), severity: str('severity') as any,
+              ownerName: str('ownerName'), mitigation: str('mitigation'), targetDate: date('targetDate') } });
+          } else if (review.kind === 'RISK_UPDATE') {
+            const current = await tx.risk.findFirst({ where: { id: targetId, projectId } });
+            assertVersion(current);
+            await tx.risk.update({ where: { id: targetId }, data: {
+              title: str('title'), description: str('description'),
+              severity: str('severity') as any, status: str('status') as any,
+              ownerName: str('ownerName'), mitigation: str('mitigation'), targetDate: date('targetDate')
+            } });
+          } else if (review.kind === 'ISSUE_CREATE') {
+            await tx.issue.create({ data: { projectId, title: str('title')!,
+              description: str('description'), severity: str('severity') as any,
+              ownerName: str('ownerName'), resolution: str('resolution'), targetDate: date('targetDate') } });
+          } else if (review.kind === 'ISSUE_UPDATE') {
+            const current = await tx.issue.findFirst({ where: { id: targetId, projectId } });
+            assertVersion(current);
+            await tx.issue.update({ where: { id: targetId }, data: {
+              title: str('title'), description: str('description'),
+              severity: str('severity') as any, status: str('status') as any,
+              ownerName: str('ownerName'), resolution: str('resolution'), targetDate: date('targetDate')
+            } });
+          } else if (review.kind === 'ACTION_CREATE') {
+            await tx.actionItem.create({ data: { projectId, title: str('title')!,
+              ownerName: str('ownerName'), dueDate: date('dueDate') } });
+          } else if (review.kind === 'ACTION_UPDATE') {
+            const current = await tx.actionItem.findFirst({ where: { id: targetId, projectId } });
+            assertVersion(current);
+            await tx.actionItem.update({ where: { id: targetId }, data: {
+              title: str('title'), ownerName: str('ownerName'),
+              dueDate: date('dueDate'), status: str('status') as any
+            } });
+          } else if (review.kind === 'DECISION_CREATE') {
+            await tx.decision.create({ data: { projectId, title: str('title')!,
+              rationale: str('rationale'), decidedBy: str('decidedBy') } });
+          } else if (review.kind === 'TIMESHEET_CREATE') {
+            if (!review.makerId) throw new BadRequestException('Time entry maker missing');
+            await tx.timesheetEntry.create({ data: { projectId, userId: review.makerId,
+              workDate: date('workDate')!, hours: Number(values.hours), description: str('description') } });
+          } else if (review.kind === 'REPORT_PUBLISH') {
+            if (!['ADMIN','PMO'].includes(req.principal.role))
+              throw new ForbiddenException('PMO checker required to release executive reports');
+            // Approval of the versioned snapshot is recorded in ReviewRequest and AuditEvent.
+          }
+        } else if (review.kind === 'PROJECT_UPDATE') {
           const project = await tx.project.findFirst({ where: { id: review.entityId || '', organizationId: review.organizationId } });
           if (!project) throw new NotFoundException('Target project not found');
           if (project.status !== payload.previousStatus || project.health !== payload.previousHealth) {
