@@ -36,6 +36,7 @@ model Organization {
   users     Membership[]
   auditEvents AuditEvent[]
   reviewRequests ReviewRequest[]
+  parameters OrganizationParameter[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 }
@@ -214,4 +215,17 @@ model ReviewRequest {
 
   @@index([organizationId, status, createdAt])
   @@index([makerId, createdAt])
+}
+
+model OrganizationParameter {
+  id             String       @id @default(uuid())
+  organizationId String
+  key            String
+  value          Json
+  updatedBy      String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, key])
 }
