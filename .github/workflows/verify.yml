@@ -55,9 +55,8 @@ jobs:
           node-version: '22'
       - run: npm install --no-audit --no-fund
       - run: npm run db:generate
-      - name: Print initial versioned migration candidate
-        run: npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script
-      - run: npx prisma db push --skip-generate
+      - name: Apply committed PostgreSQL migrations
+        run: npm run db:deploy
       - run: npm run db:seed
       - run: npm run build
       - name: Verify authenticated organization-scoped API
@@ -113,5 +112,41 @@ jobs:
           const report = (await reportResponse.json()).data;
           assert.equal(report.projects.find((entry) => entry.id === project.id).progressPercent, 100);
           assert.ok(report.summary.completedTasks >= 1);
-          console.log('API smoke passed: authorization, login, project/task CRUD, persistence, reporting');
+          const riskRes = await fetch(base + '/projects/' + project.id + '/raid/risks', {
+            method: 'POST', headers, body: JSON.stringify({ title: 'Supplier delivery delay', severity: 'HIGH' })
+          });
+          assert.equal(riskRes.status, 201);
+          const risk = (await riskRes.json()).data;
+          const riskUpdate = await fetch(base + '/projects/' + project.id + '/raid/risks/' + risk.id, {
+            method: 'PATCH', headers, body: JSON.stringify({ status: 'IN_PROGRESS', mitigation: 'Weekly follow-up' })
+          });
+          assert.equal(riskUpdate.status, 200);
+          const issueRes = await fetch(base + '/projects/' + project.id + '/raid/issues', {
+            method: 'POST', headers, body: JSON.stringify({ title: 'Environment unavailable', severity: 'MEDIUM' })
+          });
+          assert.equal(issueRes.status, 201);
+          const decisionRes = await fetch(base + '/projects/' + project.id + '/raid/decisions', {
+            method: 'POST', headers, body: JSON.stringify({ title: 'Proceed with phased migration' })
+          });
+          assert.equal(decisionRes.status, 201);
+          const actionRes = await fetch(base + '/projects/' + project.id + '/raid/actions', {
+            method: 'POST', headers, body: JSON.stringify({ title: 'Confirm vendor readiness' })
+          });
+          assert.equal(actionRes.status, 201);
+          const registerRes = await fetch(base + '/projects/' + project.id + '/raid', { headers });
+          assert.equal(registerRes.status, 200);
+          const register = (await registerRes.json()).data;
+          assert.equal(register.risks.find((entry) => entry.id === risk.id).status, 'IN_PROGRESS');
+          assert.equal(register.issues.length, 1);
+          assert.equal(register.decisions.length, 1);
+          assert.equal(register.actions.length, 1);
+          const timeRes = await fetch(base + '/projects/' + project.id + '/timesheets', {
+            method: 'POST', headers,
+            body: JSON.stringify({ workDate: '2026-10-15T00:00:00.000Z', hours: 7.5, description: 'Test planning' })
+          });
+          assert.equal(timeRes.status, 201);
+          const timeListRes = await fetch(base + '/projects/' + project.id + '/timesheets', { headers });
+          assert.equal(timeListRes.status, 200);
+          assert.ok((await timeListRes.json()).data.some((entry) => Number(entry.hours) === 7.5));
+          console.log('API smoke passed: auth, scoped project-task operations, RAID, timesheets and reports');
           JS
