@@ -152,6 +152,10 @@ export class LeaveController {
         kind: 'LEAVE_REQUEST', summary: body.type + ' leave: ' + body.startDate + ' to ' + body.endDate,
         payload: { type: body.type, startDate: body.startDate, endDate: body.endDate, reason: body.reason, dayType } }
     });
+    await this.prisma.auditEvent.create({ data: {
+      organizationId: req.principal.organizationId, actorId: req.principal.userId,
+      action: 'REVIEW_SUBMITTED', entityType: 'LEAVE_REQUEST', entityId: request.id
+    } });
     return { success: true, data: { id: request.id, status: request.status } };
   }
 }
@@ -180,6 +184,10 @@ export class ParametersController {
         kind: 'PARAMETER_UPDATE', entityId: current?.id, summary: body.summary || 'Change ' + body.key,
         payload: { key: body.key, value: body.value, previousValue: current?.value ?? null } }
     });
+    await this.prisma.auditEvent.create({ data: {
+      organizationId: req.principal.organizationId, actorId: req.principal.userId,
+      action: 'REVIEW_SUBMITTED', entityType: 'PARAMETER_UPDATE', entityId: review.id
+    } });
     return { success: true, data: { id: review.id, status: review.status } };
   }
 }
