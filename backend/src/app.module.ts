@@ -12,6 +12,7 @@ import { TasksController } from './tasks.controller';
 import { ReportsController } from './reports.controller';
 import { RaidController } from './raid.controller';
 import { TimesheetsController } from './timesheets.controller';
+import { RegistrationController, ReviewsController } from './reviews.controller';
 
 @Module({
   imports: [
@@ -26,7 +27,7 @@ import { TimesheetsController } from './timesheets.controller';
       }
     })
   ],
-  controllers: [HealthController, AuthController, ProjectsController, TasksController, ReportsController, RaidController, TimesheetsController],
+  controllers: [HealthController, AuthController, ProjectsController, TasksController, ReportsController, RaidController, TimesheetsController, RegistrationController, ReviewsController],
   providers: [PrismaService, ProjectsService, AuthService, AuthGuard]
 })
 export class AppModule {}
