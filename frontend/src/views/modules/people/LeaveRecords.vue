@@ -14,7 +14,7 @@
     <button @click="load">Refresh</button></div>
    <div class="filters">
      <label>Leave type <select v-model="typeFilter"><option value="">All types</option><option>ANNUAL</option><option>MEDICAL</option><option>EMERGENCY</option><option>UNPAID</option></select></label>
-     <label>Decision <select v-model="statusFilter"><option value="">All statuses</option><option>PENDING</option><option>APPROVED</option><option>REJECTED</option><option>RETURNED</option></select></label>
+     <label>Decision <select v-model="statusFilter"><option value="">All statuses</option><option>PENDING</option><option>APPROVED</option><option>REJECTED</option><option>RETURNED</option><option>CANCELLED</option></select></label>
    </div>
    <p v-if="loading">Loading records…</p>
    <div v-else class="scroll"><table><thead><tr><th>Request ID</th><th>Leave type</th><th>Date range</th><th>Duration</th><th>Approval</th><th>Submitted</th></tr></thead>
