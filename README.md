@@ -35,4 +35,4 @@ ProjManage/
 
 See `backend/README.md` for API details and `docs/qa/verification.md` for acceptance criteria.
 
-**Warning:** This is a development MVP, not a production-certified service. Other original Vue screens still use local sample state. Public deployment remains disabled until they are integrated and production security/browser tests are complete.
+**Scope note:** The unsupported legacy screens (old dashboards, leave, claims, invoices, wiki, mock role administration and local-only project/Gantt workflows) were intentionally removed from the active source tree. They remain recoverable in Git history. This is a tested local-development MVP—not a production-certified SaaS. Public deployment remains disabled until production security, browser compatibility and operational reviews are complete.
