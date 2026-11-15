@@ -42,7 +42,7 @@
 </template>
 <script setup>
 import { computed, onMounted, ref } from 'vue';
-import axios from '../../api/axiosConfig';
+import axios from '../../../api/axiosConfig';
 const type=ref('ANNUAL'),startDate=ref(''),endDate=ref(''),reason=ref('');
 const loading=ref(false),busy=ref(false),error=ref(''),success=ref(''),requests=ref([]);
 const pendingCount=computed(()=>requests.value.filter(v=>v.status==='PENDING').length);
