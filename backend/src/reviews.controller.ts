@@ -6,6 +6,7 @@ import { AuthGuard, AuthenticatedRequest } from './auth.guard';
 import { PrismaService } from './prisma.service';
 import { parseHolidays, workdays } from './workflow-modules.controller';
 import { ThrottleService } from './throttle.service';
+import { EmailTokenService } from './email-token.service';
 import { notifyReviewers } from './review-notifications';
 import type { Request } from 'express';
 
@@ -70,7 +71,8 @@ export class RegistrationController {
 @Controller('reviews')
 @UseGuards(AuthGuard)
 export class ReviewsController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService,
+    private readonly emailTokens: EmailTokenService) {}
 
   private assertChecker(req: AuthenticatedRequest) {
     if (!['ADMIN', 'PMO', 'PROJECT_MANAGER'].includes(req.principal.role)) {
@@ -346,6 +348,7 @@ export class ReviewsController {
             }
           }
         } else if (review.kind === 'REGISTRATION') {
+          this.emailTokens.assertConfigured();
           const email = String(payload.email);
           const already = await tx.user.findUnique({ where: { email } });
           if (already) throw new ConflictException('Account already exists');
@@ -384,6 +387,18 @@ export class ReviewsController {
       }
       return updated;
     });
+    if (result.kind === 'REGISTRATION' && body.decision === 'APPROVED') {
+      const payload = result.payload as Prisma.JsonObject;
+      const user = await this.prisma.user.findUnique({ where: { email: String(payload.email) } });
+      if (user) {
+        try {
+          await this.emailTokens.issue(user.id, user.email, user.name, 'VERIFY');
+        } catch (error) {
+          // The account remains unverified and cannot sign in; the user can request a new link.
+          console.warn('Registration approved but verification email delivery failed');
+        }
+      }
+    }
     return { success: true, data: safeRequest(result) };
   }
 }
