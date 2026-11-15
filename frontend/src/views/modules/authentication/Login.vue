@@ -121,6 +121,7 @@
 
 <script>
 import axiosInstance from '../../../api/axiosConfig';
+import '../../../styles/views/authenticate/login.css';
 
 export default {
   name: 'Login',
@@ -207,8 +208,7 @@ export default {
 .signup-prompt{margin:18px 0;color:#64748b;font-size:13px}.signup-prompt a{color:#315ac4;text-decoration:none;font-weight:800}
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
-@import '../../../styles/views/authenticate/login.css';
-
+@
 /* Demo Credentials Styles */
 .demo-credentials {
   background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
