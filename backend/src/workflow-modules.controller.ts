@@ -18,6 +18,19 @@ class ParameterDto {
   @IsOptional() @IsString() @MaxLength(400) summary?: string;
 }
 
+
+function workdays(start: string, end: string) {
+  const first = new Date(start + 'T00:00:00.000Z');
+  const last = new Date(end + 'T00:00:00.000Z');
+  if (!Number.isFinite(first.valueOf()) || !Number.isFinite(last.valueOf())) return 0;
+  let count = 0;
+  for (let day = first.getTime(); day <= last.getTime() && count < 260; day += 86400000) {
+    const weekday = new Date(day).getUTCDay();
+    if (weekday !== 0 && weekday !== 6) count++;
+  }
+  return count;
+}
+
 @Controller('leave')
 @UseGuards(AuthGuard)
 export class LeaveController {
@@ -36,6 +49,67 @@ export class LeaveController {
     })) };
   }
 
+  @Get('balances')
+  async balances(@Req() req: AuthenticatedRequest) {
+    const [records, parameters] = await Promise.all([
+      this.prisma.reviewRequest.findMany({
+        where: { organizationId: req.principal.organizationId, makerId: req.principal.userId,
+          kind: 'LEAVE_REQUEST', status: 'APPROVED' }
+      }),
+      this.prisma.organizationParameter.findMany({
+        where: { organizationId: req.principal.organizationId,
+          key: { in: ['leaveAnnualEntitlement', 'leaveMedicalEntitlement'] } }
+      })
+    ]);
+    const configured = Object.fromEntries(parameters.map(p => [p.key, Number(p.value)]));
+    const entitlements = {
+      ANNUAL: Number.isFinite(configured.leaveAnnualEntitlement) && configured.leaveAnnualEntitlement >= 0
+        ? configured.leaveAnnualEntitlement : 18,
+      MEDICAL: Number.isFinite(configured.leaveMedicalEntitlement) && configured.leaveMedicalEntitlement >= 0
+        ? configured.leaveMedicalEntitlement : 14
+    };
+    const used = { ANNUAL: 0, MEDICAL: 0 };
+    const year = new Date().getUTCFullYear();
+    for (const item of records) {
+      const p = item.payload as Prisma.JsonObject;
+      const type = String(p.type) as keyof typeof used;
+      if (!(type in used)) continue;
+      const from = String(p.startDate), to = String(p.endDate);
+      const lower = from < year + '-01-01' ? year + '-01-01' : from;
+      const upper = to > year + '-12-31' ? year + '-12-31' : to;
+      if (lower <= upper) used[type] += workdays(lower, upper);
+    }
+    const remaining = {
+      ANNUAL: Math.max(0, entitlements.ANNUAL - used.ANNUAL),
+      MEDICAL: Math.max(0, entitlements.MEDICAL - used.MEDICAL)
+    };
+    return { success: true, data: { year, entitlement: entitlements, used, remaining,
+      note: 'Weekdays only. Public holidays, half-days and tenure prorating require configured HR calendars.' } };
+  }
+
+  @Get('team')
+  async team(@Req() req: AuthenticatedRequest) {
+    if (!['ADMIN', 'PMO', 'PROJECT_MANAGER'].includes(req.principal.role)) {
+      throw new ForbiddenException('Team availability permission required');
+    }
+    const records = await this.prisma.reviewRequest.findMany({
+      where: { organizationId: req.principal.organizationId,
+        kind: 'LEAVE_REQUEST', status: 'APPROVED' },
+      orderBy: { createdAt: 'desc' }, take: 200
+    });
+    const people = await this.prisma.user.findMany({
+      where: { memberships: { some: { organizationId: req.principal.organizationId } } },
+      select: { id: true, name: true }
+    });
+    const names = new Map(people.map(p => [p.id, p.name]));
+    return { success: true, data: records.map(r => ({
+      id: r.id, employeeId: r.makerId, employeeName: names.get(r.makerId || '') || 'Unknown',
+      type: (r.payload as Prisma.JsonObject).type,
+      startDate: (r.payload as Prisma.JsonObject).startDate,
+      endDate: (r.payload as Prisma.JsonObject).endDate
+    })) };
+  }
+
   @Post()
   async create(@Req() req: AuthenticatedRequest, @Body() body: LeaveDto) {
     const start = new Date(body.startDate), end = new Date(body.endDate);
@@ -45,6 +119,9 @@ export class LeaveController {
     if ((end.getTime() - start.getTime()) / 86400000 > 60) {
       throw new BadRequestException('Requests longer than 60 days must be handled by HR');
     }
+    if (workdays(body.startDate, body.endDate) === 0) {
+      throw new BadRequestException('A leave request must include at least one weekday');
+    }
     const overlapping = await this.prisma.reviewRequest.findMany({
       where: { organizationId: req.principal.organizationId, makerId: req.principal.userId,
         kind: 'LEAVE_REQUEST', status: { in: ['PENDING', 'APPROVED'] } }
@@ -53,6 +130,12 @@ export class LeaveController {
       const p = r.payload as Prisma.JsonObject;
       return String(p.startDate) <= body.endDate && String(p.endDate) >= body.startDate;
     })) throw new BadRequestException('This request overlaps an existing pending or approved absence');
+    const balances = await this.balances(req);
+    const remaining = balances.data.remaining as Record<string, number>;
+    if (['ANNUAL', 'MEDICAL'].includes(body.type) &&
+      workdays(body.startDate, body.endDate) > (remaining[body.type] ?? 0)) {
+      throw new BadRequestException('Insufficient approved leave balance');
+    }
     const request = await this.prisma.reviewRequest.create({
       data: { organizationId: req.principal.organizationId, makerId: req.principal.userId,
         kind: 'LEAVE_REQUEST', summary: body.type + ' leave: ' + body.startDate + ' to ' + body.endDate,
