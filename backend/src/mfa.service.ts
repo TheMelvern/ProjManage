@@ -1,6 +1,7 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { compare } from 'bcryptjs';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from './prisma.service';
 
 function digest(value: string): string {
@@ -147,7 +148,7 @@ export class MfaService {
     } };
   }
   private async validCode(
-    tx: Parameters<Parameters<PrismaService['$transaction']>[0]>[0],
+    tx: Prisma.TransactionClient,
     user: { id: string; mfaCiphertext: string | null; mfaLastStep: number | null },
     input: string
   ): Promise<boolean> {
