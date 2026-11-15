@@ -146,6 +146,10 @@ export class OperationProposalsController {
           values: values as Prisma.InputJsonValue, snapshot, previousUpdatedAt: previousUpdatedAt || null }
       }
     });
+    await this.prisma.auditEvent.create({ data: {
+      organizationId: req.principal.organizationId, actorId: req.principal.userId,
+      action: 'REVIEW_SUBMITTED', entityType: kind, entityId: review.id
+    } });
     return { success: true, data: { id: review.id, kind: review.kind, status: review.status } };
   }
 }
