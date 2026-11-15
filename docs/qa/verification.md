@@ -9,17 +9,18 @@
 
 Backend smoke coverage includes unauthorized requests, valid JWT login, project/task creation and status updates, risk/issue/decision/action registration, timesheet storage, report generation, membership revocation, cross-tenant denial and read-only member authorization.
 
-## Browser acceptance checks still required
+## Verified browser smoke and remaining acceptance checks
 
-- Login/logout, expired sessions and navigation in Chromium, Firefox and WebKit.
+- Chromium CI verifies API-backed login, project creation, task persistence across refresh, RAID creation, timesheet/report navigation and logout.
+- Still required: expired session behavior, Firefox and WebKit compatibility, mobile form input QA.
 - Portfolio, project/task editing, RAID and timesheet forms across desktop/tablet/mobile.
 - Gantt/timeline import and export for CSV, JSON, Microsoft Project XML and XLSX.
 - Keyboard navigation, focus order, labels, contrast and assistive-technology behavior.
 - Repeated save/refresh without duplicate records and multi-user concurrency.
-- Regression tests of existing legacy modules: claims, leave, invoices, wiki, role administration and Gantt workflows.
+- Legacy modules were intentionally removed from the active application; historical code remains accessible in Git history.
 
 ## Remaining release blockers
 
-The original application includes several localStorage/mock flows that are not yet backed by the new API. Not all screens are redesigned in Framer or covered by responsive/browser E2E tests. Token refresh/revocation, production access controls, audit logging, operational monitoring, tenant-level QA and infrastructure configuration remain outstanding.
+The original localStorage/mock modules and unsupported screens have been removed from the active source tree. The five remaining PMO views are API-backed. Responsive browser coverage outside Chromium, token refresh/revocation, sign-in throttling, production access controls, persistent audit logging, observability, tenant-level QA and deployment infrastructure remain outstanding.
 
-**Policy:** Keep PR #1 as a draft and leave `main` unchanged until the full release checklist passes. Do not treat successful builds and API smoke tests alone as complete production validation.
+**Release policy:** Successful CI validates the scoped local MVP; it is not certification for public deployment. Merging the tested MVP into `main` is separate from production release. Keep automatic deployment disabled until operational and security controls are completed.
