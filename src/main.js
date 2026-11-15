@@ -13,6 +13,7 @@ import AccessManagement from './views/modules/accessControls/AccessManagement.vu
 import Wiki from './views/modules/wikis/wikiDump.vue'
 import Leave from './views/modules/leaveTracker/Leave.vue'
 import ReportsView from './views/modules/projects/reports/ReportsView.vue'
+import PortfolioOverview from './views/modules/projects/pmoDashboard/PortfolioOverview.vue'
 
 // Project Modules
 import PmoDashboard from './views/modules/projects/pmoDashboard/PmoDashboard.vue'
@@ -126,6 +127,12 @@ const router = createRouter({
           meta: { requiresLayout: true }
         }
       ]
+    },
+    {
+      path: '/portfolio',
+      name: 'PortfolioOverview',
+      component: PortfolioOverview,
+      meta: { requiresLayout: true }
     },
     {
       path: '/reports',
