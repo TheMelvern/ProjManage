@@ -37,7 +37,7 @@
             <option>LOW</option><option>MEDIUM</option><option>HIGH</option><option>CRITICAL</option>
           </select>
         </template>
-        <button type="submit" :disabled="busy || title.length < 2">Add item</button>
+        <button type="submit" :disabled="busy || title.length < 2">Submit item</button>
       </form>
       <div class="entries">
         <article v-for="item in register[activeTab]" :key="item.id" class="entry">
@@ -111,10 +111,13 @@ async function addEntry() {
   try {
     const payload = { title: title.value };
     if (activeTab.value === 'risks' || activeTab.value === 'issues') payload.severity = severity.value;
-    await axiosInstance.post('/projects/' + encodeURIComponent(selectedProjectId.value) + '/raid/' + activeTab.value, payload);
+    const kind = { risks: 'RISK_CREATE', issues: 'ISSUE_CREATE', decisions: 'DECISION_CREATE', actions: 'ACTION_CREATE' }[activeTab.value];
+    await axiosInstance.post('/reviews/operations', {
+      kind, projectId: selectedProjectId.value, summary: 'Create ' + activeTab.value.slice(0, -1) + ' ' + title.value,
+      values: payload
+    });
     title.value = '';
-    message.value = 'Register item saved.';
-    await loadRegister();
+    message.value = 'RAID item submitted for independent approval.';
   } catch (cause) { reportError(cause); }
   finally { busy.value = false; }
 }
@@ -123,9 +126,12 @@ async function changeStatus(item, status) {
   error.value = '';
   message.value = '';
   try {
-    await axiosInstance.patch('/projects/' + encodeURIComponent(selectedProjectId.value) + '/raid/' + activeTab.value + '/' + encodeURIComponent(item.id), { status });
-    message.value = 'Item updated.';
-    await loadRegister();
+    const kind = { risks: 'RISK_UPDATE', issues: 'ISSUE_UPDATE', actions: 'ACTION_UPDATE' }[activeTab.value];
+    await axiosInstance.post('/reviews/operations', {
+      kind, projectId: selectedProjectId.value, targetId: item.id,
+      summary: 'Change ' + activeTab.value + ' status for ' + item.title, values: { status }
+    });
+    message.value = 'RAID status change submitted for independent approval.';
   } catch (cause) { reportError(cause); }
   finally { busy.value = false; }
 }
