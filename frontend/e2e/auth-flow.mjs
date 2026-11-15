@@ -77,7 +77,7 @@ try {
   await page.getByText(/password reset link will be sent/).waitFor({timeout:15000});
   const recovery=deliveredToken(recipient,'Reset');
   await page.goto('http://localhost:5174/#/reset-password?token='+recovery,{waitUntil:'networkidle'});
-  await page.getByLabel('New password').fill('browser-recovered-password-123');
+  await page.getByLabel('New password',{exact:true}).fill('browser-recovered-password-123');
   await page.getByLabel('Confirm new password').fill('browser-recovered-password-123');
   await page.getByRole('button',{name:'Reset password'}).click();
   await page.getByText(/Password reset/).waitFor({timeout:15000});
