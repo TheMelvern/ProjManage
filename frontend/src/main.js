@@ -16,6 +16,7 @@ import ReportsView from './views/modules/projects/reports/ReportsView.vue'
 import PortfolioOverview from './views/modules/projects/pmoDashboard/PortfolioOverview.vue'
 import ProjectWorkspace from './views/modules/projects/ProjectWorkspace.vue'
 import RaidWorkspace from './views/modules/projects/RaidWorkspace.vue'
+import TimesheetWorkspace from './views/modules/projects/TimesheetWorkspace.vue'
 
 // Project Modules
 import PmoDashboard from './views/modules/projects/pmoDashboard/PmoDashboard.vue'
@@ -129,6 +130,12 @@ const router = createRouter({
           meta: { requiresLayout: true }
         }
       ]
+    },
+    {
+      path: '/timesheets',
+      name: 'TimesheetWorkspace',
+      component: TimesheetWorkspace,
+      meta: { requiresLayout: true }
     },
     {
       path: '/raid',
