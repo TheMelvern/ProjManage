@@ -149,6 +149,7 @@
 
 <script>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { projectService } from '../../../../services/projectService'
 import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 
@@ -183,9 +184,29 @@ export default {
       { id: 6, name: 'Lisa Wang', role: 'Frontend Dev', initials: 'LW', avatarColor: '#06b6d4' }
     ]
     
-    const loadProjectsFromStorage = () => {
+    const loadProjectsFromStorage = async () => {
       isLoading.value = true
       try {
+        if (import.meta.env.VITE_USE_LIVE_API === 'true') {
+          const response = await projectService.getProjects()
+          projects.value = response.data.map(project => ({
+            id: project.id,
+            name: project.name,
+            code: project.code || `PRJ-${String(project.id).slice(-6)}`,
+            client: project.client || '—',
+            phase: project.status || 'planning',
+            progress: project.progress || 0,
+            health: project.health === 'green' ? 'healthy' : project.health === 'red' ? 'at-risk' : 'caution',
+            budget: 0,
+            issues: 0,
+            teamMembers: [],
+            timelineCreated: false,
+            createdAt: project.createdAt,
+            updatedAt: project.updatedAt,
+            rawData: project
+          }))
+          return
+        }
         const savedProjects = localStorage.getItem('saved_projects')
         
         if (savedProjects) {
