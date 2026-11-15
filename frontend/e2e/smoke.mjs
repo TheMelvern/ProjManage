@@ -6,6 +6,10 @@ const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
 page.on('pageerror', error => console.error('BROWSER PAGE ERROR:', error.message));
 try {
   await page.goto('http://localhost:5173/#/login', { waitUntil: 'networkidle' });
+  await page.getByRole('link', { name: 'Create an account' }).click();
+  await page.getByRole('heading', { name: 'Create your account' }).waitFor();
+  await page.getByRole('link', { name: 'Sign in' }).click();
+  await page.waitForURL('**/#/login');
   await page.getByPlaceholder('name@company.com').fill('admin@pmo.test');
   await page.getByPlaceholder('••••••••').fill('local-test-password-12345');
   await page.getByRole('button', { name: /Sign In/i }).click();
@@ -32,6 +36,25 @@ try {
   await page.getByRole('link', { name: /Executive Reports/ }).click();
   await page.getByRole('heading', { name: 'Executive status reports' }).waitFor();
   await page.getByText(projectName).waitFor({ timeout: 15000 });
+  await page.getByRole('link', { name: /Approval Center/ }).click();
+  await page.getByRole('heading', { name: 'Approval Center' }).waitFor();
+  await page.getByRole('link', { name: /Leave Tracker/ }).click();
+  await page.getByRole('heading', { name: 'Leave Tracker Management' }).waitFor();
+  await page.getByLabel('Leave type').selectOption('ANNUAL');
+  await page.getByLabel('Start date').fill('2026-12-20');
+  await page.getByLabel('End date').fill('2026-12-21');
+  await page.getByLabel('Reason / handover details').fill('E2E annual leave validation');
+  await page.getByRole('button', { name: 'Submit for check' }).click();
+  await page.getByText('Request submitted for independent approval.').first().waitFor({ timeout: 15000 }).catch(async () => {
+    await page.getByText(/Request submitted for independent approval/).first().waitFor({ timeout: 15000 });
+  });
+  await page.getByRole('link', { name: /Admin Parameters/ }).click();
+  await page.getByRole('heading', { name: 'Admin Parameters' }).waitFor();
+  await page.getByLabel('Parameter').selectOption('currency');
+  await page.getByLabel('Proposed value').fill('MYR');
+  await page.getByLabel('Change rationale').fill('Verify administrative maker-checker workflow');
+  await page.getByRole('button', { name: 'Submit for check' }).click();
+  await page.getByText(/Change request created/).waitFor({ timeout: 15000 });
   await page.getByRole('button', { name: 'Sign out' }).click();
   await page.waitForURL('**/#/login', { timeout: 15000 });
   assert.equal(await page.evaluate(() => localStorage.getItem('access_token')), null);
