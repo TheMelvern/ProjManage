@@ -52,6 +52,12 @@
         <span class="sidebar-item-text">Portfolio Overview</span>
       </router-link>
 
+      <router-link to="/workspace" class="sidebar-item"
+        :class="{ 'sidebar-item-active': currentRoute === '/workspace' }" @click="closeAllDropdowns">
+        <span class="material-symbols-outlined sidebar-item-icon">task_alt</span>
+        <span class="sidebar-item-text">Delivery Workspace</span>
+      </router-link>
+
       <!-- Projects Dropdown - UPDATED WITH SIMPLIFIED ROUTES -->
       <div class="sidebar-group">
         <div class="sidebar-group-header" :class="{ 'sidebar-group-open': isProjectsOpen }"
