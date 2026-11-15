@@ -6,7 +6,7 @@
         <h1>Projects & tasks</h1>
         <p>Manage delivery records that power your executive status reports.</p>
       </div>
-      <router-link to="/reports" class="report-link">Open reports</router-link>
+      <div class="module-shortcuts"><router-link to="/projects/detail" class="report-link">View details</router-link><router-link to="/reports" class="report-link">Open reports</router-link></div>
     </header>
 
     <p v-if="!liveMode" class="notice" role="status">
@@ -202,6 +202,7 @@ onMounted(loadProjects);
 </script>
 
 <style scoped>
+.module-shortcuts{display:flex;gap:9px;flex-wrap:wrap}
 .workspace {background:#f4f7fb;min-height:100vh;padding:34px;color:#192943;}
 .workspace-header {display:flex;justify-content:space-between;gap:24px;align-items:center;margin-bottom:26px;}
 .eyebrow {font-weight:800;letter-spacing:.1em;color:#4260b0;font-size:11px;}
