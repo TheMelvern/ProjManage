@@ -1,0 +1,279 @@
+name: PMO Foundation Verification
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  frontend-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run build
+
+  dependency-audit:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci --ignore-scripts
+      - name: Fail on high severity production dependency vulnerabilities
+        run: npm audit --omit=dev --audit-level=high
+
+  backend-smoke:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: pmo_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d pmo_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/pmo_test?schema=public
+      JWT_SECRET: local-ci-only-secret-please-do-not-use-outside-tests-123
+      BOOTSTRAP_ADMIN_EMAIL: admin@pmo.test
+      BOOTSTRAP_ADMIN_PASSWORD: local-test-password-12345
+      API_HOST: 127.0.0.1
+      API_PORT: 3000
+      FRONTEND_ORIGIN: http://localhost:5173
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: npm run db:generate
+      - name: Apply committed PostgreSQL migrations
+        run: npm run db:deploy
+      - run: npm run db:seed
+      - run: npm run build
+      - name: Verify authenticated organization-scoped API
+        run: |
+          node dist/main.js > /tmp/pmo-api.log 2>&1 &
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import { PrismaClient } from '@prisma/client';
+          import bcryptjs from 'bcryptjs';
+          const { hash } = bcryptjs;
+          const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+          let ready = false;
+          for (let i = 0; i < 30; i++) {
+            try {
+              const res = await fetch('http://127.0.0.1:3000/api/health');
+              if (res.ok) { ready = true; break; }
+            } catch {}
+            await delay(1000);
+          }
+          assert.ok(ready, 'API did not start');
+          const base = 'http://127.0.0.1:3000/api';
+          const unauthorized = await fetch(base + '/projects');
+          assert.equal(unauthorized.status, 401);
+          const login = await fetch(base + '/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: 'admin@pmo.test', password: 'local-test-password-12345' })
+          });
+          assert.equal(login.status, 201);
+          const loggedIn = await login.json();
+          assert.ok(loggedIn.data.accessToken);
+          const headers = { Authorization: 'Bearer ' + loggedIn.data.accessToken, 'Content-Type': 'application/json' };
+          const created = await fetch(base + '/projects', {
+            method: 'POST', headers, body: JSON.stringify({ name: 'Automated Integration Project' })
+          });
+          assert.equal(created.status, 201);
+          const project = (await created.json()).data;
+          const list = await fetch(base + '/projects', { headers });
+          assert.equal(list.status, 200);
+          const projects = (await list.json()).data;
+          assert.ok(projects.some((p) => p.id === project.id));
+          const taskCreated = await fetch(base + '/projects/' + project.id + '/tasks', {
+            method: 'POST', headers, body: JSON.stringify({ title: 'Define rollout plan' })
+          });
+          assert.equal(taskCreated.status, 201);
+          const task = (await taskCreated.json()).data;
+          const markedDone = await fetch(base + '/projects/' + project.id + '/tasks/' + task.id, {
+            method: 'PATCH', headers, body: JSON.stringify({ status: 'DONE' })
+          });
+          assert.equal(markedDone.status, 200);
+          const tasksResponse = await fetch(base + '/projects/' + project.id + '/tasks', { headers });
+          const tasks = (await tasksResponse.json()).data;
+          assert.equal(tasks.find((entry) => entry.id === task.id).status, 'DONE');
+          const reportResponse = await fetch(base + '/reports/portfolio', { headers });
+          assert.equal(reportResponse.status, 200);
+          const report = (await reportResponse.json()).data;
+          assert.equal(report.projects.find((entry) => entry.id === project.id).progressPercent, 100);
+          assert.ok(report.summary.completedTasks >= 1);
+          const riskRes = await fetch(base + '/projects/' + project.id + '/raid/risks', {
+            method: 'POST', headers, body: JSON.stringify({ title: 'Supplier delivery delay', severity: 'HIGH' })
+          });
+          assert.equal(riskRes.status, 201);
+          const risk = (await riskRes.json()).data;
+          const riskUpdate = await fetch(base + '/projects/' + project.id + '/raid/risks/' + risk.id, {
+            method: 'PATCH', headers, body: JSON.stringify({ status: 'IN_PROGRESS', mitigation: 'Weekly follow-up' })
+          });
+          assert.equal(riskUpdate.status, 200);
+          const issueRes = await fetch(base + '/projects/' + project.id + '/raid/issues', {
+            method: 'POST', headers, body: JSON.stringify({ title: 'Environment unavailable', severity: 'MEDIUM' })
+          });
+          assert.equal(issueRes.status, 201);
+          const decisionRes = await fetch(base + '/projects/' + project.id + '/raid/decisions', {
+            method: 'POST', headers, body: JSON.stringify({ title: 'Proceed with phased migration' })
+          });
+          assert.equal(decisionRes.status, 201);
+          const actionRes = await fetch(base + '/projects/' + project.id + '/raid/actions', {
+            method: 'POST', headers, body: JSON.stringify({ title: 'Confirm vendor readiness' })
+          });
+          assert.equal(actionRes.status, 201);
+          const registerRes = await fetch(base + '/projects/' + project.id + '/raid', { headers });
+          assert.equal(registerRes.status, 200);
+          const register = (await registerRes.json()).data;
+          assert.equal(register.risks.find((entry) => entry.id === risk.id).status, 'IN_PROGRESS');
+          assert.equal(register.issues.length, 1);
+          assert.equal(register.decisions.length, 1);
+          assert.equal(register.actions.length, 1);
+          const timeRes = await fetch(base + '/projects/' + project.id + '/timesheets', {
+            method: 'POST', headers,
+            body: JSON.stringify({ workDate: '2026-10-15T00:00:00.000Z', hours: 7.5, description: 'Test planning' })
+          });
+          assert.equal(timeRes.status, 201);
+          const timeListRes = await fetch(base + '/projects/' + project.id + '/timesheets', { headers });
+          assert.equal(timeListRes.status, 200);
+          assert.ok((await timeListRes.json()).data.some((entry) => Number(entry.hours) === 7.5));
+          const db = new PrismaClient();
+          try {
+            const otherOrg = await db.organization.create({ data: { name: 'Other Tenant' } });
+            const otherUser = await db.user.create({
+              data: { email: 'viewer@pmo.test', name: 'Read-only user',
+                passwordHash: await hash('test-viewer-password-1234', 12) }
+            });
+            await db.membership.create({
+              data: { organizationId: otherOrg.id, userId: otherUser.id, role: 'MEMBER' }
+            });
+            const viewerLogin = await fetch(base + '/auth/login', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email: 'viewer@pmo.test', password: 'test-viewer-password-1234' })
+            });
+            assert.equal(viewerLogin.status, 201);
+            const viewerToken = (await viewerLogin.json()).data.accessToken;
+            const viewerHeaders = { Authorization: 'Bearer ' + viewerToken, 'Content-Type': 'application/json' };
+            const viewerProjects = await fetch(base + '/projects', { headers: viewerHeaders });
+            assert.equal(viewerProjects.status, 200);
+            assert.equal((await viewerProjects.json()).data.length, 0);
+            const otherTenantDetail = await fetch(base + '/projects/' + project.id, { headers: viewerHeaders });
+            assert.equal(otherTenantDetail.status, 404);
+            const otherTenantTask = await fetch(base + '/projects/' + project.id + '/tasks', { headers: viewerHeaders });
+            assert.equal(otherTenantTask.status, 404);
+            const viewerCreate = await fetch(base + '/projects', {
+              method: 'POST', headers: viewerHeaders, body: JSON.stringify({ name: 'Unauthorized New Project' })
+            });
+            assert.equal(viewerCreate.status, 403);
+            const otherOrgReport = await fetch(base + '/reports/portfolio', { headers: viewerHeaders });
+            assert.equal(otherOrgReport.status, 200);
+            assert.equal((await otherOrgReport.json()).data.summary.totalProjects, 0);
+            await db.membership.delete({ where: { organizationId_userId: {
+              organizationId: otherOrg.id, userId: otherUser.id
+            } } });
+            const revoked = await fetch(base + '/projects', { headers: viewerHeaders });
+            assert.equal(revoked.status, 401);
+          } finally {
+            await db.$disconnect();
+          }
+          console.log('API smoke passed: project-task/RAID/timesheet/report lifecycle, cross-tenant isolation and role enforcement');
+          JS
+
+  browser-e2e:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: pmo_browser
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d pmo_browser"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/pmo_browser?schema=public
+      JWT_SECRET: local-browser-ci-test-secret-never-use-outside-ci-1234
+      BOOTSTRAP_ADMIN_EMAIL: admin@pmo.test
+      BOOTSTRAP_ADMIN_PASSWORD: local-test-password-12345
+      API_HOST: 127.0.0.1
+      API_PORT: 3000
+      FRONTEND_ORIGIN: http://localhost:5173
+      VITE_API_BASE_URL: http://127.0.0.1:3000/api
+      VITE_USE_LIVE_API: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install backend
+        working-directory: backend
+        run: npm install --no-audit --no-fund
+      - name: Prepare PostgreSQL
+        working-directory: backend
+        run: |
+          npm run db:generate
+          npm run db:deploy
+          npm run db:seed
+          npm run build
+      - name: Launch API
+        working-directory: backend
+        run: |
+          nohup node dist/main.js >/tmp/pmo-api-browser.log 2>&1 &
+      - name: Install frontend and Playwright
+        working-directory: frontend
+        run: |
+          npm ci
+          npm install --no-save --no-audit --no-fund playwright
+          npx playwright install --with-deps chromium
+      - name: Launch frontend
+        working-directory: frontend
+        run: |
+          nohup npm run dev -- --host 127.0.0.1 >/tmp/pmo-vite-browser.log 2>&1 &
+      - name: Wait for services
+        run: |
+          for i in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:3000/api/health >/dev/null && curl -fsS http://localhost:5173 >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/pmo-api-browser.log /tmp/pmo-vite-browser.log
+          exit 1
+      - name: Browser lifecycle
+        working-directory: frontend
+        run: node e2e/smoke.mjs
