@@ -185,6 +185,19 @@ try {
   await request('GET','/leave/team',member,undefined,403);
   const team=(await request('GET','/leave/team',checker,undefined,200)).data;
   assert.ok(team.some(x=>x.id===leave.id));
+  // Complementary AM/PM leave can be approved on the same workday.
+  const morning=(await request('POST','/leave',member,{
+    type:'ANNUAL',startDate:y+'-12-16',endDate:y+'-12-16',
+    dayType:'AM',reason:'Medical appointment AM'
+  },201)).data;
+  const afternoon=(await request('POST','/leave',member,{
+    type:'ANNUAL',startDate:y+'-12-16',endDate:y+'-12-16',
+    dayType:'PM',reason:'Personal appointment PM'
+  },201)).data;
+  await approve(checker,morning.id);
+  await approve(checker,afternoon.id);
+  const halfBal=(await request('GET','/leave/balances',member,undefined,200)).data;
+  assert.equal(halfBal.used.ANNUAL,beforeBalance.used.ANNUAL+3);
 
   // Governed admin parameters, user roles, audited decisions.
   await request('GET','/admin/parameters',member,undefined,403);
@@ -216,5 +229,19 @@ try {
   }}});
   await request('GET','/projects',refreshedMember,undefined,401);
   assert.equal((await request('GET','/projects',outsider,undefined,200)).data.length,0);
+  const freshLogin=await login(checkerUser.email,'checker-password-12345');
+  await request('POST','/auth/logout',freshLogin,{},201);
+  await request('GET','/projects',freshLogin,undefined,401);
+  const lockedUser=await db.user.create({data:{
+    email:'locked-'+suffix+'@pmo.test',name:'Login Protection Test',
+    passwordHash:await bcryptjs.hash('correct-password-1234',12)
+  }});
+  await db.membership.create({data:{organizationId:organization.id,userId:lockedUser.id,role:'MEMBER'}});
+  for(let i=0;i<5;i++)await request('POST','/auth/login',null,{
+    email:lockedUser.email,password:'invalid-password-1234'
+  },401);
+  await request('POST','/auth/login',null,{
+    email:lockedUser.email,password:'correct-password-1234'
+  },429);
   console.log('PASS: tenant isolation, registration, projects/tasks, RAID, timesheets, reports, leave, parameters, users, role approvals, audit, JWT revocation');
 } finally { await db.$disconnect(); }
