@@ -34,6 +34,7 @@ model Organization {
   name      String
   projects  Project[]
   users     Membership[]
+  auditEvents AuditEvent[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 }
@@ -69,6 +70,11 @@ model Project {
   targetEndDate  DateTime?
   organization   Organization   @relation(fields: [organizationId], references: [id])
   tasks          Task[]
+  risks          Risk[]
+  issues         Issue[]
+  decisions      Decision[]
+  actions        ActionItem[]
+  timesheets     TimesheetEntry[]
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
   @@index([organizationId, status])
@@ -85,4 +91,100 @@ model Task {
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   @@index([projectId, status])
+}
+
+enum RegisterStatus {
+  OPEN
+  IN_PROGRESS
+  CLOSED
+}
+
+enum Severity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+model Risk {
+  id           String         @id @default(uuid())
+  projectId    String
+  title        String
+  description  String?
+  severity     Severity       @default(MEDIUM)
+  status       RegisterStatus @default(OPEN)
+  mitigation   String?
+  ownerName    String?
+  targetDate   DateTime?
+  project      Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  @@index([projectId, status])
+}
+
+model Issue {
+  id           String         @id @default(uuid())
+  projectId    String
+  title        String
+  description  String?
+  severity     Severity       @default(MEDIUM)
+  status       RegisterStatus @default(OPEN)
+  resolution   String?
+  ownerName    String?
+  targetDate   DateTime?
+  project      Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  @@index([projectId, status])
+}
+
+model Decision {
+  id         String   @id @default(uuid())
+  projectId  String
+  title      String
+  rationale  String?
+  decidedBy  String?
+  decidedAt  DateTime @default(now())
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  @@index([projectId, decidedAt])
+}
+
+model ActionItem {
+  id         String         @id @default(uuid())
+  projectId  String
+  title      String
+  ownerName  String?
+  dueDate    DateTime?
+  status     RegisterStatus @default(OPEN)
+  project    Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  @@index([projectId, status])
+}
+
+model TimesheetEntry {
+  id          String   @id @default(uuid())
+  projectId   String
+  userId      String
+  workDate    DateTime
+  hours       Decimal  @db.Decimal(5, 2)
+  description String?
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  @@index([projectId, workDate])
+  @@index([userId, workDate])
+}
+
+model AuditEvent {
+  id             String       @id @default(uuid())
+  organizationId String
+  actorId        String
+  action         String
+  entityType     String
+  entityId       String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  @@index([organizationId, createdAt])
 }
