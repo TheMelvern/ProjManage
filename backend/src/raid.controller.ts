@@ -66,6 +66,7 @@ export class RaidController {
 
   @Post('risks')
   async createRisk(@Req() req: AuthenticatedRequest, @Param('projectId') projectId: string, @Body() body: RegisterDto) {
+    throw new ForbiddenException('RAID changes require an independent maker-checker proposal');
     await this.authorize(req, projectId, true);
     const risk = await this.prisma.risk.create({
       data: { projectId, title: body.title, description: body.description, severity: body.severity,
@@ -78,6 +79,7 @@ export class RaidController {
   @Patch('risks/:id')
   async patchRisk(@Req() req: AuthenticatedRequest, @Param('projectId') projectId: string,
     @Param('id') id: string, @Body() body: RegisterPatchDto) {
+    throw new ForbiddenException('RAID changes require an independent maker-checker proposal');
     await this.authorize(req, projectId, true);
     const existing = await this.prisma.risk.findFirst({ where: { id, projectId } });
     if (!existing) throw new NotFoundException('Risk not found');
@@ -91,6 +93,7 @@ export class RaidController {
 
   @Post('issues')
   async createIssue(@Req() req: AuthenticatedRequest, @Param('projectId') projectId: string, @Body() body: RegisterDto) {
+    throw new ForbiddenException('RAID changes require an independent maker-checker proposal');
     await this.authorize(req, projectId, true);
     const issue = await this.prisma.issue.create({
       data: { projectId, title: body.title, description: body.description, severity: body.severity,
@@ -103,6 +106,7 @@ export class RaidController {
   @Patch('issues/:id')
   async patchIssue(@Req() req: AuthenticatedRequest, @Param('projectId') projectId: string,
     @Param('id') id: string, @Body() body: RegisterPatchDto) {
+    throw new ForbiddenException('RAID changes require an independent maker-checker proposal');
     await this.authorize(req, projectId, true);
     const existing = await this.prisma.issue.findFirst({ where: { id, projectId } });
     if (!existing) throw new NotFoundException('Issue not found');
@@ -116,6 +120,7 @@ export class RaidController {
 
   @Post('decisions')
   async createDecision(@Req() req: AuthenticatedRequest, @Param('projectId') projectId: string, @Body() body: DecisionDto) {
+    throw new ForbiddenException('RAID changes require an independent maker-checker proposal');
     await this.authorize(req, projectId, true);
     const decision = await this.prisma.decision.create({ data: { projectId, title: body.title,
       rationale: body.rationale, decidedBy: body.decidedBy } });
@@ -124,6 +129,7 @@ export class RaidController {
 
   @Post('actions')
   async createAction(@Req() req: AuthenticatedRequest, @Param('projectId') projectId: string, @Body() body: ActionDto) {
+    throw new ForbiddenException('RAID changes require an independent maker-checker proposal');
     await this.authorize(req, projectId, true);
     const action = await this.prisma.actionItem.create({
       data: { projectId, title: body.title, ownerName: body.ownerName,
@@ -135,6 +141,7 @@ export class RaidController {
   @Patch('actions/:id')
   async patchAction(@Req() req: AuthenticatedRequest, @Param('projectId') projectId: string,
     @Param('id') id: string, @Body() body: ActionPatchDto) {
+    throw new ForbiddenException('RAID changes require an independent maker-checker proposal');
     await this.authorize(req, projectId, true);
     const existing = await this.prisma.actionItem.findFirst({ where: { id, projectId } });
     if (!existing) throw new NotFoundException('Action not found');
