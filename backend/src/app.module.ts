@@ -15,6 +15,7 @@ import { TimesheetsController } from './timesheets.controller';
 import { RegistrationController, ReviewsController } from './reviews.controller';
 import { LeaveController, ParametersController } from './workflow-modules.controller';
 import { AdministrationController } from './administration.controller';
+import { OperationProposalsController } from './proposals.controller';
 
 @Module({
   imports: [
@@ -29,7 +30,7 @@ import { AdministrationController } from './administration.controller';
       }
     })
   ],
-  controllers: [HealthController, AuthController, ProjectsController, TasksController, ReportsController, RaidController, TimesheetsController, RegistrationController, ReviewsController, LeaveController, ParametersController, AdministrationController],
+  controllers: [HealthController, AuthController, ProjectsController, TasksController, ReportsController, RaidController, TimesheetsController, RegistrationController, ReviewsController, LeaveController, ParametersController, AdministrationController, OperationProposalsController],
   providers: [PrismaService, ProjectsService, AuthService, AuthGuard]
 })
 export class AppModule {}
