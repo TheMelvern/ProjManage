@@ -37,12 +37,19 @@ export class AuthService {
     }
     const membership = user.memberships[0];
     if (!membership) throw new UnauthorizedException('No organization membership');
+    const configuredSession = await this.prisma.organizationParameter.findUnique({
+      where: { organizationId_key: { organizationId: membership.organizationId,
+        key: 'sessionTimeoutMinutes' } }
+    });
+    const configuredMinutes = Number(configuredSession?.value ?? 60);
+    const sessionMinutes = Number.isFinite(configuredMinutes)
+      ? Math.max(5, Math.min(Math.round(configuredMinutes), 480)) : 60;
     const accessToken = await this.jwt.signAsync({
       sub: user.id,
       org: membership.organizationId,
       role: membership.role,
       ver: user.sessionVersion
-    }, { expiresIn: '1h' });
+    }, { expiresIn: sessionMinutes * 60 });
     return {
       success: true,
       data: {
