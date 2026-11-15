@@ -1,4 +1,4 @@
-import { Body, Controller, ForbiddenException, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, ForbiddenException, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import { IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
 import { HealthStatus, ProjectStatus } from '@prisma/client';
 import { ProjectsService } from './projects.service';
@@ -52,6 +52,9 @@ export class ProjectsController {
   @Patch(':id')
   update(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Body() body: UpdateProjectDto) {
     this.assertCanEdit(req);
+    if (body.status !== undefined || body.health !== undefined) {
+      throw new BadRequestException('Project status and health changes require maker-checker approval via POST /api/reviews/projects');
+    }
     return this.projects.update(req.principal.organizationId, id, body);
   }
 }
