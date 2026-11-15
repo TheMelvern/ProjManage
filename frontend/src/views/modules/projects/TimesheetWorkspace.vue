@@ -24,7 +24,7 @@
         <div class="field full"><label for="timesheet-description">Work completed</label>
           <textarea id="timesheet-description" v-model.trim="description" rows="3" maxlength="1000"
             placeholder="Describe your work for the project" :disabled="!liveMode || busy"></textarea></div>
-        <div class="field full form-bottom"><button type="submit" :disabled="!liveMode || busy || !projectId">Save entry</button>
+        <div class="field full form-bottom"><button type="submit" :disabled="!liveMode || busy || !projectId">Submit for check</button>
           <span>Entries are associated with your authenticated account.</span></div>
       </form>
     </section>
@@ -85,14 +85,14 @@ async function submit() {
   error.value = '';
   message.value = '';
   try {
-    await axiosInstance.post('/projects/' + encodeURIComponent(projectId.value) + '/timesheets', {
-      workDate: new Date(workDate.value + 'T12:00:00').toISOString(),
-      hours: Number(hours.value),
-      description: description.value || undefined
+    await axiosInstance.post('/reviews/operations', {
+      kind: 'TIMESHEET_CREATE', projectId: projectId.value,
+      summary: 'Log ' + Number(hours.value) + ' hours for ' + workDate.value,
+      values: { workDate: new Date(workDate.value + 'T12:00:00').toISOString(),
+        hours: Number(hours.value), description: description.value }
     });
     description.value = '';
-    message.value = 'Timesheet entry saved.';
-    await loadEntries();
+    message.value = 'Timesheet submitted for independent approval.';
   } catch (cause) { reportError(cause); } finally { busy.value = false; }
 }
 onMounted(loadProjects);
