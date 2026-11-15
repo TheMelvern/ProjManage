@@ -21,6 +21,7 @@
         </button>
         <div class="topbar-label">{{ pageTitle }}</div>
         <div class="topbar-right">
+          <router-link to="/notifications" class="notification-shortcut" title="Notification Center" aria-label="Notification Center"><span class="material-symbols-outlined">notifications</span><span v-if="unreadCount" class="notification-count">{{ unreadCount > 99 ? "99+" : unreadCount }}</span></router-link>
           <span class="profile-badge" :title="currentUser">{{ userInitials }}</span><span class="user-label">{{ currentUser }}</span><span class="profile-role">{{ currentRole }}</span>
           <button type="button" class="logout-btn" @click="logout">Sign out</button>
         </div>
@@ -32,15 +33,24 @@
   </div>
 </template>
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, ref, watch, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axiosInstance from './api/axiosConfig';
 const route = useRoute();
 const router = useRouter();
 const menuOpen = ref(false);
+const unreadCount = ref(0);
+async function refreshUnread(){
+  if (!localStorage.getItem('access_token')) { unreadCount.value=0; return; }
+  try { const result = await axiosInstance.get('/notifications'); unreadCount.value=result.data.data.unread; }
+  catch { unreadCount.value=0; }
+}
+watch(()=>route.fullPath, refreshUnread);
+onMounted(refreshUnread);
 const navigation = [
   { to: '/portfolio', label: 'Portfolio Overview', icon: 'dashboard' },
   { to: '/approvals', label: 'Approval Center', icon: 'rule' },
+  { to: '/notifications', label: 'Notification Center', icon: 'notifications' },
   { to: '/workflows', label: 'Connected Workflows', icon: 'hub' },
   { to: '/projects', label: 'Projects & Tasks', icon: 'task_alt' },
   { to: '/raid', label: 'RAID Register', icon: 'warning_amber' },
@@ -79,6 +89,7 @@ async function logout() {
   }
   ['access_token', 'auth_token', 'auth-token', 'user'].forEach(key => localStorage.removeItem(key));
   menuOpen.value = false;
+  unreadCount.value = 0;
   router.replace({ name: 'Login' });
 }
 </script>
