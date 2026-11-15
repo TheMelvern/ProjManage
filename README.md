@@ -1,38 +1,54 @@
 # PMO Portal
 
-A project-management and PMO reporting workspace built on the existing Vue application with a NestJS API and PostgreSQL.
+Framer-aligned project-management workspace, implementing the [PMO Framer design](https://framer.com/projects/STom7jCmgSh7YkuQlZOB) with **Vue 3 + Vite frontend, NestJS API, Prisma and PostgreSQL**. Unlike Framer's static prototype, app modules read/write persisted records through authenticated API endpoints.
 
-## Monorepo
+## Modules
 
-```text
-ProjManage/
-├── frontend/     Vue 3 + Vite + Tailwind — existing modules plus new live views
-├── backend/      NestJS + Prisma — JWT auth, projects, tasks, RAID, timesheets, reports
-├── docs/         Architecture, Framer handoff, test guide
-└── .github/      GitHub Actions CI (build, API smoke and dependency audit)
+| Module | URL (Vue hash routes) | Function |
+|---|---|---|
+| Sign In / Sign Up | `/#/login`, `/#/signup` | JWT sign-in, pending organization enrollment |
+| Portfolio | `/#/portfolio` | Live project health, progress, risks and priorities |
+| Projects & Tasks | `/#/projects` | Project creation and updates, tasks, status proposals |
+| RAID | `/#/raid` | Risks, issues, decisions, actions |
+| Timesheets | `/#/timesheets` | Staff effort proposals and approved time history |
+| Executive Reports | `/#/reports` | Live KPIs, independently approved report snapshots and CSV export |
+| Leave Tracker | `/#/leave` | Annual/medical/other requests, balances, half-day support, pending cancellation |
+| Team Calendar / Records | `/#/leave/team`, `/#/leave/records` | Approved absences, own leave history and export |
+| Approval Center | `/#/approvals` | Independently approve/reject/return changes; no self-approval |
+| Administration | `/#/admin/parameters`, `/#/admin/users`, `/#/admin/audit` | Reviewed organization parameters, role proposals, audit trails |
+| Connected Workflows | `/#/workflows` | Cross-module navigation and data lifecycle |
+
+Project, RAID, timesheet and report detail subpages are under `/#/projects/detail`, `/#/raid/detail`, `/#/timesheets/detail`, `/#/reports/detail`. Modules use responsive navigation and user profile avatar/role badges.
+
+## Local setup (Node 22+, PostgreSQL)
+
+1. Create the PostgreSQL database and restricted login. Choose your own secure DB password.
+2. In `backend/`, copy `.env.example` to `.env`; configure `DATABASE_URL`, a unique 32+ character `JWT_SECRET`, and independent `BOOTSTRAP_ADMIN_EMAIL`/`PASSWORD` and `BOOTSTRAP_REVIEWER_EMAIL`/`PASSWORD`. The second administrator lets a fresh installation operate maker–checker role and policy changes without self-approval.
+3. Open PowerShell in the repo's `backend` folder:
+
+```powershell
+npm install
+npm run db:generate
+npm run db:deploy
+npm run db:seed
+npm run dev
 ```
 
-## Run locally (Node.js 22+, PostgreSQL)
+4. In another terminal:
 
-1. Create a dedicated PostgreSQL database `pmo_portal` and restricted user `pmo_dev`.
-2. Copy `backend/.env.example` to `backend/.env` and set a strong JWT secret and unique bootstrap credentials.
-3. From `backend/`, execute:
-   ```sh
-   npm install
-   npm run db:generate
-   npm run db:deploy
-   npm run db:seed
-   npm run dev
-   ```
-4. In a separate terminal, from `frontend/`, execute:
-   ```sh
-   npm ci
-   cp .env.example .env.local
-   npm run dev
-   ```
-   Edit `.env.local` to set `VITE_USE_LIVE_API=true` and `VITE_API_BASE_URL=http://127.0.0.1:3000/api`. Restart Vite if you change environment variables.
-5. Open `http://localhost:5174`, sign in with your bootstrap administrator, then use the Portfolio, Delivery Workspace, RAID Register, Timesheets and Executive Reports sections.
+```powershell
+cd frontend
+npm ci
+Copy-Item .env.example .env.local
+npm run dev
+```
 
-See `backend/README.md` for API details and `docs/qa/verification.md` for acceptance criteria.
+5. Open **http://localhost:5174**. API default is `http://127.0.0.1:3000/api`. Set `frontend/.env.local` `VITE_USE_LIVE_API=true` and `VITE_API_BASE_URL=http://127.0.0.1:3000/api`. Frontend route history uses `#/`.
 
-**Scope note:** The unsupported legacy screens (old dashboards, leave, claims, invoices, wiki, mock role administration and local-only project/Gantt workflows) were intentionally removed from the active source tree. They remain recoverable in Git history. This is a tested local-development MVP—not a production-certified SaaS. Public deployment remains disabled until production security, browser compatibility and operational reviews are complete.
+**Important:** New source changes use a two-stage process: maker submission → independent checker approval → persisted effect and audit. The maker's proposal is not the approved record. Invite/signup requests likewise cannot authenticate until approval.
+
+## Verification and deployment
+
+GitHub Actions runs the frontend build, frontend production dependency audit, real PostgreSQL migrations and API integration, and Chromium browser E2E (desktop and mobile screenshot artifacts). See [verification](docs/qa/verification.md) and [Framer parity map](docs/framer-parity-implementation.md).
+
+**Scope boundary:** This is a locally verified PMO application, not a certified public SaaS. Before internet-facing production launch, deploy with HTTPS and secret management, configure email ownership verification/MFA, use a distributed rate limiter, audit role/project access in your organization, add public-holiday and accrual policies, full WCAG/Firefox/WebKit coverage, notifications, monitoring/backups, and a production security review. Automatic deployment remains disabled. The intentionally retired legacy mock-only claims/invoice/wiki screens are recoverable via Git history, not active modules.
