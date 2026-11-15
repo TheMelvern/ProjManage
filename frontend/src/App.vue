@@ -5,7 +5,7 @@
       <div class="app-brand"><span class="brand-symbol">P</span><span>PMO Portal</span></div>
       <p class="nav-category">WORKSPACE</p>
       <nav class="sidebar-links" aria-label="PMO modules">
-        <router-link v-for="item in navigation" :key="item.to" :to="item.to"
+        <router-link v-for="item in visibleNavigation" :key="item.to" :to="item.to"
           :aria-current="route.path === item.to ? 'page' : undefined" @click="menuOpen = false">
           <span class="material-symbols-outlined" aria-hidden="true">{{ item.icon }}</span>
           <span>{{ item.label }}</span>
@@ -21,7 +21,7 @@
         </button>
         <div class="topbar-label">{{ pageTitle }}</div>
         <div class="topbar-right">
-          <span class="profile-badge" :title="currentUser">{{ userInitials }}</span><span class="user-label">{{ currentUser }}</span>
+          <span class="profile-badge" :title="currentUser">{{ userInitials }}</span><span class="user-label">{{ currentUser }}</span><span class="profile-role">{{ currentRole }}</span>
           <button type="button" class="logout-btn" @click="logout">Sign out</button>
         </div>
       </header>
@@ -44,12 +44,25 @@ const navigation = [
   { to: '/raid', label: 'RAID Register', icon: 'warning_amber' },
   { to: '/timesheets', label: 'Timesheets', icon: 'schedule' },
   { to: '/leave', label: 'Leave Tracker', icon: 'event_available' },
+  { to: '/leave/team', label: 'Team Calendar', icon: 'calendar_month', managerOnly: true },
   { to: '/reports', label: 'Executive Reports', icon: 'summarize' },
-  { to: '/admin/parameters', label: 'Admin Parameters', icon: 'settings' }
+  { to: '/admin/parameters', label: 'Admin Parameters', icon: 'settings', adminOnly: true },
+  { to: '/admin/users', label: 'Users & Roles', icon: 'manage_accounts', adminOnly: true },
+  { to: '/admin/audit', label: 'Audit & Security', icon: 'shield', adminOnly: true }
 ];
 const isLogin = computed(() => ['Login', 'Signup'].includes(route.name));
+const currentRole = computed(() => {
+  route.path;
+  try { return JSON.parse(localStorage.getItem('user') || '{}').role || 'MEMBER'; }
+  catch { return 'MEMBER'; }
+});
+const visibleNavigation = computed(() => navigation.filter(item =>
+  (!item.adminOnly || currentRole.value === 'ADMIN') &&
+  (!item.managerOnly || ['ADMIN','PMO','PROJECT_MANAGER'].includes(currentRole.value))));
+
 const pageTitle = computed(() => navigation.find(item => item.to === route.path)?.label || 'PMO Portal');
 const currentUser = computed(() => {
+  route.path;
   try {
     const stored = JSON.parse(localStorage.getItem('user') || '{}');
     return stored.name || stored.email || 'Signed in';
