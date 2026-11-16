@@ -79,6 +79,7 @@ model Project {
   health         HealthStatus   @default(UNKNOWN)
   startDate      DateTime?
   targetEndDate  DateTime?
+  deliveryMethod  String @default("KANBAN")
   organization   Organization   @relation(fields: [organizationId], references: [id])
   tasks          Task[]
   risks          Risk[]
@@ -98,6 +99,10 @@ model Task {
   description String?
   status      TaskStatus @default(TODO)
   dueDate     DateTime?
+  startDate   DateTime?
+  itemType    String @default("TASK")
+  priority    String @default("MEDIUM")
+  phase       String?
   project     Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt

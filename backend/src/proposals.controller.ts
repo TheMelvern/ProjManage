@@ -20,9 +20,9 @@ class OperationDto {
 }
 
 const writable: Record<Kind, string[]> = {
-  PROJECT_CREATE: ['name','client','description'],
-  TASK_CREATE: ['title','description','dueDate'],
-  TASK_UPDATE: ['title','description','dueDate','status'],
+  PROJECT_CREATE: ['name','client','description','startDate','targetEndDate','deliveryMethod'],
+  TASK_CREATE: ['title','description','dueDate','startDate','itemType','priority','phase'],
+  TASK_UPDATE: ['title','description','dueDate','startDate','itemType','priority','phase','status'],
   RISK_CREATE: ['title','description','severity','ownerName','mitigation','targetDate'],
   RISK_UPDATE: ['title','description','severity','ownerName','mitigation','targetDate','status'],
   ISSUE_CREATE: ['title','description','severity','ownerName','resolution','targetDate'],
@@ -49,7 +49,7 @@ function validateValues(kind: Kind, values: Record<string, unknown>): Record<str
   const checked: Record<string, string | number | null> = {};
   for (const [key, value] of Object.entries(values)) {
     if (value === null) {
-      if (!['dueDate','targetDate','description','client','ownerName','resolution','mitigation'].includes(key)) {
+      if (!['dueDate','targetDate','startDate','targetEndDate','phase','description','client','ownerName','resolution','mitigation'].includes(key)) {
         throw new BadRequestException('This field cannot be null');
       }
       checked[key] = null;
@@ -64,12 +64,23 @@ function validateValues(kind: Kind, values: Record<string, unknown>): Record<str
     const clean = value.trim();
     if (clean.length > 1500) throw new BadRequestException('Field exceeds maximum size');
     if (['name','title'].includes(key) && (clean.length < 2 || clean.length > 200)) throw new BadRequestException('Name/title must have 2–200 characters');
+    if (key === 'deliveryMethod' && !['KANBAN','WATERFALL'].includes(clean)) throw new BadRequestException('Invalid delivery method');
+    if (key === 'itemType' && !['EPIC','STORY','TASK','BUG','MILESTONE'].includes(clean)) throw new BadRequestException('Invalid work item type');
+    if (key === 'priority' && !['LOW','MEDIUM','HIGH','CRITICAL'].includes(clean)) throw new BadRequestException('Invalid priority');
     if (key === 'status' && !statusValues.includes(clean as typeof statusValues[number])) throw new BadRequestException('Invalid status');
     if (key === 'severity' && !severityValues.includes(clean)) throw new BadRequestException('Invalid severity');
-    if (['dueDate','targetDate','workDate'].includes(key) && (!Number.isFinite(Date.parse(clean)))) {
+    if (['dueDate','targetDate','startDate','targetEndDate','workDate'].includes(key) && (!Number.isFinite(Date.parse(clean)))) {
       throw new BadRequestException('Invalid date');
     }
     checked[key] = clean;
+  }
+  if (kind === 'PROJECT_CREATE' && typeof checked.startDate === 'string' &&
+      typeof checked.targetEndDate === 'string' && Date.parse(checked.targetEndDate) < Date.parse(checked.startDate)) {
+    throw new BadRequestException('Project end must be on or after the planned start');
+  }
+  if ((kind === 'TASK_CREATE' || kind === 'TASK_UPDATE') && typeof checked.startDate === 'string' &&
+      typeof checked.dueDate === 'string' && Date.parse(checked.dueDate) < Date.parse(checked.startDate)) {
+    throw new BadRequestException('Work item due date must be on or after its start');
   }
   if (kind === 'TIMESHEET_CREATE') {
     if (typeof checked.workDate !== 'string' || typeof checked.hours !== 'number') {
