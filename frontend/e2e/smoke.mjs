@@ -32,7 +32,7 @@ try {
   const layout=await page.locator('.auth-layout').evaluate(el=>getComputedStyle(el).display);
   assert.equal(layout,'grid','Unified PMO authentication layout CSS was not applied');
   const panel=await page.locator('.auth-form-card').evaluate(el=>getComputedStyle(el).backgroundColor);
-  assert.equal(panel,'rgb(255, 255, 255)','Unified PMO login card CSS was not applied');
+  assert.ok(panel.startsWith('rgba(255, 255, 255') || panel==='rgb(255, 255, 255)','Frosted sign-in card background was not applied');
   assert.equal(await page.locator('.auth-story').isVisible(),false,'SaaS sign-in should use one centered card');
   const centered=await page.locator('.auth-layout').evaluate(el=>el.getBoundingClientRect());
   assert.ok(centered.width<=500,'Sign-in card should stay compact and centered');
