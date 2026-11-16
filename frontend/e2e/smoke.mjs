@@ -33,14 +33,14 @@ try {
   assert.equal(layout,'grid','Unified PMO authentication layout CSS was not applied');
   const panel=await page.locator('.auth-form-card').evaluate(el=>getComputedStyle(el).backgroundColor);
   assert.ok(panel.startsWith('rgba(255, 255, 255') || panel==='rgb(255, 255, 255)','Frosted sign-in card background was not applied');
-  assert.equal(await page.locator('.auth-story').isVisible(),false,'SaaS sign-in should use one centered card');
+  assert.equal(await page.locator('.auth-story').isVisible(),true,'Premium sign-in should include the portfolio story panel');
   const centered=await page.locator('.auth-layout').evaluate(el=>el.getBoundingClientRect());
-  assert.ok(centered.width<=500,'Sign-in card should stay compact and centered');
+  assert.ok(centered.width>900,'Premium sign-in should use a spacious two-column layout');
   const loginType=await page.locator('.auth-form-card h2').evaluate(el=>({
     family:getComputedStyle(el).fontFamily,size:getComputedStyle(el).fontSize,
     weight:Number(getComputedStyle(el).fontWeight)
   }));
-  assert.ok(loginType.family.includes('Inter'),'Authentication header must use Inter');
+  assert.ok(loginType.family.includes('system') || loginType.family.includes('Segoe UI') || loginType.family.includes('-apple-system'),'Authentication header must use the premium system font stack');
   assert.equal(loginType.size,'30px','Authentication headings must use global display size');
   assert.ok(loginType.weight>=700);
   const loginInput=await page.locator('#login-email').evaluate(el=>getComputedStyle(el).fontSize);
@@ -85,7 +85,23 @@ try {
   await profileDialog.getByLabel('Full name').fill('PMO Administrator');
   await profileDialog.getByRole('button',{name:'Save changes'}).click();
   await profileDialog.getByText('Profile updated successfully.').waitFor();
+  await profileDialog.getByRole('button',{name:'Dark'}).click();
+  await profileDialog.getByRole('button',{name:'Purple'}).click();
+  assert.equal(await page.locator('html').getAttribute('data-theme'),'dark');
+  assert.equal(await page.locator('html').getAttribute('data-accent'),'purple');
+  await profileDialog.getByRole('button',{name:'Save appearance'}).click();
+  await profileDialog.getByText('Appearance preferences saved.').waitFor();
+  assert.deepEqual(await request('/profile',await page.evaluate(()=>localStorage.getItem('access_token'))).then(p=>[p.themeMode,p.accentColor]),['dark','purple']);
   await profileDialog.getByRole('button',{name:'Close profile management'}).click();
+  await page.reload();
+  assert.equal(await page.locator('html').getAttribute('data-theme'),'dark','Theme must persist on reload');
+  assert.equal(await page.locator('html').getAttribute('data-accent'),'purple','Accent must persist on reload');
+  await page.getByRole('button',{name:/Manage profile for/}).click();
+  const preferencesDialog=page.getByRole('dialog',{name:'Profile management'});
+  await preferencesDialog.getByRole('button',{name:'Light'}).click();
+  await preferencesDialog.getByRole('button',{name:'Blue'}).click();
+  await preferencesDialog.getByRole('button',{name:'Save appearance'}).click();
+  await preferencesDialog.getByRole('button',{name:'Close profile management'}).click();
   assert.equal(await page.getByRole('dialog',{name:'Profile management'}).count(),0);
 
   // Shared shell: signout belongs in sidebar; profile and notifications stay in topbar.
@@ -191,7 +207,7 @@ try {
   assert.equal(await sidebar.getByRole('link',{name:'Admin Parameters'}).count(),0);
   assert.equal(await sidebar.getByRole('link',{name:'Users & Roles'}).count(),0);
   assert.equal(await sidebar.getByRole('link',{name:'Audit & Security'}).count(),0);
-  assert.equal(await sidebar.getByRole('link',{name:'Administration'}).count(),1);
+  assert.equal(await sidebar.getByRole('link',{name:'Parameters'}).count(),1);
   await page.getByRole('navigation',{name:'Executive Reports tabs'}).getByRole('link',{name:'Approvals'}).click();
   await page.getByRole('heading',{name:'Report approvals'}).waitFor();
   await page.getByText('Publication submitted').count().then(count=>assert.equal(count,0));
@@ -243,7 +259,7 @@ try {
   await page.getByText('2026-12-20').first().waitFor({timeout:15000});
 
 
-  await sidebar.getByRole('link',{name:'Administration'}).click();
+  await sidebar.getByRole('link',{name:'Parameters'}).click();
   const adminTabs=page.getByRole('navigation',{name:'Administration tabs'});
   assert.equal(await adminTabs.getByRole('link').count(),4);
   await page.getByRole('heading',{name:'Admin Parameters'}).waitFor();
