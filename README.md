@@ -21,7 +21,7 @@ Framer-aligned project-management workspace, implementing the [PMO Framer design
 
 Project, RAID, timesheet and report detail subpages are under `/#/projects/detail`, `/#/raid/detail`, `/#/timesheets/detail`, `/#/reports/detail`. Modules use responsive navigation and user profile avatar/role badges.
 
-## Local setup (Node 22+, PostgreSQL)
+## Local setup (Node.js 22 LTS recommended, PostgreSQL)
 
 1. Create the PostgreSQL database and restricted login. Choose your own secure DB password.
 2. In `backend/`, copy `.env.example` to `.env`; configure `DATABASE_URL`, a unique 32+ character `JWT_SECRET`, and independent `BOOTSTRAP_ADMIN_EMAIL`/`PASSWORD` and `BOOTSTRAP_REVIEWER_EMAIL`/`PASSWORD`. The second administrator lets a fresh installation operate maker–checker role and policy changes without self-approval.
@@ -36,6 +36,8 @@ npm run dev
 ```
 
 `npm run build` and `npm run dev` now regenerate Prisma Client from `backend/prisma/schema.prisma` automatically before compiling or starting the API. After pulling schema changes, run `npm run db:deploy` against the configured database before starting the updated service. `npm run db:generate` can also be used explicitly to refresh the generated types.
+
+If the Nest watcher reports `Cannot find module 'dist/main'` despite zero TypeScript errors, stop it, remove `backend/dist` and any `tsconfig.tsbuildinfo` cache, and run `npm run build`. Confirm `backend/dist/main.js` exists before using `npm run start` or `npm run dev`. Use Node.js 22 LTS for parity with CI; Node.js 24 is not the tested runtime for this project.
 
 4. In another terminal:
 
