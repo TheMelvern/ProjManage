@@ -65,6 +65,11 @@ const router = useRouter();
 const menuOpen = ref(false);
 const profileOpen = ref(false);
 const profileData = ref(readStoredProfile());
+async function refreshProfile(){
+  if(!localStorage.getItem('access_token'))return;
+  try{const updated=(await axiosInstance.get('/profile')).data.data;onProfileUpdated(updated);}
+  catch{/* Keep the existing authenticated session if profile lookup is unavailable. */}
+}
 function readStoredProfile(){
   try { return JSON.parse(localStorage.getItem('user') || '{}'); }
   catch { return {}; }
@@ -80,7 +85,7 @@ watch(()=>route.fullPath,()=>{notificationsOpen.value=false;refreshUnread();});
 function onOutsideClick(event){if(notificationAnchor.value&&!notificationAnchor.value.contains(event.target))notificationsOpen.value=false;}
 function onEscape(event){if(event.key==='Escape')notificationsOpen.value=false;}
 async function toggleNotifications(){notificationsOpen.value=!notificationsOpen.value;if(!notificationsOpen.value)return;notificationLoading.value=true;notificationError.value='';try{await refreshUnread();}catch{notificationError.value='Unable to load recent notifications.';}finally{notificationLoading.value=false;}}
-onMounted(()=>{refreshUnread();document.addEventListener('pointerdown',onOutsideClick);document.addEventListener('keydown',onEscape);});
+onMounted(()=>{refreshUnread();refreshProfile();document.addEventListener('pointerdown',onOutsideClick);document.addEventListener('keydown',onEscape);});
 onUnmounted(()=>{document.removeEventListener('pointerdown',onOutsideClick);document.removeEventListener('keydown',onEscape);});
 const navigation = [
   { to: '/portfolio', label: 'Portfolio Overview', icon: 'dashboard' },
