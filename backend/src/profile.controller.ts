@@ -1,5 +1,5 @@
 import { BadRequestException, Body, Controller, Get, Patch, Post, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
-import { IsString, MaxLength, MinLength } from 'class-validator';
+import { IsIn, IsString, MaxLength, MinLength } from 'class-validator';
 import { compare, hash } from 'bcryptjs';
 import { AuthGuard, AuthenticatedRequest } from './auth.guard';
 import { PrismaService } from './prisma.service';
@@ -10,6 +10,11 @@ class UpdateProfileDto {
 
 class UpdateAvatarDto {
   @IsString() @MaxLength(220000) dataUrl!: string;
+}
+
+class UpdateAppearanceDto {
+  @IsIn(['system','light','dark']) themeMode!: string;
+  @IsIn(['blue','graphite','purple','teal','green','rose']) accentColor!: string;
 }
 
 class ChangePasswordDto {
@@ -26,7 +31,7 @@ export class ProfileController {
   async me(@Req() req: AuthenticatedRequest) {
     const user = await this.prisma.user.findUnique({
       where: { id: req.principal.userId },
-      select: { id: true, name: true, email: true, avatarDataUrl: true, emailVerifiedAt: true, createdAt: true }
+      select: { id: true, name: true, email: true, avatarDataUrl: true, themeMode: true, accentColor: true, emailVerifiedAt: true, createdAt: true }
     });
     if (!user) throw new UnauthorizedException('Account not found');
     const org = await this.prisma.organization.findUnique({
@@ -56,6 +61,20 @@ export class ProfileController {
       action: 'PROFILE_UPDATED', entityType: 'USER', entityId: req.principal.userId
     } });
     return { success: true, data: { ...user, role: req.principal.role } };
+  }
+
+  @Patch('appearance')
+  async updateAppearance(@Req() req: AuthenticatedRequest, @Body() body: UpdateAppearanceDto) {
+    const user = await this.prisma.user.update({
+      where: { id: req.principal.userId },
+      data: { themeMode: body.themeMode, accentColor: body.accentColor },
+      select: { themeMode: true, accentColor: true }
+    });
+    await this.prisma.auditEvent.create({ data: {
+      organizationId: req.principal.organizationId, actorId: req.principal.userId,
+      action: 'APPEARANCE_UPDATED', entityType: 'USER', entityId: req.principal.userId
+    } });
+    return { success: true, data: user };
   }
 
   @Post('avatar')
