@@ -74,6 +74,14 @@ function validateValues(kind: Kind, values: Record<string, unknown>): Record<str
     }
     checked[key] = clean;
   }
+  if (kind === 'PROJECT_CREATE' && typeof checked.startDate === 'string' &&
+      typeof checked.targetEndDate === 'string' && Date.parse(checked.targetEndDate) < Date.parse(checked.startDate)) {
+    throw new BadRequestException('Project end must be on or after the planned start');
+  }
+  if ((kind === 'TASK_CREATE' || kind === 'TASK_UPDATE') && typeof checked.startDate === 'string' &&
+      typeof checked.dueDate === 'string' && Date.parse(checked.dueDate) < Date.parse(checked.startDate)) {
+    throw new BadRequestException('Work item due date must be on or after its start');
+  }
   if (kind === 'TIMESHEET_CREATE') {
     if (typeof checked.workDate !== 'string' || typeof checked.hours !== 'number') {
       throw new BadRequestException('Work date and hours are required');
