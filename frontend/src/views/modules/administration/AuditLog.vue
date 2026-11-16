@@ -6,7 +6,7 @@
       <div class="head"><div><h2>Administrative audit history</h2><p>Audit events are read-only; each event identifies the actor, entity and timestamp.</p></div>
         <button @click="load">Refresh</button></div>
       <div class="controls">
-        <label>Action category <select v-model="filter"><option value="">All actions</option><option v-for="x in actions" :key="x" :value="x">{{ x }}</option></select></label>
+        <label>Action category <SmartSelect v-model="filter" aria-label="Audit action filter" :options="[{value:'',label:'All actions'},...actions.map(x=>({value:x,label:x}))]" /></label>
         <label>Search actor or entity <input v-model.trim="query" placeholder="Find an event"/></label>
       </div>
       <p v-if="loading">Loading audit records…</p>
@@ -22,6 +22,7 @@
   </main>
 </template>
 <script setup>
+import SmartSelect from '../../../components/SmartSelect.vue';
 import { computed,onMounted,ref } from 'vue';
 import axios from '../../../api/axiosConfig';
 const rows=ref([]),error=ref(''),loading=ref(false),filter=ref(''),query=ref('');
