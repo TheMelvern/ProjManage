@@ -16,7 +16,7 @@
     </section>
     <section class="review-card queue">
       <div class="section-title"><h2>Approval work queue</h2><label>Filter status
-        <select v-model="filter"><option value="ALL">All</option><option value="PENDING">Pending</option><option value="APPROVED">Approved</option><option value="REJECTED">Rejected</option><option value="RETURNED">Returned</option></select>
+        <SmartSelect v-model="filter" aria-label="Approval status filter" :options="['ALL','PENDING','APPROVED','REJECTED','RETURNED'].map(x=>({value:x,label:x==='ALL'?'All':x.charAt(0)+x.slice(1).toLowerCase()}))" />
       </label></div>
       <div v-if="loading">Loading review requests…</div>
       <div v-else-if="!filtered.length" class="empty">No review requests match this filter.</div>
@@ -49,6 +49,7 @@
 </template>
 
 <script setup>
+import SmartSelect from '../../../components/SmartSelect.vue';
 import { computed, onMounted, ref, watch } from 'vue';
 import axios from '../../../api/axiosConfig';
 const props=defineProps({ module:{type:String,required:true} });
