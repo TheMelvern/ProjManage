@@ -6,7 +6,7 @@
       <p class="nav-category">WORKSPACE</p>
       <nav class="sidebar-links" aria-label="PMO modules">
         <router-link v-for="item in visibleNavigation" :key="item.to" :to="item.to"
-          :aria-current="route.path === item.to ? 'page' : undefined" @click="menuOpen = false">
+           :aria-current="(route.path === item.to || route.path === item.to + '/approvals' || (item.to === '/admin/parameters' && route.path.startsWith('/admin/'))) ? 'page' : undefined" @click="menuOpen = false">
           <span class="material-symbols-outlined" aria-hidden="true">{{ item.icon }}</span>
           <span>{{ item.label }}</span>
         </router-link>
@@ -63,16 +63,13 @@ watch(()=>route.fullPath, refreshUnread);
 onMounted(refreshUnread);
 const navigation = [
   { to: '/portfolio', label: 'Portfolio Overview', icon: 'dashboard' },
-  { to: '/approvals', label: 'Approval Center', icon: 'rule' },
   { to: '/projects', label: 'Projects & Tasks', icon: 'task_alt' },
   { to: '/raid', label: 'RAID Register', icon: 'warning_amber' },
   { to: '/timesheets', label: 'Timesheets', icon: 'schedule' },
   { to: '/leave', label: 'Leave Tracker', icon: 'event_available' },
   { to: '/leave/team', label: 'Team Calendar', icon: 'calendar_month', managerOnly: true },
   { to: '/reports', label: 'Executive Reports', icon: 'summarize' },
-  { to: '/admin/parameters', label: 'Admin Parameters', icon: 'settings', adminOnly: true },
-  { to: '/admin/users', label: 'Users & Roles', icon: 'manage_accounts', adminOnly: true },
-  { to: '/admin/audit', label: 'Audit & Security', icon: 'shield', adminOnly: true }
+  { to: '/admin/parameters', label: 'Administration', icon: 'settings', adminOnly: true }
 ];
 const isLogin = computed(() => ['Login', 'Signup', 'VerifyEmail', 'ResendVerification', 'ForgotPassword', 'ResetPassword'].includes(route.name));
 const currentRole = computed(() => {
@@ -84,7 +81,8 @@ const visibleNavigation = computed(() => navigation.filter(item =>
 
 const pageTitle = computed(() =>
   route.path === '/notifications' ? 'Notification Center' :
-  navigation.find(item => item.to === route.path)?.label || 'PMO Portal'
+  route.path.startsWith('/admin/') ? 'Administration' :
+  navigation.find(item => route.path === item.to || route.path === item.to + '/approvals')?.label || 'PMO Portal'
 );
 const currentUser = computed(() => {
   return profileData.value.name || profileData.value.email || 'Signed in';
