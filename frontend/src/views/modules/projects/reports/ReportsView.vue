@@ -25,12 +25,7 @@
     <p v-if="publicationNotice" class="report-notice" role="status">{{ publicationNotice }}</p>
     <div class="report-notice">
       <label for="approved-report">Approved executive snapshots</label>
-      <select id="approved-report" v-model="publicationId">
-        <option value="">Choose approved publication</option>
-        <option v-for="item in published" :key="item.id" :value="item.id">
-          {{ item.summary }} · {{ formatDate(item.reviewedAt) }}
-        </option>
-      </select>
+      <SmartSelect id="approved-report" v-model="publicationId" aria-label="Approved executive snapshots" :options="[{value:'',label:'Choose approved publication'},...published.map(item=>({value:item.id,label:item.summary+' · '+formatDate(item.reviewedAt)}))]" />
       <small>Export is available only for independently approved snapshots.</small>
     </div>
     <template v-if="report">
@@ -73,6 +68,7 @@
 </template>
 
 <script setup>
+import SmartSelect from '../../../../components/SmartSelect.vue';
 import { computed, onMounted, ref } from 'vue';
 import axiosInstance from '../../../../api/axiosConfig';
 
