@@ -4,7 +4,6 @@ import App from './App.vue';
 import Login from './views/modules/authentication/Login.vue';
 import Signup from './views/modules/authentication/Signup.vue';
 import AccountAccess from './views/modules/authentication/AccountAccess.vue';
-import TeamAvailability from './views/modules/people/TeamAvailability.vue';
 import LeaveRecords from './views/modules/people/LeaveRecords.vue';
 import DetailWorkspace from './views/modules/projects/DetailWorkspace.vue';
 import NotificationCenter from './views/modules/administration/NotificationCenter.vue';
@@ -37,7 +36,7 @@ const router = createRouter({
     { path: '/admin/users', name: 'UserAdmin', component: ModuleWorkspace, props: {module:'admin'} },
     { path: '/admin/access', redirect: '/admin/users' },
     { path: '/admin/audit', name: 'AuditLog', component: ModuleWorkspace, props: {module:'admin'} },
-    { path: '/leave/team', name: 'TeamAvailability', component: TeamAvailability },
+    { path: '/leave/team', name: 'TeamAvailability', component: ModuleWorkspace, props: {module:'leave'} },
     { path: '/', redirect: '/portfolio' },
     { path: '/portfolio', name: 'Portfolio', component: PortfolioOverview },
     { path: '/workspace', redirect: '/projects' },
