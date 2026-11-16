@@ -97,6 +97,7 @@
 
 <script>
 import axiosInstance from '../../../api/axiosConfig';
+import { applyStoredAppearance } from '../../../utils/appearance';
 
 export default {
   name: 'Login',
@@ -110,7 +111,9 @@ export default {
   methods: {
     storeSession(payload) {
       localStorage.setItem('access_token', payload.accessToken);
-      localStorage.setItem('user', JSON.stringify({ ...payload.user, lastLogin: new Date().toISOString() }));
+      const nextUser={ ...payload.user, lastLogin: new Date().toISOString() };
+      localStorage.setItem('user', JSON.stringify(nextUser));
+      applyStoredAppearance(nextUser);
       if (this.rememberMe) localStorage.setItem('rememberedEmail', this.email);
       else localStorage.removeItem('rememberedEmail');
       this.$router.replace('/portfolio');
