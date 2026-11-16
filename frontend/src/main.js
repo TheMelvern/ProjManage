@@ -4,20 +4,12 @@ import App from './App.vue';
 import Login from './views/modules/authentication/Login.vue';
 import Signup from './views/modules/authentication/Signup.vue';
 import AccountAccess from './views/modules/authentication/AccountAccess.vue';
-import ReviewCenter from './views/modules/administration/ReviewCenter.vue';
-import LeaveTracker from './views/modules/people/LeaveTracker.vue';
-import Parameters from './views/modules/administration/Parameters.vue';
-import UserAdmin from './views/modules/administration/UserAdmin.vue';
-import AuditLog from './views/modules/administration/AuditLog.vue';
 import TeamAvailability from './views/modules/people/TeamAvailability.vue';
 import LeaveRecords from './views/modules/people/LeaveRecords.vue';
 import DetailWorkspace from './views/modules/projects/DetailWorkspace.vue';
 import NotificationCenter from './views/modules/administration/NotificationCenter.vue';
 import PortfolioOverview from './views/modules/projects/pmoDashboard/PortfolioOverview.vue';
-import ProjectWorkspace from './views/modules/projects/ProjectWorkspace.vue';
-import RaidWorkspace from './views/modules/projects/RaidWorkspace.vue';
-import TimesheetWorkspace from './views/modules/projects/TimesheetWorkspace.vue';
-import ReportsView from './views/modules/projects/reports/ReportsView.vue';
+import ModuleWorkspace from './views/modules/ModuleWorkspace.vue';
 import './styles/shared/tailwind.css';
 import './styles/shared/app.css';
 import './styles/shared/typography.css';
@@ -32,29 +24,35 @@ const router = createRouter({
     { path: '/forgot-password', name: 'ForgotPassword', component: AccountAccess, meta: { public: true } },
     { path: '/reset-password', name: 'ResetPassword', component: AccountAccess, meta: { public: true } },
     { path: '/notifications', name: 'Notifications', component: NotificationCenter },
-    { path: '/approvals', name: 'Approvals', component: ReviewCenter },
-    { path: '/approvals/detail', name: 'ApprovalDetail', component: ReviewCenter },
-    { path: '/leave', name: 'Leave', component: LeaveTracker },
+    { path: '/approvals', redirect: '/projects/approvals' },
+    { path: '/approvals/detail', redirect: '/projects/approvals' },
+    { path: '/leave', name: 'Leave', component: ModuleWorkspace, props: {module:'leave'} },
+    { path: '/leave/approvals', name: 'LeaveApprovals', component: ModuleWorkspace, props: {module:'leave'} },
     { path: '/leave/records', name: 'LeaveRecords', component: LeaveRecords },
-    { path: '/leave/approvals', name: 'LeaveApprovals', component: TeamAvailability },
-    { path: '/admin/parameters', name: 'Parameters', component: Parameters },
+
+    { path: '/admin/parameters', name: 'Parameters', component: ModuleWorkspace, props: {module:'admin'} },
+    { path: '/admin/approvals', name: 'AdminApprovals', component: ModuleWorkspace, props: {module:'admin'} },
     { path: '/admin', redirect: '/admin/parameters' },
-    { path: '/admin/workflows', name: 'AdminWorkflows', component: Parameters },
-    { path: '/admin/users', name: 'UserAdmin', component: UserAdmin },
+    { path: '/admin/workflows', redirect: '/admin/parameters' },
+    { path: '/admin/users', name: 'UserAdmin', component: ModuleWorkspace, props: {module:'admin'} },
     { path: '/admin/access', name: 'AdminAccess', component: UserAdmin },
-    { path: '/admin/audit', name: 'AuditLog', component: AuditLog },
+    { path: '/admin/audit', name: 'AuditLog', component: ModuleWorkspace, props: {module:'admin'} },
     { path: '/leave/team', name: 'TeamAvailability', component: TeamAvailability },
     { path: '/', redirect: '/portfolio' },
     { path: '/portfolio', name: 'Portfolio', component: PortfolioOverview },
     { path: '/workspace', name: 'Workspace', component: ProjectWorkspace },
-    { path: '/projects', name: 'Projects', component: ProjectWorkspace },
+    { path: '/projects', name: 'Projects', component: ModuleWorkspace, props: {module:'projects'} },
+    { path: '/projects/approvals', name: 'ProjectApprovals', component: ModuleWorkspace, props: {module:'projects'} },
     { path: '/projects/detail', name: 'ProjectDetail', component: DetailWorkspace },
     { path: '/raid/detail', name: 'RaidDetail', component: DetailWorkspace },
     { path: '/timesheets/detail', name: 'TimesheetDetail', component: DetailWorkspace },
     { path: '/reports/detail', name: 'ReportDetail', component: DetailWorkspace },
-    { path: '/raid', name: 'RAID', component: RaidWorkspace },
-    { path: '/timesheets', name: 'Timesheets', component: TimesheetWorkspace },
-    { path: '/reports', name: 'Reports', component: ReportsView },
+    { path: '/raid', name: 'RAID', component: ModuleWorkspace, props: {module:'raid'} },
+    { path: '/raid/approvals', name: 'RaidApprovals', component: ModuleWorkspace, props: {module:'raid'} },
+    { path: '/timesheets', name: 'Timesheets', component: ModuleWorkspace, props: {module:'timesheets'} },
+    { path: '/timesheets/approvals', name: 'TimesheetApprovals', component: ModuleWorkspace, props: {module:'timesheets'} },
+    { path: '/reports', name: 'Reports', component: ModuleWorkspace, props: {module:'reports'} },
+    { path: '/reports/approvals', name: 'ReportApprovals', component: ModuleWorkspace, props: {module:'reports'} },
     { path: '/:pathMatch(.*)*', redirect: '/portfolio' }
   ]
 });
