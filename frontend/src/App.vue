@@ -27,11 +27,14 @@
         <div class="topbar-label">{{ pageTitle }}</div>
         <div class="topbar-right">
           <router-link to="/notifications" class="notification-shortcut" title="Notification Center" aria-label="Notification Center"><span class="material-symbols-outlined">notifications</span><span v-if="unreadCount" class="notification-count">{{ unreadCount > 99 ? "99+" : unreadCount }}</span></router-link>
-          <span class="profile-badge" :title="currentUser" :aria-label="'Signed in as ' + currentUser">{{ userInitials }}</span>
+          <button type="button" class="profile-badge profile-badge-button" :title="currentUser"
+            :aria-label="'Manage profile for ' + currentUser" @click="profileOpen = true">{{ userInitials }}</button>
         </div>
       </header>
       <router-view />
     </div>
+    <ProfileManagementModal v-if="profileOpen" @close="profileOpen = false"
+      @updated="onProfileUpdated" @password-changed="onPasswordChanged" />
     <button v-if="menuOpen" type="button" class="mobile-backdrop"
       aria-label="Close navigation" @click="menuOpen = false" />
   </div>
@@ -40,9 +43,16 @@
 import { computed, ref, watch, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axiosInstance from './api/axiosConfig';
+import ProfileManagementModal from './views/modules/administration/ProfileManagementModal.vue';
 const route = useRoute();
 const router = useRouter();
 const menuOpen = ref(false);
+const profileOpen = ref(false);
+const profileData = ref(readStoredProfile());
+function readStoredProfile(){
+  try { return JSON.parse(localStorage.getItem('user') || '{}'); }
+  catch { return {}; }
+}
 const unreadCount = ref(0);
 async function refreshUnread(){
   if (!localStorage.getItem('access_token')) { unreadCount.value=0; return; }
@@ -66,9 +76,7 @@ const navigation = [
 ];
 const isLogin = computed(() => ['Login', 'Signup', 'VerifyEmail', 'ResendVerification', 'ForgotPassword', 'ResetPassword'].includes(route.name));
 const currentRole = computed(() => {
-  route.path;
-  try { return JSON.parse(localStorage.getItem('user') || '{}').role || 'MEMBER'; }
-  catch { return 'MEMBER'; }
+  return profileData.value.role || 'MEMBER';
 });
 const visibleNavigation = computed(() => navigation.filter(item =>
   (!item.adminOnly || currentRole.value === 'ADMIN') &&
@@ -79,22 +87,33 @@ const pageTitle = computed(() =>
   navigation.find(item => item.to === route.path)?.label || 'PMO Portal'
 );
 const currentUser = computed(() => {
-  route.path;
-  try {
-    const stored = JSON.parse(localStorage.getItem('user') || '{}');
-    return stored.name || stored.email || 'Signed in';
-  } catch { return 'Signed in'; }
+  return profileData.value.name || profileData.value.email || 'Signed in';
 });
 const userInitials = computed(() => currentUser.value.split(/[\\s@.]+/).slice(0,2).map(w => w.charAt(0).toUpperCase()).join('') || 'PM');
+function onProfileUpdated(updated) {
+  profileData.value = { ...profileData.value, ...updated };
+  localStorage.setItem('user', JSON.stringify(profileData.value));
+}
+function onPasswordChanged() {
+  profileOpen.value = false;
+  clearLocalSession();
+  router.replace({ name: 'Login' });
+}
+function clearLocalSession(){
+  ['access_token', 'auth_token', 'auth-token', 'user'].forEach(key => localStorage.removeItem(key));
+  profileData.value = {};
+  menuOpen.value = false;
+  unreadCount.value = 0;
+}
+
 async function logout() {
   try {
     if (localStorage.getItem('access_token')) await axiosInstance.post('/auth/logout');
   } catch {
     // Local sign-out must still clear the browser token if the API is offline.
   }
-  ['access_token', 'auth_token', 'auth-token', 'user'].forEach(key => localStorage.removeItem(key));
-  menuOpen.value = false;
-  unreadCount.value = 0;
+  clearLocalSession();
+  profileOpen.value = false;
   router.replace({ name: 'Login' });
 }
 </script>
