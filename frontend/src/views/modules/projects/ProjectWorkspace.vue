@@ -97,7 +97,7 @@ import SmartSelect from '../../../components/SmartSelect.vue';
 
 const liveMode = import.meta.env.VITE_USE_LIVE_API === 'true';
 const loading = ref(false), busy = ref(false), error = ref(''), success = ref('');
-const projects = ref([]), selectedId = ref(null), tasks = ref([]), showCreate=ref(false);
+const projects = ref([]), selectedId = ref(sessionStorage.getItem('pmo-selected-project') || null), tasks = ref([]), showCreate=ref(false);
 const newProjectName = ref(''), newClient = ref(''), newTaskTitle = ref(''), newTaskDue = ref('');
 const projectStatus = ref('PLANNING'), projectHealth = ref('UNKNOWN');
 const projectStatuses = ['PLANNING', 'ACTIVE', 'ON_HOLD', 'COMPLETED', 'CANCELLED'];
@@ -128,6 +128,8 @@ async function loadProjects() {
     if (!projects.value.some(p => p.id === selectedId.value)) {
       selectedId.value = projects.value[0]?.id || null;
     }
+    if(selectedId.value)sessionStorage.setItem('pmo-selected-project',selectedId.value);
+    else sessionStorage.removeItem('pmo-selected-project');
     projectStatus.value = selectedProject.value?.status || 'PLANNING';
     projectHealth.value = selectedProject.value?.health || 'UNKNOWN';
     await loadTasks();
@@ -140,6 +142,7 @@ async function loadTasks() {
 }
 async function selectProject(id) {
   selectedId.value = id;
+  sessionStorage.setItem('pmo-selected-project',id);
   projectStatus.value = selectedProject.value?.status || 'PLANNING';
   projectHealth.value = selectedProject.value?.health || 'UNKNOWN';
   try { await loadTasks(); } catch (cause) { showError(cause); }
