@@ -15,8 +15,8 @@
         <form @submit.prevent="submit">
           <label for="leave-type">Leave type</label><SmartSelect id="leave-type" v-model="type" aria-label="Leave type" :options="[{value:'ANNUAL',label:'Annual leave'},{value:'MEDICAL',label:'Medical leave'},{value:'EMERGENCY',label:'Emergency leave'},{value:'UNPAID',label:'Unpaid leave'}]" />
           <div class="date-grid">
-            <div><label for="leave-start">Start date</label><input id="leave-start" v-model="startDate" type="date" required /></div>
-            <div><label for="leave-end">End date</label><input id="leave-end" v-model="endDate" type="date" :min="startDate" required /></div>
+            <div><label for="leave-start">Start date</label><SmartDatePicker id="leave-start" v-model="startDate" aria-label="Start date" required /></div>
+            <div><label for="leave-end">End date</label><SmartDatePicker id="leave-end" v-model="endDate" aria-label="End date" :min="startDate" required /></div>
           </div>
           <label for="leave-day-type">Leave duration</label>
           <SmartSelect id="leave-day-type" v-model="dayType" aria-label="Leave duration" :options="[{value:'FULL',label:'Full working day(s)'},{value:'AM',label:'Morning half day (single date)'},{value:'PM',label:'Afternoon half day (single date)'}]" />
@@ -41,6 +41,7 @@
   </main>
 </template>
 <script setup>
+import SmartDatePicker from "../../../components/SmartDatePicker.vue";
 import { computed, onMounted, ref } from 'vue';
 import axios from '../../../api/axiosConfig';
 import SmartSelect from '../../../components/SmartSelect.vue';
