@@ -243,4 +243,16 @@ export default {
 @media(max-width:900px){.auth-page{padding:22px 16px}.auth-layout{grid-template-columns:1fr;max-width:600px}.auth-story{min-height:0;padding:25px}.story-main{margin:22px 0}.auth-story h1{font-size:28px}.workspace-preview{display:none}.story-footer{font-size:10px}.auth-form-card{padding:32px}.form-heading{margin-bottom:24px}}
 @media(max-width:540px){.auth-page{padding:0;background:#fff;gap:0}.auth-layout{display:block}.auth-story{display:none}.auth-form-card{min-height:calc(100dvh - 38px);border:0;box-shadow:none;border-radius:0;padding:28px 22px}.mobile-brand{display:flex}.auth-form-card h2{font-size:28px}.page-footer{background:#fff;padding:0 0 17px}}
 @media(prefers-reduced-motion:reduce){.auth-primary,.input-wrap{transition:none}.auth-primary:hover{transform:none}}
+
+/* SaaS authentication: centered frosted card over abstract blurred image artwork. */
+.auth-page{position:relative;isolation:isolate;min-height:100dvh;padding:34px 18px;background:#10223f;overflow:hidden}
+.auth-page::before{content:"";position:fixed;z-index:-2;inset:-25px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1440' height='900' viewBox='0 0 1440 900'%3E%3Cdefs%3E%3ClinearGradient id='g' x2='1' y2='1'%3E%3Cstop stop-color='%230b1631'/%3E%3Cstop offset='.52' stop-color='%232a5085'/%3E%3Cstop offset='1' stop-color='%2386aec6'/%3E%3C/linearGradient%3E%3Cfilter id='b'%3E%3CfeGaussianBlur stdDeviation='95'/%3E%3C/filter%3E%3C/defs%3E%3Cpath fill='url(%23g)' d='M0 0h1440v900H0z'/%3E%3Cg filter='url(%23b)'%3E%3Cellipse cx='330' cy='235' rx='350' ry='210' fill='%23496de1'/%3E%3Cellipse cx='1190' cy='210' rx='310' ry='270' fill='%2383bfd9'/%3E%3Cellipse cx='920' cy='785' rx='460' ry='210' fill='%233957a8'/%3E%3Cellipse cx='110' cy='810' rx='360' ry='300' fill='%23628dab'/%3E%3C/g%3E%3C/svg%3E");background-size:cover;background-position:center;filter:blur(10px) saturate(1.16);transform:scale(1.06)}
+.auth-page::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(140deg,#08172f77,#0c1a3160 55%,#182b5377)}
+.auth-layout{display:grid;grid-template-columns:minmax(0,1fr);width:100%;max-width:476px;gap:0}
+.auth-story{display:none}
+.auth-form-card{border:1px solid #ffffffac;border-radius:24px;min-height:560px;padding:45px clamp(24px,5vw,47px);background:#fffffff0;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:0 28px 90px #0611245c}
+.mobile-brand{display:flex}
+.page-footer{color:#e4eeff}
+@media(max-width:900px){.auth-page{padding:24px 16px}.auth-layout{max-width:476px}.auth-form-card{padding:35px}}
+@media(max-width:540px){.auth-page{padding:18px 12px;background:#10223f;gap:12px}.auth-layout{display:grid}.auth-form-card{min-height:auto;border:1px solid #ffffffac;border-radius:20px;padding:30px 23px}.page-footer{background:transparent;padding:0 0 10px;color:#d9e4f5}}
 </style>
