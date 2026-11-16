@@ -76,7 +76,6 @@
         </p>
       </section>
     </div>
-    <div class="portfolio-crosslinks"><router-link to="/projects">Manage projects</router-link><router-link to="/raid">Review RAID</router-link><router-link to="/timesheets">Team effort</router-link><router-link to="/reports">Reports</router-link></div>
     <p class="portfolio-timestamp" v-if="report">Report generated {{ generatedLabel }}</p>
   </main>
 </template>
