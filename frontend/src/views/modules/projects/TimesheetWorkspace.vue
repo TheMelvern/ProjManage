@@ -11,11 +11,7 @@
     <section class="panel">
       <form class="entry-form" @submit.prevent="submit">
         <div class="field full"><label for="timesheet-project">Project</label>
-          <select id="timesheet-project" v-model="projectId" required :disabled="!liveMode || busy"
-            @change="loadEntries">
-            <option value="">Select project</option>
-            <option v-for="project in projects" :key="project.id" :value="project.id">{{ project.name }}</option>
-          </select></div>
+          <SmartSelect id="timesheet-project" v-model="projectId" aria-label="Project" :disabled="!liveMode || busy" @change="loadEntries" :options="[{value:'',label:'Select project'},...projects.map(project=>({value:project.id,label:project.name}))]" /></div>
         <div class="field"><label for="timesheet-date">Work date</label>
           <input id="timesheet-date" type="date" v-model="workDate" :max="today" required :disabled="!liveMode || busy" /></div>
         <div class="field"><label for="timesheet-hours">Hours worked</label>
@@ -42,6 +38,7 @@
   </main>
 </template>
 <script setup>
+import SmartSelect from '../../../components/SmartSelect.vue';
 import { computed, onMounted, ref } from 'vue';
 import axiosInstance from '../../../api/axiosConfig';
 
