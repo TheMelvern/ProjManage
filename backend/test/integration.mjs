@@ -365,5 +365,18 @@ try {
   await request('POST','/auth/login',null,{
     email:lockedUser.email,password:'correct-password-1234'
   },429);
+  // Password changes require current-password proof and invalidate prior JWTs.
+  await request('POST','/profile/change-password',outsider,{
+    currentPassword:'not-correct',newPassword:'changed-password-123456'
+  },401);
+  await request('POST','/profile/change-password',outsider,{
+    currentPassword:'outsider-password-1234',newPassword:'changed-password-123456'
+  },201);
+  await request('GET','/profile',outsider,undefined,401);
+  await request('POST','/auth/login',null,{
+    email:outsiderUser.email,password:'outsider-password-1234'
+  },401);
+  const updatedOutsider=await login(outsiderUser.email,'changed-password-123456');
+  assert.equal((await request('GET','/profile',updatedOutsider,undefined,200)).data.id,outsiderUser.id);
   console.log('PASS: tenant isolation, registration, projects/tasks, RAID, timesheets, reports, leave, parameters, users, role approvals, audit, JWT revocation');
 } finally { await db.$disconnect(); await new Promise(resolve=>mailServer.close(resolve)); }
