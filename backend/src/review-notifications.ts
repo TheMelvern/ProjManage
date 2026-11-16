@@ -1,5 +1,16 @@
 import { PrismaService } from './prisma.service';
 
+/** Return the module-owned approval tab for a review category. */
+export function reviewApprovalPath(kind?: string): string {
+  if (!kind) return '/projects/approvals';
+  if (['REGISTRATION','PARAMETER_UPDATE','MEMBERSHIP_UPDATE'].includes(kind)) return '/admin/approvals';
+  if (kind === 'LEAVE_REQUEST') return '/leave/approvals';
+  if (kind === 'TIMESHEET_CREATE') return '/timesheets/approvals';
+  if (kind === 'REPORT_PUBLISH') return '/reports/approvals';
+  if (/^(RISK|ISSUE|DECISION|ACTION)_/.test(kind)) return '/raid/approvals';
+  return '/projects/approvals';
+}
+
 /**
  * In-app notification fanout. Only actual organization members can receive events.
  * Failure to deliver an in-app notification must not grant, bypass or reverse approval.
@@ -9,7 +20,8 @@ export async function notifyReviewers(
   organizationId: string,
   makerId: string | null,
   summary: string,
-  adminOnly = false
+  adminOnly = false,
+  kind?: string
 ) {
   const reviewers = await prisma.membership.findMany({
     where: {
@@ -23,7 +35,7 @@ export async function notifyReviewers(
   const result = await prisma.notification.createMany({ data: reviewers.map(({ userId }) => ({
     organizationId, recipientId: userId,
     kind: 'REVIEW_PENDING', title: 'New approval request',
-    body: summary.slice(0, 350), link: '/approvals'
+    body: summary.slice(0, 350), link: reviewApprovalPath(kind)
   })) });
   return result.count;
 }
