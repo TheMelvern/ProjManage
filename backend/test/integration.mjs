@@ -398,7 +398,8 @@ try {
     const items=(await request('GET','/reviews?module='+module,maker,undefined,200)).data;
     assert.ok(items.every(item=>kinds.includes(item.kind)),'Wrong category in '+module+' approvals');
   }
-  const managerAdmin=(await request('GET','/reviews?module=admin',checker,undefined,200)).data;
+  const refreshedChecker=await login(checkerUser.email,'checker-password-12345');
+  const managerAdmin=(await request('GET','/reviews?module=admin',refreshedChecker,undefined,200)).data;
   assert.ok(managerAdmin.every(item=>approvalGroups.admin.includes(item.kind)));
   console.log('PASS: tenant isolation, registration, projects/tasks, RAID, timesheets, reports, leave, parameters, users, role approvals, audit, JWT revocation');
 } finally { await db.$disconnect(); await new Promise(resolve=>mailServer.close(resolve)); }
