@@ -251,8 +251,8 @@ button:disabled {opacity:.5;cursor:not-allowed;}
 .task-details {flex:1;min-width:0;}
 .task-details strong {display:block;font-size:13px;word-break:break-word;}
 .task-details small {display:block;color:#77859b;font-size:12px;margin-top:6px;}
-.tasks select {max-width:146px;}
+.task-details{flex:1 1 220px;min-width:140px}.tasks li>.smart-select{width:160px;flex:0 0 160px}.tasks select {max-width:146px;}
 .tasks li.task-empty {color:#77859b;font-size:13px;}
 @media(max-width:1000px){.workspace-layout{grid-template-columns:1fr;}}
-@media(max-width:600px){.workspace{padding:16px}.workspace-header{flex-direction:column;align-items:start}.workspace-card{padding:18px}.detail-settings{flex-direction:column;align-items:stretch}.tasks li{flex-wrap:wrap}.tasks select{max-width:none;}}
+@media(max-width:600px){.workspace{padding:16px}.workspace-header{flex-direction:column;align-items:start}.workspace-card{padding:18px}.detail-settings{flex-direction:column;align-items:stretch}.tasks li{flex-wrap:wrap}.tasks li>.smart-select{width:100%;flex:1 1 100%}.tasks select{max-width:none;}}
 </style>
