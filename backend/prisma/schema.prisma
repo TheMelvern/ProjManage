@@ -52,6 +52,8 @@ model User {
   sessionVersion Int @default(0)
   emailVerifiedAt DateTime?
   avatarDataUrl String? @db.Text
+  themeMode String @default("system")
+  accentColor String @default("blue")
   emailTokens EmailToken[]
   memberships Membership[]
   notifications Notification[]

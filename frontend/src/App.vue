@@ -60,11 +60,13 @@ import { computed, ref, watch, onMounted, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axiosInstance from './api/axiosConfig';
 import ProfileManagementModal from './views/modules/administration/ProfileManagementModal.vue';
+import {applyStoredAppearance,resetAppearance} from './utils/appearance';
 const route = useRoute();
 const router = useRouter();
 const menuOpen = ref(false);
 const profileOpen = ref(false);
 const profileData = ref(readStoredProfile());
+applyStoredAppearance(profileData.value);
 async function refreshProfile(){
   if(!localStorage.getItem('access_token'))return;
   try{const updated=(await axiosInstance.get('/profile')).data.data;onProfileUpdated(updated);}
@@ -94,7 +96,7 @@ const navigation = [
   { to: '/timesheets', label: 'Timesheets', icon: 'schedule' },
   { to: '/leave', label: 'Leave Tracker', icon: 'event_available' },
   { to: '/reports', label: 'Executive Reports', icon: 'summarize' },
-  { to: '/admin/parameters', label: 'Administration', icon: 'settings', adminOnly: true }
+  { to: '/admin/parameters', label: 'Parameters', icon: 'tune', adminOnly: true }
 ];
 const isLogin = computed(() => ['Login', 'Signup', 'VerifyEmail', 'ResendVerification', 'ForgotPassword', 'ResetPassword'].includes(route.name));
 const currentRole = computed(() => {
@@ -107,7 +109,7 @@ const visibleNavigation = computed(() => navigation.filter(item =>
 const pageTitle = computed(() =>
   route.path.startsWith('/projects/') && !route.path.endsWith('/approvals') ? 'Projects & Tasks' :
   route.path === '/notifications' ? 'Notification Center' :
-  route.path.startsWith('/admin/') ? 'Administration' :
+  route.path.startsWith('/admin/') ? 'Parameters' :
   (route.path.startsWith('/leave/') ? 'Leave Tracker' : navigation.find(item => route.path === item.to || route.path === item.to + '/approvals')?.label) || 'PMO Portal'
 );
 const currentUser = computed(() => {
@@ -117,6 +119,7 @@ const userInitials = computed(() => currentUser.value.split(/[\\s@.]+/).slice(0,
 function onProfileUpdated(updated) {
   profileData.value = { ...profileData.value, ...updated };
   localStorage.setItem('user', JSON.stringify(profileData.value));
+  applyStoredAppearance(profileData.value);
 }
 function onPasswordChanged() {
   profileOpen.value = false;
@@ -126,6 +129,7 @@ function onPasswordChanged() {
 function clearLocalSession(){
   ['access_token', 'auth_token', 'auth-token', 'user'].forEach(key => localStorage.removeItem(key));
   profileData.value = {};
+  resetAppearance();
   menuOpen.value = false;
   unreadCount.value = 0;
   notificationsOpen.value=false;
