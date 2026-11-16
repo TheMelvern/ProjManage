@@ -13,16 +13,13 @@
       <section class="card">
         <h2>Apply for leave</h2><p>New requests are routed to an independent approver.</p>
         <form @submit.prevent="submit">
-          <label for="leave-type">Leave type</label><select id="leave-type" v-model="type"><option value="ANNUAL">Annual leave</option><option value="MEDICAL">Medical leave</option><option value="EMERGENCY">Emergency leave</option><option value="UNPAID">Unpaid leave</option></select>
+          <label for="leave-type">Leave type</label><SmartSelect id="leave-type" v-model="type" aria-label="Leave type" :options="[{value:'ANNUAL',label:'Annual leave'},{value:'MEDICAL',label:'Medical leave'},{value:'EMERGENCY',label:'Emergency leave'},{value:'UNPAID',label:'Unpaid leave'}]" />
           <div class="date-grid">
             <div><label for="leave-start">Start date</label><input id="leave-start" v-model="startDate" type="date" required /></div>
             <div><label for="leave-end">End date</label><input id="leave-end" v-model="endDate" type="date" :min="startDate" required /></div>
           </div>
           <label for="leave-day-type">Leave duration</label>
-          <select id="leave-day-type" v-model="dayType">
-            <option value="FULL">Full working day(s)</option><option value="AM">Morning half day (single date)</option>
-            <option value="PM">Afternoon half day (single date)</option>
-          </select>
+          <SmartSelect id="leave-day-type" v-model="dayType" aria-label="Leave duration" :options="[{value:'FULL',label:'Full working day(s)'},{value:'AM',label:'Morning half day (single date)'},{value:'PM',label:'Afternoon half day (single date)'}]" />
           <label for="leave-reason">Reason / handover details</label>
           <textarea id="leave-reason" v-model.trim="reason" rows="4" minlength="3" maxlength="500" required placeholder="Reason and coverage plan"></textarea>
           <button type="submit" :disabled="busy || !startDate || !endDate || !reason"> {{ busy ? 'Submitting…' : 'Submit for check' }} </button>
@@ -46,6 +43,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import axios from '../../../api/axiosConfig';
+import SmartSelect from '../../../components/SmartSelect.vue';
 const type=ref('ANNUAL'),startDate=ref(''),endDate=ref(''),reason=ref(''),dayType=ref('FULL');
 const loading=ref(false),busy=ref(false),error=ref(''),success=ref(''),requests=ref([]),balance=ref(null);
 const pendingCount=computed(()=>requests.value.filter(v=>v.status==='PENDING').length);
