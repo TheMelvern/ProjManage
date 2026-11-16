@@ -35,7 +35,6 @@
         <div><strong>{{ item.employeeName }}</strong><small>{{ item.type }} · {{ item.startDate }} to {{ item.endDate }}</small></div>
         <span class="approved">Approved</span>
       </article></div>
-      <router-link class="related-link" to="/workspace">Review project delivery</router-link>
     </section>
   </main>
 </template>
