@@ -11,7 +11,12 @@
           <span>{{ item.label }}</span>
         </router-link>
       </nav>
-      <div class="sidebar-bottom"><small>Persistent PMO workspace</small></div>
+      <div class="sidebar-bottom">
+        <button type="button" class="sidebar-signout" @click="logout">
+          <span class="material-symbols-outlined" aria-hidden="true">logout</span>
+          <span>Sign out</span>
+        </button>
+      </div>
     </aside>
     <div class="app-content">
       <header class="app-topbar">
@@ -22,8 +27,7 @@
         <div class="topbar-label">{{ pageTitle }}</div>
         <div class="topbar-right">
           <router-link to="/notifications" class="notification-shortcut" title="Notification Center" aria-label="Notification Center"><span class="material-symbols-outlined">notifications</span><span v-if="unreadCount" class="notification-count">{{ unreadCount > 99 ? "99+" : unreadCount }}</span></router-link>
-          <span class="profile-badge" :title="currentUser">{{ userInitials }}</span><span class="user-label">{{ currentUser }}</span><span class="profile-role">{{ currentRole }}</span>
-          <button type="button" class="logout-btn" @click="logout">Sign out</button>
+          <span class="profile-badge" :title="currentUser" :aria-label="'Signed in as ' + currentUser">{{ userInitials }}</span>
         </div>
       </header>
       <router-view />
@@ -50,8 +54,6 @@ onMounted(refreshUnread);
 const navigation = [
   { to: '/portfolio', label: 'Portfolio Overview', icon: 'dashboard' },
   { to: '/approvals', label: 'Approval Center', icon: 'rule' },
-  { to: '/notifications', label: 'Notification Center', icon: 'notifications' },
-  { to: '/workflows', label: 'Connected Workflows', icon: 'hub' },
   { to: '/projects', label: 'Projects & Tasks', icon: 'task_alt' },
   { to: '/raid', label: 'RAID Register', icon: 'warning_amber' },
   { to: '/timesheets', label: 'Timesheets', icon: 'schedule' },
@@ -72,7 +74,10 @@ const visibleNavigation = computed(() => navigation.filter(item =>
   (!item.adminOnly || currentRole.value === 'ADMIN') &&
   (!item.managerOnly || ['ADMIN','PMO','PROJECT_MANAGER'].includes(currentRole.value))));
 
-const pageTitle = computed(() => navigation.find(item => item.to === route.path)?.label || 'PMO Portal');
+const pageTitle = computed(() =>
+  route.path === '/notifications' ? 'Notification Center' :
+  navigation.find(item => item.to === route.path)?.label || 'PMO Portal'
+);
 const currentUser = computed(() => {
   route.path;
   try {
