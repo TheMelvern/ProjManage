@@ -13,8 +13,8 @@
    <div class="card-header"><div><h2>My leave transactions</h2><p>Pending requests do not deduct balances until approved.</p></div>
     <button @click="load">Refresh</button></div>
    <div class="filters">
-     <label>Leave type <select v-model="typeFilter"><option value="">All types</option><option>ANNUAL</option><option>MEDICAL</option><option>EMERGENCY</option><option>UNPAID</option></select></label>
-     <label>Decision <select v-model="statusFilter"><option value="">All statuses</option><option>PENDING</option><option>APPROVED</option><option>REJECTED</option><option>RETURNED</option><option>CANCELLED</option></select></label>
+     <label>Leave type <SmartSelect v-model="typeFilter" aria-label="Leave type filter" :options="[{value:'',label:'All types'},...['ANNUAL','MEDICAL','EMERGENCY','UNPAID'].map(v=>({value:v,label:v}))]" /></label>
+     <label>Decision <SmartSelect v-model="statusFilter" aria-label="Leave status filter" :options="[{value:'',label:'All statuses'},...['PENDING','APPROVED','REJECTED','RETURNED','CANCELLED'].map(v=>({value:v,label:v}))]" /></label>
    </div>
    <p v-if="loading">Loading records…</p>
    <div v-else class="scroll"><table><thead><tr><th>Request ID</th><th>Leave type</th><th>Date range</th><th>Duration</th><th>Approval</th><th>Submitted</th></tr></thead>
@@ -35,6 +35,7 @@
  </main>
 </template>
 <script setup>
+import SmartSelect from '../../../components/SmartSelect.vue';
 import {computed,onMounted,ref} from 'vue';
 import axios from '../../../api/axiosConfig';
 const records=ref([]),balances=ref(null),loading=ref(false),error=ref(''),typeFilter=ref(''),statusFilter=ref('');
