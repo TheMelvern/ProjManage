@@ -1,8 +1,8 @@
 <template>
   <main class="review-page">
     <header class="review-heading">
-      <div><p class="eyebrow">GOVERNANCE / FOUR-EYES CONTROL</p><h1>Approval Center</h1>
-        <p>Independent review for project changes and account onboarding.</p></div>
+      <div><p class="eyebrow">GOVERNANCE / FOUR-EYES CONTROL</p><h1>{{ moduleLabel }} approvals</h1>
+        <p>Review requests and decisions for this module.</p></div>
       <button class="secondary" @click="load">Refresh queue</button>
     </header>
     <p v-if="error" class="feedback error" role="alert">{{ error }}</p>
@@ -23,7 +23,7 @@
       <div v-else class="table-wrap"><table><thead><tr><th>Reference</th><th>Module</th><th>Maker</th><th>Summary</th><th>Status</th><th>Checker</th><th>Action</th></tr></thead>
         <tbody><tr v-for="review in filtered" :key="review.id">
           <td class="mono">{{ review.id.slice(0,8) }}</td>
-          <td>{{ review.kind === 'REGISTRATION' ? 'Account registration' : 'Project delivery' }}</td>
+          <td>{{ labelKind(review.kind) }}</td>
           <td><span class="avatar">{{ initials(review.makerName) }}</span>{{ review.makerName || 'Applicant' }}</td>
           <td>{{ review.summary }}</td>
           <td><span class="status" :class="review.status.toLowerCase()">{{ review.status }}</span></td>
@@ -49,8 +49,17 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import axios from '../../../api/axiosConfig';
+const props=defineProps({ module:{type:String,required:true} });
+const kindGroups={
+  projects:['PROJECT_CREATE','PROJECT_UPDATE','TASK_CREATE','TASK_UPDATE'],
+  raid:['RISK_CREATE','RISK_UPDATE','ISSUE_CREATE','ISSUE_UPDATE','DECISION_CREATE','ACTION_CREATE','ACTION_UPDATE'],
+  timesheets:['TIMESHEET_CREATE'],reports:['REPORT_PUBLISH'],leave:['LEAVE_REQUEST'],
+  admin:['REGISTRATION','PARAMETER_UPDATE','MEMBERSHIP_UPDATE']
+};
+const moduleLabel=computed(()=>({projects:'Project',raid:'RAID',timesheets:'Timesheet',reports:'Report',leave:'Leave',admin:'Administration'})[props.module]||'Module');
+const labelKind=kind=>String(kind||'').replaceAll('_',' ').toLowerCase().replace(/\b\w/g,c=>c.toUpperCase());
 const reviews = ref([]), loading = ref(false), busy = ref(false), error = ref(''), notice = ref('');
 const selectedId = ref(''), comment = ref(''), filter = ref('ALL');
 const selected = computed(() => reviews.value.find(r => r.id === selectedId.value));
@@ -67,7 +76,7 @@ const initials = value => value ? String(value).trim().split(/\\s+/).slice(0,2).
 function describe(e) { const m=e.response?.data?.message; return Array.isArray(m)?m.join(', '):m||e.message||'Request failed'; }
 async function load() {
   error.value = ''; loading.value = true;
-  try { reviews.value = (await axios.get('/reviews')).data.data; }
+  try { const items=(await axios.get('/reviews')).data.data; reviews.value=items.filter(r=>(kindGroups[props.module]||[]).includes(r.kind)); if(!reviews.value.some(r=>r.id===selectedId.value))selectedId.value=''; }
   catch(e) { error.value = describe(e); }
   finally { loading.value = false; }
 }
@@ -83,9 +92,10 @@ async function decide(decision) {
   finally { busy.value = false; }
 }
 onMounted(load);
+watch(()=>props.module,()=>{selectedId.value='';load();});
 </script>
 <style scoped>
 .person{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
-.review-page{background:#f4f7fb;min-height:100vh;padding:32px;display:grid;gap:22px;align-content:start;color:#18253c}.review-heading{display:flex;justify-content:space-between;align-items:center;gap:16px}.review-heading h1{font-size:30px;margin:6px 0}.review-heading p:not(.eyebrow){color:#64748b}.eyebrow{font-size:11px;letter-spacing:.08em;font-weight:800;color:#315ac4}.review-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:15px}.review-card{background:#fff;border:1px solid #e5ebf4;padding:24px;border-radius:16px}.metric{display:grid;gap:10px}.metric small{color:#64748b}.metric strong{font-size:30px}.rules{background:#eef3fe}.rules h2{color:#315ac4}.rules p,.info{color:#66758b;font-size:13px}.review-card h2{font-size:18px;margin:0 0 12px}.section-title{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:16px}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;text-align:left}th{background:#f0f3f8;font-size:11px;color:#65748b;padding:14px}td{border-bottom:1px solid #eef1f6;font-size:12px;padding:14px;white-space:nowrap}.mono{font-family:monospace}.avatar{display:inline-grid;place-items:center;border-radius:50%;height:29px;width:29px;margin-right:8px;background:#e6edfd;color:#315ac4;font-size:10px;font-weight:800}.status{font-size:10px;font-weight:800;padding:7px 10px;border-radius:20px;background:#eef2f7;color:#56677e}.status.pending{background:#fff1d7;color:#99661a}.status.approved{background:#e0f6ed;color:#197957}.status.rejected{background:#ffe8ed;color:#a63450}.status.returned{background:#fef2dc;color:#99661a}select,textarea{border:1px solid #d8e1ec;border-radius:9px;padding:10px;background:#f7f9fc;color:#18253c;font:inherit}.decision label{display:block;font-size:12px;font-weight:700;margin:16px 0 8px}.decision textarea{display:block;width:100%}.review-actions{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}button{cursor:pointer;border:0;border-radius:10px;background:#315ac4;color:#fff;font-weight:700;padding:11px 15px}button:disabled{opacity:.5;cursor:not-allowed}button.secondary{background:#edf2fb;color:#315ac4}button.danger{background:#ffe5eb;color:#a7314e}.text-button{background:none;color:#315ac4;padding:6px}.feedback{background:#e6f7ed;color:#157a57;padding:12px;border-radius:9px}.feedback.error{background:#ffe9ed;color:#a02a47}.diff pre{white-space:pre-wrap;background:#f6f8fc;border-radius:9px;padding:15px;font-size:12px}.empty{color:#64748b;padding:25px 0}
+.review-page{background:#f4f7fb;min-height:calc(100vh - 60px);padding:32px;display:grid;gap:22px;align-content:start;color:#18253c}.review-heading{display:flex;justify-content:space-between;align-items:center;gap:16px}.review-heading h1{font-size:30px;margin:6px 0}.review-heading p:not(.eyebrow){color:#64748b}.eyebrow{font-size:11px;letter-spacing:.08em;font-weight:800;color:#315ac4}.review-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:15px}.review-card{background:#fff;border:1px solid #e5ebf4;padding:24px;border-radius:16px}.metric{display:grid;gap:10px}.metric small{color:#64748b}.metric strong{font-size:30px}.rules{background:#eef3fe}.rules h2{color:#315ac4}.rules p,.info{color:#66758b;font-size:13px}.review-card h2{font-size:18px;margin:0 0 12px}.section-title{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:16px}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;text-align:left}th{background:#f0f3f8;font-size:11px;color:#65748b;padding:14px}td{border-bottom:1px solid #eef1f6;font-size:12px;padding:14px;white-space:nowrap}.mono{font-family:monospace}.avatar{display:inline-grid;place-items:center;border-radius:50%;height:29px;width:29px;margin-right:8px;background:#e6edfd;color:#315ac4;font-size:10px;font-weight:800}.status{font-size:10px;font-weight:800;padding:7px 10px;border-radius:20px;background:#eef2f7;color:#56677e}.status.pending{background:#fff1d7;color:#99661a}.status.approved{background:#e0f6ed;color:#197957}.status.rejected{background:#ffe8ed;color:#a63450}.status.returned{background:#fef2dc;color:#99661a}select,textarea{border:1px solid #d8e1ec;border-radius:9px;padding:10px;background:#f7f9fc;color:#18253c;font:inherit}.decision label{display:block;font-size:12px;font-weight:700;margin:16px 0 8px}.decision textarea{display:block;width:100%}.review-actions{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}button{cursor:pointer;border:0;border-radius:10px;background:#315ac4;color:#fff;font-weight:700;padding:11px 15px}button:disabled{opacity:.5;cursor:not-allowed}button.secondary{background:#edf2fb;color:#315ac4}button.danger{background:#ffe5eb;color:#a7314e}.text-button{background:none;color:#315ac4;padding:6px}.feedback{background:#e6f7ed;color:#157a57;padding:12px;border-radius:9px}.feedback.error{background:#ffe9ed;color:#a02a47}.diff pre{white-space:pre-wrap;background:#f6f8fc;border-radius:9px;padding:15px;font-size:12px}.empty{color:#64748b;padding:25px 0}
 @media(max-width:900px){.review-metrics{grid-template-columns:repeat(2,1fr)}.review-page{padding:20px}}@media(max-width:520px){.review-metrics{grid-template-columns:1fr 1fr}.review-heading{align-items:flex-start;flex-direction:column}}
 </style>
