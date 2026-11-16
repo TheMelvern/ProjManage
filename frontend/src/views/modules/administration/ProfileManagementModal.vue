@@ -41,6 +41,26 @@
             </div>
             <div class="profile-actions"><button type="submit" :disabled="busy || !name || name === profile.name">{{ busy ? 'Saving…' : 'Save changes' }}</button></div>
           </form>
+          <section class="profile-section appearance-section">
+            <div class="section-heading"><h3>Appearance</h3><p>Your theme follows you across modules and devices after sign-in.</p></div>
+            <fieldset class="appearance-fieldset"><legend>Display mode</legend>
+              <div class="appearance-options">
+                <button v-for="mode in modes" :key="mode.value" type="button" :disabled="busy" :aria-pressed="appearance.themeMode === mode.value" @click="chooseAppearance('themeMode',mode.value)">
+                  <span class="material-symbols-outlined" aria-hidden="true">{{ mode.icon }}</span>{{ mode.label }}
+                </button>
+              </div>
+            </fieldset>
+            <fieldset class="appearance-fieldset"><legend>Accent color</legend>
+              <div class="accent-options">
+                <button v-for="accent in accents" :key="accent.value" type="button" :disabled="busy" :aria-pressed="appearance.accentColor === accent.value" :aria-label="accent.label" :title="accent.label" @click="chooseAppearance('accentColor',accent.value)">
+                  <span class="accent-swatch" :style="{ background: accent.color }"><span v-if="appearance.accentColor === accent.value" class="material-symbols-outlined" aria-hidden="true">check</span></span>
+                  <small>{{ accent.label }}</small>
+                </button>
+              </div>
+            </fieldset>
+            <p class="profile-hint">Changes preview instantly. Save to keep them on your account.</p>
+            <div class="profile-actions"><button type="button" :disabled="busy || !appearanceDirty" @click="saveAppearancePreferences">{{ busy ? 'Saving…' : 'Save appearance' }}</button></div>
+          </section>
           <form class="profile-section" @submit.prevent="changePassword">
             <div class="section-heading"><h3>Change password</h3><p>For security, changing your password signs out other sessions and this device.</p></div>
             <label for="profile-current-password">Current password</label>
@@ -58,17 +78,34 @@
   </div>
 </template>
 <script setup>
-import { computed, nextTick, onMounted, ref } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
 import axios from '../../../api/axiosConfig';
+import { applyAppearance, saveAppearance, APPEARANCE_MODES, ACCENT_COLORS } from '../../../utils/appearance';
 const emit=defineEmits(['close','updated','password-changed']);
 const dialog=ref(null),profile=ref({}),name=ref(''),loading=ref(true),busy=ref(false),error=ref(''),notice=ref('');
 const currentPassword=ref(''),newPassword=ref(''),confirmPassword=ref('');
+const appearance=ref({themeMode:'system',accentColor:'blue'});
+const savedAppearance=ref({themeMode:'system',accentColor:'blue'});
+const modes=[{value:'system',label:'System',icon:'devices'},{value:'light',label:'Light',icon:'light_mode'},{value:'dark',label:'Dark',icon:'dark_mode'}].filter(x=>APPEARANCE_MODES.includes(x.value));
+const accents=[{value:'blue',label:'Blue',color:'#0071E3'},{value:'graphite',label:'Graphite',color:'#667085'},{value:'purple',label:'Purple',color:'#805AD5'},{value:'teal',label:'Teal',color:'#158C8C'},{value:'green',label:'Green',color:'#26865E'},{value:'rose',label:'Rose',color:'#CA647C'}].filter(x=>ACCENT_COLORS.includes(x.value));
+const appearanceDirty=computed(()=>appearance.value.themeMode!==savedAppearance.value.themeMode || appearance.value.accentColor!==savedAppearance.value.accentColor);
+function chooseAppearance(key,value){appearance.value={...appearance.value,[key]:value};applyAppearance(appearance.value);}
+async function saveAppearancePreferences(){busy.value=true;error.value='';notice.value='';
+  try{const updated=(await axios.patch('/profile/appearance',appearance.value)).data.data;
+    const clean=saveAppearance(profile.value.id,updated);appearance.value={...clean};savedAppearance.value={...clean};
+    profile.value={...profile.value,...updated};emit('updated',updated);notice.value='Appearance preferences saved.';
+  }catch(e){error.value=describe(e);}finally{busy.value=false;}
+}
+function restoreUnsavedAppearance(){if(appearanceDirty.value)applyAppearance(savedAppearance.value);}
+
 const initials=computed(()=>String(name.value||profile.value.email||'PM').split(/[\s@.]+/).slice(0,2).map(x=>x.slice(0,1).toUpperCase()).join(''));
 const formatRole=value=>String(value||'MEMBER').replaceAll('_',' ').toLowerCase().replace(/\b\w/g,c=>c.toUpperCase());
 const describe=e=>{const m=e.response?.data?.message;return Array.isArray(m)?m.join(', '):m||e.message||'Unable to update profile';};
 async function load(){
   loading.value=true;error.value='';
-  try{profile.value=(await axios.get('/profile')).data.data;name.value=profile.value.name;}
+  try{profile.value=(await axios.get('/profile')).data.data;name.value=profile.value.name;
+    savedAppearance.value={themeMode:profile.value.themeMode||'system',accentColor:profile.value.accentColor||'blue'};
+    appearance.value={...savedAppearance.value};applyAppearance(appearance.value);}
   catch(e){error.value=describe(e);}finally{loading.value=false;}
 }
 async function saveProfile(){
@@ -110,6 +147,7 @@ async function changePassword(){
   }catch(e){error.value=describe(e);}finally{busy.value=false;}
 }
 onMounted(async()=>{await nextTick();dialog.value?.focus();await load();});
+onUnmounted(restoreUnsavedAppearance);
 </script>
 <style scoped>
 .profile-overlay{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:20px;background:#10213e99;backdrop-filter:blur(3px)}
@@ -144,4 +182,7 @@ onMounted(async()=>{await nextTick();dialog.value?.focus();await load();});
 .profile-message.success{background:#e4f6eb;color:#14784c}
 .profile-foot{padding:15px 28px;border-top:1px solid #e8edf5;display:flex;justify-content:flex-end}
 @media(max-width:600px){.profile-overlay{padding:10px}.profile-head{padding:20px}.profile-content{padding:18px 20px}.profile-foot{padding:14px 20px}.profile-grid{grid-template-columns:1fr}}
+.appearance-fieldset{padding:0;margin:8px 0 12px;border:0}.appearance-fieldset legend{font-size:12px;font-weight:750;margin-bottom:10px;color:var(--pmo-text,#26344c)}
+.appearance-options,.accent-options{display:flex;flex-wrap:wrap;gap:10px}.profile-modal .appearance-options button{display:flex;align-items:center;gap:9px;padding:12px 17px!important;background:var(--pmo-surface-alt,#f0f4fb)!important;color:var(--pmo-text,#253651)!important;border:1px solid var(--pmo-border,#d9e2ef)!important}
+.profile-modal .appearance-options button[aria-pressed=true]{border:2px solid var(--pmo-accent,#0071e3)!important;color:var(--pmo-accent,#0071e3)!important}.appearance-options .material-symbols-outlined{font-size:18px}.profile-modal .accent-options button{background:transparent!important;color:var(--pmo-text,#273956)!important;display:grid;justify-items:center;padding:5px!important;gap:6px;border:0!important}.accent-swatch{height:39px;width:39px;border-radius:13px;display:grid;place-items:center;border:2px solid transparent}.accent-swatch .material-symbols-outlined{color:#fff;font-size:19px}.accent-options button[aria-pressed=true] .accent-swatch{outline:2px solid var(--pmo-accent,#0071e3);outline-offset:3px}.accent-options small{font-size:10px}
 </style>
