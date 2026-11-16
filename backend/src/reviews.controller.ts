@@ -7,7 +7,7 @@ import { PrismaService } from './prisma.service';
 import { parseHolidays, workdays } from './workflow-modules.controller';
 import { ThrottleService } from './throttle.service';
 import { EmailTokenService } from './email-token.service';
-import { notifyReviewers } from './review-notifications';
+import { notifyReviewers, reviewApprovalPath } from './review-notifications';
 import type { Request } from 'express';
 
 class RegisterDto {
@@ -63,7 +63,7 @@ export class RegistrationController {
         payload: { email, name: input.name.trim(), passwordHash }
       }
     });
-    await notifyReviewers(this.prisma, org.id, null, 'New account registration awaiting approval', true);
+    await notifyReviewers(this.prisma, org.id, null, 'New account registration awaiting approval', true, 'REGISTRATION');
     return { success: true, data: { id: request.id, status: request.status, message: 'Registration submitted for administrator approval' } };
   }
 }
@@ -140,7 +140,7 @@ export class ReviewsController {
       organizationId: req.principal.organizationId, actorId: req.principal.userId,
       action: 'REVIEW_SUBMITTED', entityType: 'PROJECT_UPDATE', entityId: change.id
     } });
-    await notifyReviewers(this.prisma, req.principal.organizationId, req.principal.userId, change.summary);
+    await notifyReviewers(this.prisma, req.principal.organizationId, req.principal.userId, change.summary, false, 'PROJECT_UPDATE');
     return { success: true, data: safeRequest(change) };
   }
 
@@ -390,7 +390,7 @@ export class ReviewsController {
           kind: 'REVIEW_DECISION',
           title: 'Request ' + body.decision.toLowerCase(),
           body: review.summary.slice(0, 350),
-          link: '/approvals'
+          link: reviewApprovalPath(review.kind)
         } });
       }
       return updated;
