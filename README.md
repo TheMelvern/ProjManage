@@ -57,3 +57,20 @@ npm run dev
 GitHub Actions runs the frontend build, frontend production dependency audit, real PostgreSQL migrations and API integration, and Chromium browser E2E (desktop and mobile screenshot artifacts). See [verification](docs/qa/verification.md), [Framer parity map](docs/framer-parity-implementation.md) and [operations and PostgreSQL backup/restore](docs/operations-and-backups.md).
 
 **Scope boundary:** This is a locally verified PMO application, not a certified public SaaS. Before internet-facing production launch, deploy with HTTPS and secret management, configure email ownership verification/MFA, use a distributed rate limiter, audit role/project access in your organization, add public-holiday and accrual policies, full WCAG/Firefox/WebKit coverage, notifications, monitoring/backups, and a production security review. Automatic deployment remains disabled. The intentionally retired legacy mock-only claims/invoice/wiki screens are recoverable via Git history, not active modules.
+
+
+## Adaptive Premium appearance
+
+The app supports **System**, **Light**, and **Dark** modes and six accent colors (Blue, Graphite, Purple, Teal, Green, Rose). Each authenticated user can set a preference in the top-right **Profile → Appearance** section. Selections preview immediately, and **Save appearance** persists them through `PATCH /api/profile/appearance` to the user's account. Unsaved preview changes are rolled back when the dialog closes. Saved settings restore after sign-in or refresh, and follow the device theme when System is selected. Project health, risk, and validation colors remain semantic rather than being repainted by the selected accent.
+
+To upgrade a local installation after pulling this change, run the usual database migration and Prisma generation before restarting the API:
+
+```powershell
+cd backend
+npm run db:deploy
+npm run db:generate
+npm run build
+npm run dev
+```
+
+The navigation labels the existing administrator configuration entry **Parameters**; maker–checker approvals remain available as tabs within each module. **Sign out** remains at the bottom of the sidebar and the profile editor stays in the topbar.
