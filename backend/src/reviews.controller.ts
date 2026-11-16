@@ -242,9 +242,9 @@ export class ReviewsController {
             const current = await tx.task.findFirst({ where: { id: targetId, projectId } });
             assertVersion(current);
             await tx.task.update({ where: { id: targetId }, data: {
-              title: str('title'), description: str('description'),
-              dueDate: date('dueDate'), startDate: date('startDate'),
-              itemType: str('itemType'), priority: str('priority'), phase: str('phase'),
+              title: str('title'), description: values.description === null ? null : str('description'),
+              dueDate: values.dueDate === null ? null : date('dueDate'), startDate: values.startDate === null ? null : date('startDate'),
+              itemType: str('itemType'), priority: str('priority'), phase: values.phase === null ? null : str('phase'),
               parentId: values.parentId === null ? null : str('parentId'),
               dependsOnId: values.dependsOnId === null ? null : str('dependsOnId'), status: str('status') as any
             } });
