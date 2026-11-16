@@ -13,8 +13,7 @@
         <tbody><tr v-for="person in visiblePeople" :key="person.userId">
           <td><span class="person"><span class="avatar">{{ initials(person.name) }}</span><strong>{{ person.name }}</strong></span></td>
           <td>{{ person.email }}</td><td><span class="role">{{ person.role }}</span></td>
-          <td><select :aria-label="'Role for '+person.name" :value="draftRoles[person.membershipId] || person.role" @change="draftRoles[person.membershipId] = $event.target.value">
-            <option v-for="role in roles" :key="role" :value="role">{{ role }}</option></select></td>
+          <td><SmartSelect :aria-label="'Role for '+person.name" :model-value="draftRoles[person.membershipId] || person.role" :options="roles.map(role=>({value:role,label:role}))" @change="draftRoles[person.membershipId] = $event" /></td>
           <td><button :disabled="busy || (draftRoles[person.membershipId] || person.role) === person.role"
             @click="propose(person)">Submit for check</button></td>
         </tr><tr v-if="!visiblePeople.length"><td colspan="5">No matching members.</td></tr></tbody>
@@ -32,6 +31,7 @@
   </main>
 </template>
 <script setup>
+import SmartSelect from '../../../components/SmartSelect.vue';
 import { computed,onMounted,ref } from 'vue';
 import axios from '../../../api/axiosConfig';
 const people=ref([]),reviews=ref([]),draftRoles=ref({}),search=ref(''),loading=ref(false),busy=ref(false),error=ref(''),notice=ref('');
