@@ -41,13 +41,6 @@
         </article></div>
       </section>
     </div>
-    <section class="card linked"><h2>Connected workflows</h2><div class="related">
-      <router-link to="/workspace">Project delivery</router-link>
-      <router-link to="/timesheets">Project timesheets</router-link>
-      <router-link to="/approvals">Maker–checker queue</router-link>
-      <router-link to="/admin/parameters">Leave policy settings</router-link>
-      <router-link to="/leave/team">Team availability calendar</router-link>
-    </div></section>
   </main>
 </template>
 <script setup>

@@ -12,7 +12,6 @@ import AuditLog from './views/modules/administration/AuditLog.vue';
 import TeamAvailability from './views/modules/people/TeamAvailability.vue';
 import LeaveRecords from './views/modules/people/LeaveRecords.vue';
 import DetailWorkspace from './views/modules/projects/DetailWorkspace.vue';
-import ConnectedWorkflows from './views/modules/administration/ConnectedWorkflows.vue';
 import NotificationCenter from './views/modules/administration/NotificationCenter.vue';
 import PortfolioOverview from './views/modules/projects/pmoDashboard/PortfolioOverview.vue';
 import ProjectWorkspace from './views/modules/projects/ProjectWorkspace.vue';
@@ -35,7 +34,6 @@ const router = createRouter({
     { path: '/notifications', name: 'Notifications', component: NotificationCenter },
     { path: '/approvals', name: 'Approvals', component: ReviewCenter },
     { path: '/approvals/detail', name: 'ApprovalDetail', component: ReviewCenter },
-    { path: '/workflows', name: 'ConnectedWorkflows', component: ConnectedWorkflows },
     { path: '/leave', name: 'Leave', component: LeaveTracker },
     { path: '/leave/records', name: 'LeaveRecords', component: LeaveRecords },
     { path: '/leave/approvals', name: 'LeaveApprovals', component: TeamAvailability },

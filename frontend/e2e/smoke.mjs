@@ -64,8 +64,29 @@ try {
   await page.getByRole('button',{name:/Sign In/i}).click();
   await page.waitForURL('**/#/portfolio',{timeout:15000});
   await page.getByRole('heading',{name:'Portfolio Overview'}).waitFor();
+  // Profile badge opens management, and sidebar navigation scrolls independently.
+  const sidebar = page.getByRole('complementary',{name:'Primary navigation'});
+  const nav = sidebar.getByRole('navigation',{name:'PMO modules'});
+  const navOverflow = await nav.evaluate(el=>getComputedStyle(el).overflowY);
+  assert.equal(navOverflow,'auto','Sidebar navigation must scroll within the fixed sidebar');
+  const sidebarHeight = await sidebar.evaluate(el=>Math.round(el.getBoundingClientRect().height));
+  assert.equal(sidebarHeight,900,'Desktop sidebar must span the viewport height');
+  assert.ok(await sidebar.getByRole('button',{name:'Sign out'}).isVisible());
+  assert.equal(await page.getByRole('link',{name:'Connected workflows'}).count(),0);
+  await page.getByRole('button',{name:/Manage profile for/}).click();
+  const profileDialog = page.getByRole('dialog',{name:'Profile management'});
+  await profileDialog.waitFor();
+  await profileDialog.getByLabel('Full name').fill('PMO Browser Administrator');
+  await profileDialog.getByRole('button',{name:'Save changes'}).click();
+  await profileDialog.getByText('Profile updated successfully.').waitFor();
+  await page.getByRole('button',{name:/Manage profile for PMO Browser Administrator/}).waitFor();
+  await profileDialog.getByLabel('Full name').fill('PMO Administrator');
+  await profileDialog.getByRole('button',{name:'Save changes'}).click();
+  await profileDialog.getByText('Profile updated successfully.').waitFor();
+  await profileDialog.getByRole('button',{name:'Close profile management'}).click();
+  assert.equal(await page.getByRole('dialog',{name:'Profile management'}).count(),0);
+
   // Shared shell: signout belongs in sidebar; profile and notifications stay in topbar.
-  const sidebar=page.getByRole('complementary',{name:'Primary navigation'});
   const topbar=page.locator('.app-topbar');
   assert.equal(await sidebar.getByRole('button',{name:'Sign out'}).count(),1);
   assert.equal(await topbar.getByRole('button',{name:'Sign out'}).count(),0);
@@ -142,6 +163,8 @@ try {
 
   await page.getByRole('link',{name:/Leave Tracker/}).click();
   await page.getByRole('heading',{name:'Leave Tracker Management'}).waitFor();
+  assert.equal(await page.getByRole('heading',{name:'Connected workflows'}).count(),0);
+
   await page.getByLabel('Leave type').selectOption('ANNUAL');
   await page.getByLabel('Start date').fill('2026-12-20');
   await page.getByLabel('End date').fill('2026-12-21');
@@ -180,6 +203,10 @@ try {
   await mobile.getByRole('button',{name:/Sign In/i}).click();
   await mobile.waitForURL('**/#/portfolio',{timeout:15000});
   await mobile.getByRole('button',{name:'Toggle navigation'}).click();
+  const mobileNav = mobile.getByRole('complementary',{name:'Primary navigation'}).getByRole('navigation',{name:'PMO modules'});
+  assert.equal(await mobileNav.evaluate(el=>getComputedStyle(el).overflowY),'auto');
+  assert.ok(await mobile.getByRole('button',{name:'Sign out'}).isVisible());
+
   assert.ok(await mobile.locator('.sidebar-signout').isVisible(),'Sign out should be accessible in mobile navigation');
   assert.equal(await mobile.getByRole('complementary',{name:'Primary navigation'}).getByRole('link',{name:'Notification Center'}).count(),0);
 

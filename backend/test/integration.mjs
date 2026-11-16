@@ -88,6 +88,20 @@ try {
   await db.membership.create({data:{userId:outsiderUser.id,organizationId:outsiderOrg.id,role:'MEMBER'}});
   const outsider=await login(outsiderUser.email,'outsider-password-1234');
 
+  // Profile API limits modifications to the current authenticated identity.
+  await request('GET', '/profile', null, undefined, 401);
+  const account = (await request('GET', '/profile', member, undefined, 200)).data;
+  assert.equal(account.id, memberUser.id);
+  assert.equal(account.email, memberUser.email);
+  assert.equal(account.organization, organization.name);
+  assert.equal(account.passwordHash, undefined);
+  await request('PATCH', '/profile', member, {name:' '}, 400);
+  const renamed = (await request('PATCH', '/profile', member, {name:'Updated Team Member'}, 200)).data;
+  assert.equal(renamed.name, 'Updated Team Member');
+  assert.equal((await request('GET','/profile',member,undefined,200)).data.name, 'Updated Team Member');
+  assert.equal((await request('GET','/profile',outsider,undefined,200)).data.id, outsiderUser.id);
+  await request('PATCH', '/profile', member, {name:'Team Member'}, 200);
+
   // Notification endpoints reject anonymous and tenant-crossing access.
   await request('GET','/notifications',null,undefined,401);
   const emptyInbox=(await request('GET','/notifications',member,undefined,200)).data;
@@ -351,5 +365,18 @@ try {
   await request('POST','/auth/login',null,{
     email:lockedUser.email,password:'correct-password-1234'
   },429);
+  // Password changes require current-password proof and invalidate prior JWTs.
+  await request('POST','/profile/change-password',outsider,{
+    currentPassword:'not-correct',newPassword:'changed-password-123456'
+  },401);
+  await request('POST','/profile/change-password',outsider,{
+    currentPassword:'outsider-password-1234',newPassword:'changed-password-123456'
+  },201);
+  await request('GET','/profile',outsider,undefined,401);
+  await request('POST','/auth/login',null,{
+    email:outsiderUser.email,password:'outsider-password-1234'
+  },401);
+  const updatedOutsider=await login(outsiderUser.email,'changed-password-123456');
+  assert.equal((await request('GET','/profile',updatedOutsider,undefined,200)).data.id,outsiderUser.id);
   console.log('PASS: tenant isolation, registration, projects/tasks, RAID, timesheets, reports, leave, parameters, users, role approvals, audit, JWT revocation');
 } finally { await db.$disconnect(); await new Promise(resolve=>mailServer.close(resolve)); }
