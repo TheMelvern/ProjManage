@@ -37,7 +37,7 @@ import { onMounted, ref } from 'vue';
 import axios from '../../../api/axiosConfig';
 const items=ref([]),unread=ref(0),loading=ref(false),busy=ref(false),error=ref('');
 const formatDate=value=>new Date(value).toLocaleString();
-const safeLink=link=>typeof link==='string'&&['/approvals','/leave','/projects','/reports','/timesheets','/admin/users'].includes(link);
+const safeLink=link=>typeof link==='string'&&['/approvals','/projects/approvals','/raid/approvals','/timesheets/approvals','/leave/approvals','/reports/approvals','/admin/approvals','/leave','/projects','/reports','/timesheets','/admin/users'].includes(link);
 function message(err){const v=err.response?.data?.message;return Array.isArray(v)?v.join(', '):v||err.message||'Notification action failed';}
 async function refresh(){loading.value=true;error.value='';try{
  const result=(await axios.get('/notifications')).data.data;
