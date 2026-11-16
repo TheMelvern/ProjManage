@@ -14,11 +14,24 @@ async function request(path,token,method='GET',body) {
 const checker=(await request('/auth/login',null,'POST',{
   email:'checker@pmo.test',password:'checker-test-password-123'
 })).accessToken;
+// Review decisions must use the same module-scoped queues as the workflow tabs.
+const approvalKinds={
+  projects:['PROJECT_CREATE','PROJECT_UPDATE','TASK_CREATE','TASK_UPDATE'],
+  raid:['RISK_CREATE','RISK_UPDATE','ISSUE_CREATE','ISSUE_UPDATE','DECISION_CREATE','ACTION_CREATE','ACTION_UPDATE'],
+  timesheets:['TIMESHEET_CREATE'],
+  reports:['REPORT_PUBLISH'],
+  leave:['LEAVE_REQUEST'],
+  admin:['REGISTRATION','PARAMETER_UPDATE','MEMBERSHIP_UPDATE']
+};
 async function approve(kind,matching) {
-  const rows=await request('/reviews',checker);
+  const module=Object.keys(approvalKinds).find(key=>approvalKinds[key].includes(kind));
+  assert.ok(module,'Missing approval module mapping for '+kind);
+  const rows=await request('/reviews?module='+encodeURIComponent(module),checker);
+  assert.ok(rows.every(r=>approvalKinds[module].includes(r.kind)),
+    module+' approval queue must exclude other modules');
   const review=rows.find(r=>r.kind===kind && r.status==='PENDING' &&
     (!matching || r.summary.includes(matching)));
-  assert.ok(review,'Missing pending '+kind+' '+(matching||''));
+  assert.ok(review,'Missing pending '+kind+' '+(matching||'')+' in '+module);
   const approved=await request('/reviews/'+review.id+'/decision',checker,'POST',{decision:'APPROVED'});
   assert.equal(approved.status,'APPROVED');
 }
