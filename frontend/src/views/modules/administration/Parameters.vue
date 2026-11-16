@@ -8,7 +8,6 @@
       <div><span>Pending proposals</span><strong>{{ pending.length }}</strong><small>Awaiting a second administrator</small></div>
       <div><span>Configuration scope</span><strong>ORG</strong><small>Tenant-specific settings</small></div>
     </section>
-    <nav class="admin-crosslinks" aria-label="Administration navigation"><router-link to="/admin/users">Users & Roles</router-link><router-link to="/admin/audit">Audit & Security</router-link><router-link to="/admin/workflows">Workflow Parameters</router-link><router-link to="/approvals">Approval Center</router-link></nav>
     <div class="columns">
       <section class="card">
         <h2>Organization settings</h2><p>Submit proposed values for maker–checker approval.</p>
@@ -37,13 +36,8 @@
           <strong>{{ item.summary }}</strong><span class="pending-pill">{{ item.status }}</span>
           <small>Proposed by {{ item.makerId?.slice(0,8) }}</small>
         </div></div>
-        <router-link class="review-link" to="/approvals">Open independent approval queue →</router-link>
       </section>
     </div>
-    <section class="card">
-      <h2>Connected administration workflows</h2>
-      <div class="linked"><router-link to="/approvals">Approval Center</router-link><router-link to="/leave">Leave Tracker</router-link><router-link to="/raid">Risk Management</router-link><router-link to="/reports">Portfolio Reports</router-link></div>
-    </section>
   </main>
 </template>
 <script setup>
