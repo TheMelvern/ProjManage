@@ -208,17 +208,45 @@ export class ReviewsController {
             if (!record || record.updatedAt.toISOString() !== version)
               throw new ConflictException('Source record changed. Re-submit your proposal');
           };
+          if (review.kind === 'TASK_CREATE' || review.kind === 'TASK_UPDATE') {
+            // Recheck relationships at approval time, not just when proposed.
+            const refs = [str('parentId'), str('dependsOnId')].filter((v): v is string => !!v);
+            if (refs.length) {
+              const matching = await tx.task.findMany({ where: { projectId, id: { in: refs } },
+                select: { id: true, parentId: true, dependsOnId: true } });
+              if (matching.length !== new Set(refs).size) throw new ConflictException('Related work items are no longer available');
+              if (review.kind === 'TASK_UPDATE') {
+                const all = await tx.task.findMany({ where: { projectId }, select: { id: true, parentId: true, dependsOnId: true } });
+                for (const id of refs) {
+                  const seen = new Set<string>();
+                  const queue = [id];
+                  while (queue.length) {
+                    const current = queue.pop()!;
+                    if (current === targetId) throw new ConflictException('Circular work item relationship');
+                    if (seen.has(current)) continue;
+                    seen.add(current);
+                    const node = all.find(t => t.id === current);
+                    if (node?.parentId) queue.push(node.parentId);
+                    if (node?.dependsOnId) queue.push(node.dependsOnId);
+                  }
+                }
+              }
+            }
+          }
           if (review.kind === 'TASK_CREATE') {
             await tx.task.create({ data: { projectId, title: str('title')!,
               description: str('description'), dueDate: date('dueDate'), startDate: date('startDate'),
-              itemType: str('itemType') || 'TASK', priority: str('priority') || 'MEDIUM', phase: str('phase') } });
+              itemType: str('itemType') || 'TASK', priority: str('priority') || 'MEDIUM', phase: str('phase'),
+              parentId: str('parentId'), dependsOnId: str('dependsOnId') } });
           } else if (review.kind === 'TASK_UPDATE') {
             const current = await tx.task.findFirst({ where: { id: targetId, projectId } });
             assertVersion(current);
             await tx.task.update({ where: { id: targetId }, data: {
               title: str('title'), description: str('description'),
               dueDate: date('dueDate'), startDate: date('startDate'),
-              itemType: str('itemType'), priority: str('priority'), phase: str('phase'), status: str('status') as any
+              itemType: str('itemType'), priority: str('priority'), phase: str('phase'),
+              parentId: values.parentId === null ? null : str('parentId'),
+              dependsOnId: values.dependsOnId === null ? null : str('dependsOnId'), status: str('status') as any
             } });
           } else if (review.kind === 'RISK_CREATE') {
             await tx.risk.create({ data: { projectId, title: str('title')!,
