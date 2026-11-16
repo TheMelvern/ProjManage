@@ -33,9 +33,9 @@ try {
   assert.equal(layout,'grid','Unified PMO authentication layout CSS was not applied');
   const panel=await page.locator('.auth-form-card').evaluate(el=>getComputedStyle(el).backgroundColor);
   assert.equal(panel,'rgb(255, 255, 255)','Unified PMO login card CSS was not applied');
-  const story=await page.locator('.auth-story').evaluate(el=>getComputedStyle(el).backgroundColor);
-  assert.equal(story,'rgb(20, 34, 61)','PMO navy brand color does not match application sidebar');
-  assert.equal(await page.getByText('Illustrative').isVisible(),true,'Sample dashboard preview must be labelled');
+  assert.equal(await page.locator('.auth-story').isVisible(),false,'SaaS sign-in should use one centered card');
+  const centered=await page.locator('.auth-layout').evaluate(el=>el.getBoundingClientRect());
+  assert.ok(centered.width<=500,'Sign-in card should stay compact and centered');
   const loginType=await page.locator('.auth-form-card h2').evaluate(el=>({
     family:getComputedStyle(el).fontFamily,size:getComputedStyle(el).fontSize,
     weight:Number(getComputedStyle(el).fontWeight)
@@ -76,6 +76,8 @@ try {
   await page.getByRole('button',{name:/Manage profile for/}).click();
   const profileDialog = page.getByRole('dialog',{name:'Profile management'});
   await profileDialog.waitFor();
+  await profileDialog.getByText('Department').waitFor();
+  await profileDialog.getByLabel(/Upload profile picture/).waitFor();
   await profileDialog.getByLabel('Full name').fill('PMO Browser Administrator');
   await profileDialog.getByRole('button',{name:'Save changes'}).click();
   await profileDialog.getByText('Profile updated successfully.').waitFor();
@@ -94,7 +96,7 @@ try {
   assert.equal(await topbar.locator('.user-label, .profile-role').count(),0);
   assert.equal(await sidebar.getByRole('link',{name:'Notification Center'}).count(),0);
   assert.equal(await sidebar.getByRole('link',{name:'Connected Workflows'}).count(),0);
-  assert.equal(await topbar.getByRole('link',{name:'Notification Center'}).count(),1);
+  assert.equal(await topbar.getByRole('button',{name:'Recent notifications'}).count(),1);
 
   const headingSize=await page.getByRole('heading',{name:'Portfolio Overview'}).evaluate(el=>getComputedStyle(el).fontSize);
   assert.equal(headingSize,'30px','Portfolio page title should follow global type scale');
@@ -108,11 +110,14 @@ try {
   const projectHeading=await page.getByRole('heading',{name:'Projects & tasks'}).evaluate(el=>getComputedStyle(el).fontSize);
   assert.equal(projectHeading,headingSize,'Operational module headings should match Portfolio');
   await page.getByText('E2E Delivery Project').first().waitFor({timeout:15000});
+  await page.getByRole('button',{name:'+ Create project'}).click();
   await page.getByLabel('New project name').fill('Approved Browser Project');
   await page.getByRole('button',{name:'Submit project'}).click();
   await page.getByText(/Project proposal submitted/).waitFor({timeout:15000});
   await approve('PROJECT_CREATE','Approved Browser Project');
-  await page.getByRole('link',{name:'Notification Center'}).first().click();
+  await page.getByRole('button',{name:'Recent notifications'}).click();
+  await page.getByRole('dialog',{name:'Recent notifications'}).waitFor();
+  await page.getByRole('link',{name:/View details · Notification Center/}).click();
   await page.getByRole('heading',{name:'Notification Center'}).waitFor();
   await page.getByText('Request approved').first().waitFor({timeout:15000});
   await page.getByRole('button',{name:'Mark all read'}).click();
@@ -181,9 +186,12 @@ try {
 
   await page.getByRole('link',{name:/Leave Tracker/}).click();
   await page.getByRole('heading',{name:'Leave Tracker Management'}).waitFor();
+  assert.equal(await sidebar.getByRole('link',{name:'Team Calendar'}).count(),0);
+  assert.equal(await page.getByRole('navigation',{name:'Leave Tracker tabs'}).getByRole('link',{name:'Team calendar'}).count(),1);
   assert.equal(await page.getByRole('heading',{name:'Connected workflows'}).count(),0);
 
-  await page.getByLabel('Leave type').selectOption('ANNUAL');
+  await page.getByRole('combobox',{name:'Leave type'}).click();
+  await page.getByRole('option',{name:'Annual leave'}).click();
   await page.getByLabel('Start date').fill('2026-12-20');
   await page.getByLabel('End date').fill('2026-12-21');
   await page.getByLabel('Reason / handover details').fill('Browser approved leave');
@@ -232,7 +240,7 @@ try {
   mobile.on('pageerror',e=>errors.push(e.message));
   await mobile.goto('http://localhost:5174/#/login',{waitUntil:'networkidle'});
   const mobileLayout=await mobile.locator('.auth-layout').evaluate(el=>getComputedStyle(el).display);
-  assert.equal(mobileLayout,'block','Mobile login should use a fluid single-column layout');
+  assert.equal(mobileLayout,'grid','Mobile login should keep its centered single-card layout');
   assert.equal(await mobile.locator('.auth-story').isVisible(),false,'Mobile login must hide decorative brand panel');
   await mobile.getByPlaceholder('name@company.com').fill('admin@pmo.test');
   await mobile.getByPlaceholder('••••••••').fill('local-test-password-12345');
