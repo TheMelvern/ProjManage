@@ -7,6 +7,7 @@
       </router-link>
     </nav>
     <ReviewCenter v-if="activeTab === 'approvals'" :module="module" />
+    <TeamAvailability v-else-if="module === 'leave' && activeTab === 'calendar'" />
     <template v-else>
       <Parameters v-if="module === 'admin' && activeTab === 'parameters'" />
       <UserAdmin v-else-if="module === 'admin' && activeTab === 'users'" />
@@ -30,6 +31,7 @@ import ProjectWorkspace from './projects/ProjectWorkspace.vue';
 import RaidWorkspace from './projects/RaidWorkspace.vue';
 import TimesheetWorkspace from './projects/TimesheetWorkspace.vue';
 import LeaveTracker from './people/LeaveTracker.vue';
+import TeamAvailability from './people/TeamAvailability.vue';
 import ReportsView from './projects/reports/ReportsView.vue';
 const props=defineProps({module:{type:String,required:true}});
 const route=useRoute();
@@ -40,12 +42,17 @@ const tabs=computed(()=>props.module==='admin' ? [
   {to:'/admin/users',label:'Users & Roles',key:'users'},
   {to:'/admin/audit',label:'Audit & Security',key:'audit'},
   {to:'/admin/approvals',label:'Approvals',key:'approvals'}
+] : props.module === 'leave' ? [
+  {to:'/leave',label:'My leave',key:'overview'},
+  {to:'/leave/team',label:'Team calendar',key:'calendar'},
+  {to:'/leave/approvals',label:'Approvals',key:'approvals'}
 ] : [
   {to:'/'+props.module,label:'Overview',key:'overview'},
   {to:'/'+props.module+'/approvals',label:'Approvals',key:'approvals'}
 ]);
 const activeTab=computed(()=>route.path.endsWith('/approvals')?'approvals':
-  props.module==='admin' ? route.path.split('/')[2]||'parameters' : 'overview');
+  props.module==='admin' ? route.path.split('/')[2]||'parameters' :
+  props.module==='leave' && route.path==='/leave/team' ? 'calendar' : 'overview');
 </script>
 <style scoped>
 .module-space{min-width:0;min-height:100vh;background:#f4f7fb}
