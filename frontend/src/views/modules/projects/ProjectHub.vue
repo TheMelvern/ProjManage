@@ -14,7 +14,7 @@
     <div class="scroll-table"><table><thead><tr><th>Date</th><th>Team member</th><th>Hours</th><th>Work description</th></tr></thead><tbody><tr v-for="row in entries" :key="row.id"><td>{{date(row.workDate)}}</td><td>{{row.userName||'Team member'}}</td><td>{{Number(row.hours).toFixed(2)}}</td><td>{{row.description||'—'}}</td></tr><tr v-if="!entries.length"><td colspan="4">No approved time entries yet.</td></tr></tbody></table></div>
    </section>
    <section v-if="view==='timeline'" class="panel"><div class="section-title"><h2>Project timeline</h2><span>{{tasks.length}} work items</span></div><p class="hint">Schedule work with start and due dates; bars show each item's span in the selected project period.</p>
-    <div v-if="!datedItems.length" class="empty">No scheduled work yet. Add dates to a story or task to see the timeline.</div>
+    <div v-if="!datedItems.length" class="empty">No scheduled work yet. Add project dates or plan work-item dates to see the timeline.</div>
     <div v-else class="timeline-scroll"><div class="timeline-head"><span>Work item</span><span>{{date(new Date(timelineMin).toISOString())}}</span><span>{{date(new Date(timelineMax).toISOString())}}</span></div><div v-for="item in datedItems" :key="item.id" class="timeline-row"><strong>{{item.title}}</strong><div class="timeline-track"><div class="timeline-bar" :class="item.status.toLowerCase()" :style="barStyle(item)" :title="item.title+' · '+date(item.startDate||item.dueDate)+' → '+date(item.dueDate||item.startDate)"></div></div><small>{{item.phase||item.itemType}}</small></div></div>
    </section>
    <section v-if="view==='backlog'||view==='kanban'||view==='waterfall'" class="panel">
@@ -42,7 +42,10 @@ const projectId=computed(()=>String(route.params.id||''));
 const hours=computed(()=>entries.value.reduce((s,x)=>s+Number(x.hours),0));
 const progress=computed(()=>tasks.value.length?Math.round(tasks.value.filter(x=>x.status==='DONE').length/tasks.value.length*100):0);
 const phases=computed(()=>[...new Set(tasks.value.map(x=>x.phase||'Unassigned'))]);
-const datedItems=computed(()=>tasks.value.filter(x=>x.startDate||x.dueDate).sort((a,b)=>new Date(a.startDate||a.dueDate)-new Date(b.startDate||b.dueDate)));
+const datedItems=computed(()=>[
+  ...(project.value&&(project.value.startDate||project.value.targetEndDate)?[{id:'project-charter',title:project.value.name+' · Project plan',status:project.value.status,itemType:'PROJECT',phase:'Overall project',startDate:project.value.startDate,dueDate:project.value.targetEndDate}]:[]),
+  ...tasks.value.filter(x=>x.startDate||x.dueDate)
+].sort((a,b)=>new Date(a.startDate||a.dueDate)-new Date(b.startDate||b.dueDate)));
 const timelineMin=computed(()=>Math.min(...datedItems.value.map(x=>new Date(x.startDate||x.dueDate).getTime())));
 const timelineMax=computed(()=>Math.max(...datedItems.value.map(x=>new Date(x.dueDate||x.startDate).getTime()),timelineMin.value+86400000));
 const date=v=>v?new Date(v).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'Not set';
