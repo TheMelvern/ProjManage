@@ -6,6 +6,8 @@ import Signup from './views/modules/authentication/Signup.vue';
 import AccountAccess from './views/modules/authentication/AccountAccess.vue';
 import LeaveRecords from './views/modules/people/LeaveRecords.vue';
 import DetailWorkspace from './views/modules/projects/DetailWorkspace.vue';
+import ProjectCreate from './views/modules/projects/ProjectCreate.vue';
+import ProjectHub from './views/modules/projects/ProjectHub.vue';
 import NotificationCenter from './views/modules/administration/NotificationCenter.vue';
 import PortfolioOverview from './views/modules/projects/pmoDashboard/PortfolioOverview.vue';
 import ModuleWorkspace from './views/modules/ModuleWorkspace.vue';
@@ -41,6 +43,8 @@ const router = createRouter({
     { path: '/portfolio', name: 'Portfolio', component: PortfolioOverview },
     { path: '/workspace', redirect: '/projects' },
     { path: '/projects', name: 'Projects', component: ModuleWorkspace, props: {module:'projects'} },
+    { path: '/projects/new', name: 'ProjectCreate', component: ProjectCreate },
+    { path: '/projects/:id/workspace', name: 'ProjectHub', component: ProjectHub },
     { path: '/projects/approvals', name: 'ProjectApprovals', component: ModuleWorkspace, props: {module:'projects'} },
     { path: '/projects/detail', name: 'ProjectDetail', component: DetailWorkspace },
     { path: '/raid/detail', name: 'RaidDetail', component: DetailWorkspace },
