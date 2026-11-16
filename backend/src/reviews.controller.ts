@@ -93,10 +93,15 @@ export class ReviewsController {
     const requests = await this.prisma.reviewRequest.findMany({
       where: {
         organizationId: req.principal.organizationId,
-        ...(module ? { kind: { in: kinds[module] } } : {}),
-        ...(role === 'ADMIN' ? {} : role === 'PMO' || role === 'PROJECT_MANAGER'
-          ? { kind: { notIn: ['REGISTRATION', 'PARAMETER_UPDATE', 'MEMBERSHIP_UPDATE'] } }
-          : { makerId: req.principal.userId })
+        ...(module || (role !== 'ADMIN' && role !== 'MEMBER') ? {
+          kind: {
+            ...(module ? { in: kinds[module] } : {}),
+            ...(role !== 'ADMIN' && role !== 'MEMBER' ? {
+              notIn: ['REGISTRATION', 'PARAMETER_UPDATE', 'MEMBERSHIP_UPDATE']
+            } : {})
+          }
+        } : {}),
+        ...(['ADMIN', 'PMO', 'PROJECT_MANAGER'].includes(role) ? {} : { makerId: req.principal.userId })
       },
       orderBy: { createdAt: 'desc' }, take: 150
     });
