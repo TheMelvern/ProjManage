@@ -1,4 +1,4 @@
-import { BadRequestException, Body, ConflictException, Controller, ForbiddenException, Get, NotFoundException, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, ConflictException, Controller, ForbiddenException, Get, NotFoundException, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { HealthStatus, Prisma, ProjectStatus, ReviewStatus } from '@prisma/client';
 import { IsEmail, IsEnum, IsIn, IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
 import { hash } from 'bcryptjs';
@@ -81,11 +81,19 @@ export class ReviewsController {
   }
 
   @Get()
-  async list(@Req() req: AuthenticatedRequest) {
+  async list(@Req() req: AuthenticatedRequest, @Query('module') module?: string) {
+    const kinds: Record<string,string[]> = {
+      projects:['PROJECT_CREATE','PROJECT_UPDATE','TASK_CREATE','TASK_UPDATE'],
+      raid:['RISK_CREATE','RISK_UPDATE','ISSUE_CREATE','ISSUE_UPDATE','DECISION_CREATE','ACTION_CREATE','ACTION_UPDATE'],
+      timesheets:['TIMESHEET_CREATE'], reports:['REPORT_PUBLISH'], leave:['LEAVE_REQUEST'],
+      admin:['REGISTRATION','PARAMETER_UPDATE','MEMBERSHIP_UPDATE']
+    };
+    if (module && !kinds[module]) throw new BadRequestException('Unknown approval module');
     const role = req.principal.role;
     const requests = await this.prisma.reviewRequest.findMany({
       where: {
         organizationId: req.principal.organizationId,
+        ...(module ? { kind: { in: kinds[module] } } : {}),
         ...(role === 'ADMIN' ? {} : role === 'PMO' || role === 'PROJECT_MANAGER'
           ? { kind: { notIn: ['REGISTRATION', 'PARAMETER_UPDATE', 'MEMBERSHIP_UPDATE'] } }
           : { makerId: req.principal.userId })
