@@ -110,10 +110,12 @@ try {
   const projectHeading=await page.getByRole('heading',{name:'Projects & tasks'}).evaluate(el=>getComputedStyle(el).fontSize);
   assert.equal(projectHeading,headingSize,'Operational module headings should match Portfolio');
   await page.getByText('E2E Delivery Project').first().waitFor({timeout:15000});
-  await page.getByRole('button',{name:'+ Create project'}).click();
-  await page.getByLabel('New project name').fill('Approved Browser Project');
-  await page.getByRole('button',{name:'Submit project'}).click();
-  await page.getByText(/Project proposal submitted/).waitFor({timeout:15000});
+  await page.getByRole('link',{name:'+ Create project'}).click();
+  await page.getByRole('heading',{name:'Create a project'}).waitFor();
+  await page.getByLabel('Project name').fill('Approved Browser Project');
+  await page.getByRole('button',{name:/Waterfall · Phases/}).click();
+  await page.getByRole('button',{name:'Submit project for approval'}).click();
+  await page.getByRole('heading',{name:'Project submitted for approval'}).waitFor({timeout:15000});
   await approve('PROJECT_CREATE','Approved Browser Project');
   await page.getByRole('button',{name:'Recent notifications'}).click();
   await page.getByRole('dialog',{name:'Recent notifications'}).waitFor();
@@ -125,6 +127,26 @@ try {
   await page.getByRole('link',{name:/Projects & Tasks/}).click();
   await page.reload();
   await page.getByText('Approved Browser Project').first().waitFor({timeout:15000});
+  await page.getByRole('button',{name:/Approved Browser Project/}).click();
+  await page.getByRole('link',{name:'Open project workspace →'}).click();
+  await page.getByRole('heading',{name:'Approved Browser Project'}).waitFor();
+  await page.getByRole('button',{name:'Waterfall'}).click();
+  await page.getByRole('button',{name:'+ New work item'}).click();
+  await page.getByRole('combobox',{name:'Work item type'}).click();
+  await page.getByRole('listbox',{name:'Work item type'}).getByRole('option',{name:'STORY'}).click();
+  await page.getByPlaceholder('As a user, I want…').fill('Approved Browser Story');
+  await page.getByRole('button',{name:'Submit work item for approval'}).click();
+  await page.getByText(/Work item submitted for independent approval/).waitFor({timeout:15000});
+  await approve('TASK_CREATE','Approved Browser Story');
+  await page.reload();
+  await page.getByRole('button',{name:'Backlog'}).click();
+  await page.getByText('Approved Browser Story').waitFor({timeout:15000});
+  await page.getByRole('button',{name:'Kanban'}).click();
+  await page.getByText('Approved Browser Story').waitFor({timeout:15000});
+  await page.getByRole('button',{name:'Timeline'}).click();
+  await page.getByRole('button',{name:'Project info'}).click();
+  await page.getByRole('button',{name:'Timesheets'}).click();
+  await page.getByRole('link',{name:'← Projects & Tasks'}).click();
   await page.getByRole('button',{name:/Approved Browser Project/}).click();
   await page.getByLabel('New task').fill('Approved Browser Task');
   await page.getByRole('button',{name:'Submit task'}).click();
@@ -194,8 +216,22 @@ try {
 
   await page.getByRole('combobox',{name:'Leave type'}).click();
   await page.getByRole('option',{name:'Annual leave'}).click();
-  await page.getByLabel('Start date').fill('2026-12-20');
-  await page.getByLabel('End date').fill('2026-12-21');
+  async function chooseDate(label, dateString) {
+    await page.getByRole('button',{name:label,exact:true}).click();
+    const dialog=page.getByRole('dialog',{name:label,exact:true});
+    const target=new Date(dateString+'T12:00:00');
+    for(let tries=0;tries<24;tries++){
+      const month=await dialog.locator('.calendar-heading strong').textContent();
+      const expected=target.toLocaleDateString('en-GB',{month:'long',year:'numeric'});
+      if(month===expected)break;
+      const current=new Date(Date.parse('1 '+month));
+      const delta=(target.getFullYear()-current.getFullYear())*12+target.getMonth()-current.getMonth();
+      await dialog.getByRole('button',{name:delta>=0?'Next month':'Previous month'}).click();
+    }
+    await dialog.getByRole('button',{name:target.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})}).click();
+  }
+  await chooseDate('Start date','2026-12-20');
+  await chooseDate('End date','2026-12-21');
   await page.getByLabel('Reason / handover details').fill('Browser approved leave');
   await page.getByRole('button',{name:'Submit for check'}).click();
   await page.getByText(/Request submitted for independent approval/).waitFor({timeout:15000});
