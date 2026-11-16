@@ -35,6 +35,8 @@ npm run db:seed
 npm run dev
 ```
 
+`npm run build` and `npm run dev` now regenerate Prisma Client from `backend/prisma/schema.prisma` automatically before compiling or starting the API. After pulling schema changes, run `npm run db:deploy` against the configured database before starting the updated service. `npm run db:generate` can also be used explicitly to refresh the generated types.
+
 4. In another terminal:
 
 ```powershell
