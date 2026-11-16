@@ -105,6 +105,7 @@ const visibleNavigation = computed(() => navigation.filter(item =>
   (!item.managerOnly || ['ADMIN','PMO','PROJECT_MANAGER'].includes(currentRole.value))));
 
 const pageTitle = computed(() =>
+  route.path.startsWith('/projects/') && !route.path.endsWith('/approvals') ? 'Projects & Tasks' :
   route.path === '/notifications' ? 'Notification Center' :
   route.path.startsWith('/admin/') ? 'Administration' :
   (route.path.startsWith('/leave/') ? 'Leave Tracker' : navigation.find(item => route.path === item.to || route.path === item.to + '/approvals')?.label) || 'PMO Portal'
