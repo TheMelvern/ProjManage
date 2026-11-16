@@ -15,10 +15,7 @@
     <p v-if="message" role="status" class="notice success">{{ message }}</p>
     <div class="selector">
       <label for="raid-project">Project</label>
-      <select id="raid-project" v-model="selectedProjectId" @change="loadRegister" :disabled="!liveMode || loading">
-        <option value="">Select a project</option>
-        <option v-for="project in projects" :key="project.id" :value="project.id">{{ project.name }}</option>
-      </select>
+      <SmartSelect id="raid-project" v-model="selectedProjectId" aria-label="Project" @change="loadRegister" :disabled="!liveMode || loading" :options="[{value:'',label:'Select a project'},...projects.map(project=>({value:project.id,label:project.name}))]" />
       <button type="button" @click="loadRegister" :disabled="!selectedProjectId || loading">Refresh</button>
     </div>
     <section v-if="selectedProjectId" class="register">
@@ -33,9 +30,7 @@
           :disabled="busy" placeholder="Describe the item to track" />
         <template v-if="activeTab === 'risks' || activeTab === 'issues'">
           <label for="raid-severity">Severity</label>
-          <select id="raid-severity" v-model="severity" :disabled="busy">
-            <option>LOW</option><option>MEDIUM</option><option>HIGH</option><option>CRITICAL</option>
-          </select>
+          <SmartSelect id="raid-severity" v-model="severity" aria-label="Severity" :disabled="busy" :options="['LOW','MEDIUM','HIGH','CRITICAL'].map(v=>({value:v,label:v}))" />
         </template>
         <button type="submit" :disabled="busy || title.length < 2">Submit item</button>
       </form>
@@ -47,10 +42,7 @@
             <small>{{ item.severity || 'Recorded' }} · {{ formatDate(item.createdAt || item.decidedAt) }}</small>
           </div>
           <label v-if="activeTab !== 'decisions'" :for="'status-' + item.id">Status</label>
-          <select v-if="activeTab !== 'decisions'" :id="'status-' + item.id" :value="item.status"
-            @change="changeStatus(item, $event.target.value)" :disabled="busy">
-            <option>OPEN</option><option>IN_PROGRESS</option><option>CLOSED</option>
-          </select>
+          <SmartSelect v-if="activeTab !== 'decisions'" :id="'status-' + item.id" :model-value="item.status" aria-label="RAID item status" @change="changeStatus(item, $event)" :disabled="busy" :options="['OPEN','IN_PROGRESS','CLOSED'].map(v=>({value:v,label:v}))" />
         </article>
         <p v-if="!register[activeTab].length" class="empty">No {{ activeTab }} recorded for this project.</p>
       </div>
@@ -60,6 +52,7 @@
 </template>
 
 <script setup>
+import SmartSelect from '../../../components/SmartSelect.vue';
 import { onMounted, ref } from 'vue';
 import axiosInstance from '../../../api/axiosConfig';
 

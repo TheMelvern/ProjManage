@@ -41,3 +41,18 @@ button:focus-visible,a:focus-visible{outline:3px solid #86a8ff;outline-offset:3p
 
 .profile-badge-button{border:2px solid #fff;cursor:pointer;padding:0;font:inherit;transition:box-shadow .15s ease,transform .15s ease}
 .profile-badge-button:hover{box-shadow:0 0 0 3px #c4d5f6;transform:translateY(-1px)}
+
+/* Topbar activity preview and profile image */
+.notification-anchor{position:relative}
+.notification-shortcut{border:0;cursor:pointer}
+.notification-popover{position:absolute;right:0;top:calc(100% + 14px);width:min(385px,calc(100vw - 30px));max-height:min(520px,75vh);overflow:hidden;display:flex;flex-direction:column;background:#fff;border:1px solid #dfe6f3;border-radius:16px;box-shadow:0 22px 60px #0f1d3d30;z-index:60;color:#22334e}
+.notification-popover-head{display:flex;align-items:center;justify-content:space-between;padding:19px;border-bottom:1px solid #e9edf6;font-size:14px}
+.notification-popover-head span{font-size:11px;color:#61738f}
+.notification-popover-list{overflow:auto}
+.notification-popover-item{padding:13px 18px;border-bottom:1px solid #eef1f7;display:grid;gap:5px}
+.notification-popover-item.unread{background:#f5f8ff;border-left:3px solid #315ac4}
+.notification-popover-item strong{font-size:12px}.notification-popover-item p{margin:0;font-size:12px;color:#586b85;line-height:1.5}.notification-popover-item small{font-size:10px;color:#8290a3}
+.notification-popover-empty,.notification-popover-error{padding:20px;font-size:12px;color:#64748b}
+.notification-popover-error{color:#b32c4d}
+.notification-view-all{display:block;text-align:center;margin:12px;padding:12px;border-radius:10px;background:#edf2ff;color:#315ac4;text-decoration:none;font-size:12px;font-weight:800}
+.topbar-avatar-image{width:100%;height:100%;object-fit:cover;border-radius:50%}

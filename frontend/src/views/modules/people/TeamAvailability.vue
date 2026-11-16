@@ -2,7 +2,7 @@
   <main class="availability">
     <header class="head"><div><p class="eyebrow">PEOPLE OPERATIONS / TEAM AVAILABILITY</p><h1>Team Leave Calendar</h1>
       <p>Approved absences across the organization, available to authorized project and people managers.</p></div>
-      <router-link to="/leave">Back to Leave Tracker</router-link>
+      
     </header>
     <p v-if="error" class="error" role="alert">{{ error }}</p>
     <section class="metrics">

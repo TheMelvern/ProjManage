@@ -4,7 +4,7 @@
       aria-labelledby="profile-modal-heading" tabindex="-1">
       <header class="profile-head">
         <div class="profile-title">
-          <span class="profile-avatar">{{ initials }}</span>
+          <span class="profile-avatar"><img v-if="profile.avatarDataUrl" :src="profile.avatarDataUrl" alt="Profile picture" />{{ profile.avatarDataUrl ? '' : initials }}</span>
           <div><p class="profile-eyebrow">ACCOUNT / PERSONAL SETTINGS</p>
             <h2 id="profile-modal-heading">Profile management</h2>
             <p>Manage your account information and credentials.</p></div>
@@ -18,6 +18,12 @@
         <p v-if="notice" class="profile-message success" role="status">{{ notice }}</p>
         <p v-if="loading" role="status">Loading profile…</p>
         <template v-else>
+          <section class="profile-section avatar-section">
+            <div class="section-heading"><h3>Profile photo</h3><p>Use a square, clear photo for your workspace identity.</p></div>
+            <label for="profile-photo">Upload profile picture (PNG, JPEG or WebP)</label>
+            <input id="profile-photo" type="file" accept="image/png,image/jpeg,image/webp" :disabled="busy" @change="uploadAvatar" />
+            <p class="profile-hint">The image is optimized before uploading. Maximum stored size: 150 KB.</p>
+          </section>
           <form class="profile-section" @submit.prevent="saveProfile">
             <div class="section-heading"><h3>Personal information</h3><p>Your name appears throughout the PMO workspace.</p></div>
             <label for="profile-name">Full name</label>
@@ -28,6 +34,10 @@
             <div class="profile-grid">
               <div><span>Organization</span><strong>{{ profile.organization || '—' }}</strong></div>
               <div><span>Workspace role</span><strong>{{ formatRole(profile.role) }}</strong></div>
+              <div><span>Department</span><strong>{{ profile.department || 'Not assigned' }}</strong></div>
+              <div><span>Account created</span><strong>{{ profile.createdAt ? new Date(profile.createdAt).toLocaleDateString() : '—' }}</strong></div>
+              <div><span>Email verification</span><strong>{{ profile.emailVerifiedAt ? 'Verified' : 'Pending' }}</strong></div>
+              <div><span>Organization ID</span><strong class="long-value">{{ profile.organizationId || '—' }}</strong></div>
             </div>
             <div class="profile-actions"><button type="submit" :disabled="busy || !name || name === profile.name">{{ busy ? 'Saving…' : 'Save changes' }}</button></div>
           </form>
@@ -70,6 +80,24 @@ async function saveProfile(){
     emit('updated',updated);
   }catch(e){error.value=describe(e);}finally{busy.value=false;}
 }
+async function uploadAvatar(event){
+  const file=event.target.files?.[0];if(!file)return;
+  error.value='';notice.value='';
+  if(!['image/png','image/jpeg','image/webp'].includes(file.type) || file.size>5*1024*1024){error.value='Choose a PNG, JPEG or WebP smaller than 5 MB.';return;}
+  busy.value=true;
+  try{
+    const image=await createImageBitmap(file);
+    const scale=Math.min(1,320/Math.max(image.width,image.height));
+    const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(image.width*scale));canvas.height=Math.max(1,Math.round(image.height*scale));
+    const context=canvas.getContext('2d');if(!context)throw new Error('Image processing unavailable');
+    context.drawImage(image,0,0,canvas.width,canvas.height);image.close();
+    let dataUrl=canvas.toDataURL('image/jpeg',.78);
+    if(dataUrl.length>200000)dataUrl=canvas.toDataURL('image/jpeg',.5);
+    if(dataUrl.length>200000)throw new Error('Image is still too large. Choose a smaller picture.');
+    const updated=(await axios.post('/profile/avatar',{dataUrl})).data.data;
+    profile.value={...profile.value,...updated};notice.value='Profile picture updated.';emit('updated',updated);
+  }catch(e){error.value=describe(e);}finally{busy.value=false;event.target.value='';}
+}
 async function changePassword(){
   error.value='';notice.value='';
   if(newPassword.value!==confirmPassword.value){error.value='New passwords do not match.';return;}
@@ -85,9 +113,10 @@ onMounted(async()=>{await nextTick();dialog.value?.focus();await load();});
 </script>
 <style scoped>
 .profile-overlay{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:20px;background:#10213e99;backdrop-filter:blur(3px)}
-.profile-modal{background:#fff;border-radius:20px;border:1px solid #dfe7f2;width:min(100%,640px);max-height:min(90dvh,820px);overflow:hidden;display:flex;flex-direction:column;color:#18253c;box-shadow:0 25px 70px #17284d40;outline:0}
+.profile-modal{background:#fff;border-radius:20px;border:1px solid #dfe7f2;width:min(100%,740px);max-height:min(90dvh,820px);overflow:hidden;display:flex;flex-direction:column;color:#18253c;box-shadow:0 25px 70px #17284d40;outline:0}
 .profile-head{display:flex;justify-content:space-between;gap:14px;padding:26px 28px 20px;border-bottom:1px solid #e8edf5}
 .profile-title{display:flex;align-items:center;gap:14px}
+ .profile-avatar img{height:100%;width:100%;border-radius:50%;object-fit:cover}.long-value{overflow-wrap:anywhere}
 .profile-avatar{height:50px;width:50px;display:grid;place-items:center;border-radius:50%;background:#e0e9fc;color:#315ac4;font-weight:800;flex:none}
 .profile-eyebrow{font-size:10px;color:#5270af;letter-spacing:.08em;font-weight:800;margin:0 0 5px}
 .profile-head h2{font-size:21px;font-weight:750;margin:0}

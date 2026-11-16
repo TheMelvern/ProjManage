@@ -94,6 +94,20 @@ try {
   assert.equal(account.id, memberUser.id);
   assert.equal(account.email, memberUser.email);
   assert.equal(account.organization, organization.name);
+  assert.equal(account.department,null);
+  assert.equal(account.organizationId,organization.id);
+  assert.equal(account.avatarDataUrl,null);
+  await request('POST','/profile/avatar',member,{dataUrl:'data:image/svg+xml;base64,PHN2Zz48L3N2Zz4='},400);
+  await request('POST','/profile/avatar',member,{dataUrl:'data:image/png;base64,AAAA'},400);
+  const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j5HkAAAAASUVORK5CYII=','base64');
+  const avatar='data:image/png;base64,'+png.toString('base64');
+  const uploaded=(await request('POST','/profile/avatar',member,{dataUrl:avatar},201)).data;
+  assert.equal(uploaded.avatarDataUrl,avatar);
+  assert.equal((await request('GET','/profile',member,undefined,200)).data.avatarDataUrl,avatar);
+  assert.equal((await request('GET','/profile',outsider,undefined,200)).data.avatarDataUrl,null);
+  await db.membership.update({where:{organizationId_userId:{organizationId:organization.id,userId:memberUser.id}},
+    data:{department:'Project Delivery'}});
+  assert.equal((await request('GET','/profile',member,undefined,200)).data.department,'Project Delivery');
   assert.equal(account.passwordHash, undefined);
   await request('PATCH', '/profile', member, {name:' '}, 400);
   const renamed = (await request('PATCH', '/profile', member, {name:'Updated Team Member'}, 200)).data;

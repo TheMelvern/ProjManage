@@ -13,7 +13,7 @@
         <h2>Organization settings</h2><p>Submit proposed values for maker–checker approval.</p>
         <form @submit.prevent="submit">
           <label for="param-key">Parameter</label>
-          <select id="param-key" v-model="key"><option v-for="k in allowed" :key="k.key" :value="k.key">{{ k.name }}</option></select>
+          <SmartSelect id="param-key" v-model="key" aria-label="Parameter" :options="allowed.map(k=>({value:k.key,label:k.name}))" />
           <label for="param-current">Current approved value</label>
           <input id="param-current" readonly :value="currentValue" placeholder="Not configured" />
           <label for="param-new">Proposed value</label>
@@ -41,6 +41,7 @@
   </main>
 </template>
 <script setup>
+import SmartSelect from '../../../components/SmartSelect.vue';
 import { computed, onMounted, ref } from 'vue';
 import axios from '../../../api/axiosConfig';
 const allowed=[

@@ -51,6 +51,7 @@ model User {
   lockedUntil DateTime?
   sessionVersion Int @default(0)
   emailVerifiedAt DateTime?
+  avatarDataUrl String? @db.Text
   emailTokens EmailToken[]
   memberships Membership[]
   notifications Notification[]
@@ -62,6 +63,7 @@ model Membership {
   organizationId String
   userId         String
   role           String       @default("MEMBER")
+  department     String?
   organization   Organization @relation(fields: [organizationId], references: [id])
   user           User         @relation(fields: [userId], references: [id])
   @@unique([organizationId, userId])
