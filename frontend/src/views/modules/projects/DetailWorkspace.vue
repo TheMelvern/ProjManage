@@ -9,10 +9,7 @@
     <p v-if="notice" class="message" role="status">{{ notice }}</p>
     <section class="card project-select">
       <label for="detail-project">Project</label>
-      <select id="detail-project" v-model="projectId">
-        <option value="">Select project</option>
-        <option v-for="p in projects" :key="p.id" :value="p.id">{{ p.name }}</option>
-      </select>
+      <SmartSelect id="detail-project" v-model="projectId" aria-label="Project" :options="[{value:'',label:'Select project'},...projects.map(p=>({value:p.id,label:p.name}))]" />
       <router-link to="/approvals" class="link">Open approval queue</router-link>
     </section>
     <p v-if="loading">Loading project records…</p>
@@ -23,8 +20,8 @@
           <div class="form-grid">
             <label>Project name<input v-model.trim="projectDraft.name" minlength="2" maxlength="140" required /></label>
             <label>Client<input v-model.trim="projectDraft.client" maxlength="140" /></label>
-            <label>Status<select v-model="projectDraft.status"><option v-for="s in statuses" :key="s" :value="s">{{ s }}</option></select></label>
-            <label>Health<select v-model="projectDraft.health"><option v-for="s in healthStates" :key="s" :value="s">{{ s }}</option></select></label>
+            <label>Status<SmartSelect v-model="projectDraft.status" aria-label="Project status" :options="statuses.map(v=>({value:v,label:v}))" /></label>
+            <label>Health<SmartSelect v-model="projectDraft.health" aria-label="Project health" :options="healthStates.map(v=>({value:v,label:v}))" /></label>
           </div>
           <label>Description<textarea v-model.trim="projectDraft.description" rows="3" maxlength="1500"></textarea></label>
           <button type="submit" :disabled="busy">Submit edits for check</button>
@@ -52,8 +49,8 @@
         <form v-if="selectedItem && raidTab!=='decisions'" class="raid-editor" @submit.prevent="saveRaid">
           <h3>Edit {{ raidTab.slice(0,-1) }} — {{ selectedItem.title }}</h3>
           <label>Title<input v-model.trim="raidDraft.title" required minlength="2" /></label>
-          <div class="form-grid"><label>Status<select v-model="raidDraft.status"><option>OPEN</option><option>IN_PROGRESS</option><option>CLOSED</option></select></label>
-            <label v-if="raidTab==='risks'||raidTab==='issues'">Severity<select v-model="raidDraft.severity"><option>LOW</option><option>MEDIUM</option><option>HIGH</option><option>CRITICAL</option></select></label></div>
+          <div class="form-grid"><label>Status<SmartSelect v-model="raidDraft.status" aria-label="RAID status" :options="['OPEN','IN_PROGRESS','CLOSED'].map(v=>({value:v,label:v}))" /></label>
+            <label v-if="raidTab==='risks'||raidTab==='issues'">Severity<SmartSelect v-model="raidDraft.severity" aria-label="RAID severity" :options="['LOW','MEDIUM','HIGH','CRITICAL'].map(v=>({value:v,label:v}))" /></label></div>
           <label>Owner<input v-model.trim="raidDraft.ownerName" placeholder="Responsible person"/></label>
           <label v-if="raidTab==='risks'">Mitigation<textarea v-model.trim="raidDraft.mitigation" rows="3"/></label>
           <label v-if="raidTab==='issues'">Resolution<textarea v-model.trim="raidDraft.resolution" rows="3"/></label>
@@ -92,6 +89,7 @@
   </main>
 </template>
 <script setup>
+import SmartSelect from '../../../components/SmartSelect.vue';
 import {computed,ref,onMounted,watch} from 'vue';
 import {useRoute} from 'vue-router';
 import axios from '../../../api/axiosConfig';
