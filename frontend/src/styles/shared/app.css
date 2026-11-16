@@ -4,16 +4,19 @@ html,body,#app{margin:0;min-height:100%;width:100%;background:#f4f7fb}
 button,input,textarea,select{font:inherit}
 button:focus-visible,a:focus-visible{outline:3px solid #86a8ff;outline-offset:3px}
 .app-shell{display:flex;min-height:100vh}
-.app-sidebar{width:245px;background:#14223d;color:#f5f8ff;flex:none;position:fixed;top:0;left:0;bottom:0;z-index:20;display:flex;flex-direction:column}
+.app-sidebar{width:245px;background:#14223d;color:#f5f8ff;flex:none;position:fixed;top:0;left:0;bottom:0;height:100dvh;min-height:0;overflow:hidden;z-index:20;display:flex;flex-direction:column}
 .app-brand{display:flex;align-items:center;gap:12px;padding:27px 22px;font-size:19px;font-weight:750}
 .brand-symbol{width:35px;height:35px;border-radius:11px;display:grid;place-items:center;background:#7c92fb;color:#111e39}
 .nav-category{padding:13px 22px;margin:14px 0 5px;font-size:10px;letter-spacing:.14em;color:#9db0cb;font-weight:800}
-.sidebar-links{display:flex;flex-direction:column;gap:6px;padding:0 12px}
+.sidebar-links{display:flex;flex-direction:column;gap:6px;padding:0 12px 12px;flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#7287ae transparent}
+.sidebar-links::-webkit-scrollbar{width:6px}
+.sidebar-links::-webkit-scrollbar-thumb{background:#7287ae;border-radius:8px}
+.sidebar-links::-webkit-scrollbar-track{background:transparent}
 .sidebar-links a{display:flex;align-items:center;gap:14px;padding:13px 14px;color:#d0d9eb;text-decoration:none;font-size:13px;font-weight:600;border-radius:11px}
 .sidebar-links a:hover{background:#243658}
 .sidebar-links a.router-link-active{background:#344b82;color:#fff}
 .sidebar-links .material-symbols-outlined{font-size:21px}
-.sidebar-bottom{margin-top:auto;padding:14px 12px 22px;border-top:1px solid #ffffff1b}
+.sidebar-bottom{flex:0 0 auto;margin-top:auto;padding:14px 12px 22px;border-top:1px solid #ffffff1b}
 .sidebar-signout{width:100%;display:flex;align-items:center;gap:14px;text-align:left;padding:13px 14px;border:0;border-radius:11px;background:transparent;color:#d0d9eb;font-size:13px;font-weight:650;cursor:pointer;transition:background .15s ease,color .15s ease}
 .sidebar-signout .material-symbols-outlined{font-size:21px}
 .sidebar-signout:hover{background:#243658;color:#fff}
@@ -35,3 +38,6 @@ button:focus-visible,a:focus-visible{outline:3px solid #86a8ff;outline-offset:3p
 .notification-shortcut{display:inline-flex;align-items:center;justify-content:center;position:relative;width:36px;height:36px;border-radius:9px;background:#edf2fc;text-decoration:none;color:#315ac4}
 .notification-shortcut .material-symbols-outlined{font-size:21px}
 .notification-count{position:absolute;top:-6px;right:-7px;min-width:19px;height:19px;display:inline-grid;place-items:center;background:#cb3a54;color:white;border-radius:10px;padding:0 4px;font-size:10px;font-weight:800}
+
+.profile-badge-button{border:2px solid #fff;cursor:pointer;padding:0;font:inherit;transition:box-shadow .15s ease,transform .15s ease}
+.profile-badge-button:hover{box-shadow:0 0 0 3px #c4d5f6;transform:translateY(-1px)}
