@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Patch, Post, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Patch, Post, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { IsString, MaxLength, MinLength } from 'class-validator';
 import { compare, hash } from 'bcryptjs';
 import { AuthGuard, AuthenticatedRequest } from './auth.guard';
@@ -37,7 +37,7 @@ export class ProfileController {
   @Patch()
   async update(@Req() req: AuthenticatedRequest, @Body() body: UpdateProfileDto) {
     const name = body.name.trim().replace(/\s+/g, ' ');
-    if (name.length < 2) throw new UnauthorizedException('Name must contain at least two characters');
+    if (name.length < 2) throw new BadRequestException('Name must contain at least two characters');
     const user = await this.prisma.user.update({
       where: { id: req.principal.userId },
       data: { name }, select: { id: true, name: true, email: true }
