@@ -87,7 +87,6 @@ try {
   assert.equal(await page.getByRole('dialog',{name:'Profile management'}).count(),0);
 
   // Shared shell: signout belongs in sidebar; profile and notifications stay in topbar.
-  const sidebar=page.getByRole('complementary',{name:'Primary navigation'});
   const topbar=page.locator('.app-topbar');
   assert.equal(await sidebar.getByRole('button',{name:'Sign out'}).count(),1);
   assert.equal(await topbar.getByRole('button',{name:'Sign out'}).count(),0);
