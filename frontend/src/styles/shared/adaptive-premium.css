@@ -147,3 +147,46 @@ html,body,#app{background:var(--pmo-canvas);color:var(--pmo-text);transition:bac
  .app-shell-login .mobile-brand{display:flex;color:var(--pmo-text)}
 }
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important}}
+
+/* Phase 2 consistency pass: extend design tokens to project planning and operational modules. */
+.app-shell .app-content :is(.task-dialog,.task-dialog-body,.task-dialog-head,.task-dialog-actions,.item-form,.board-column,.date-popover,.timeline-head,.phase,.project-pill){
+  border-color:var(--pmo-border);
+}
+.app-shell .app-content :is(.task-dialog,.item-form,.date-popover){
+  background:var(--pmo-surface);
+  color:var(--pmo-text);
+}
+.app-shell .app-content :is(.item-form,.board-column,.phase,.information>div,.date-footer,.timeline-track,.calendar-grid button:hover:not(:disabled)){
+  background:var(--pmo-surface-alt);
+}
+.app-shell .app-content :is(.item-form,.task-dialog,.board-column,.work-row,.board-card,.information>div,.date-popover,.calendar-heading button){
+  border-radius:14px;
+}
+.app-shell .app-content :is(.project-pill,.type,.column-head span,.section-number){
+  background:var(--pmo-accent-soft);
+  color:var(--pmo-accent);
+}
+.app-shell .app-content :is(.hub-tabs button.active,.hub-tabs button:hover,.date-footer button,.timeline-bar:not(.blocked):not(.done)){
+  color:var(--pmo-accent);
+}
+.app-shell .app-content .hub-tabs button.active{border-bottom-color:var(--pmo-accent)}
+.app-shell .app-content .timeline-bar:not(.blocked):not(.done){background:var(--pmo-accent)}
+.app-shell .app-content .task-dialog .primary{color:var(--pmo-on-accent)}
+.app-shell .app-content .calendar-grid button{color:var(--pmo-text)}
+.app-shell .app-content .calendar-grid button.selected{background:var(--pmo-accent);color:var(--pmo-on-accent)}
+.app-shell .app-content :is(.task-dialog .icon-close,.task-dialog .secondary){color:var(--pmo-text)}
+.app-shell .app-content .work-row small,.app-shell .app-content .board-card p{color:var(--pmo-muted)}
+.app-shell .app-content :is(.work-row,.board-card,.task-dialog) :is(input,textarea){background:var(--pmo-input);border-color:var(--pmo-border);color:var(--pmo-text)}
+.app-shell .app-content :is(.timeline-head,.timeline-row,.task-dialog-head,.task-dialog-actions){border-color:var(--pmo-border)}
+.app-shell .app-content .task-title{color:var(--pmo-text)}
+.app-shell .app-content .task-title:hover{color:var(--pmo-accent)}
+.app-shell .app-content :is(.calendar-heading strong,.column-head strong,.phase h3){color:var(--pmo-text)}
+/* Keep semantic traffic-light hues independent of personal accent selection. */
+.app-shell .app-content .timeline-bar.done{background:#318f75}
+.app-shell .app-content .timeline-bar.blocked{background:#cf7f44}
+@media(max-width:740px){
+ .app-shell .app-content .task-dialog{max-height:96dvh}
+ .app-shell .app-content .task-dialog-body{padding:16px}
+ .app-shell .app-content .task-dialog-actions{padding:14px 16px}
+ .app-shell .app-content .timeline-controls{width:100%;justify-content:flex-start}
+}
