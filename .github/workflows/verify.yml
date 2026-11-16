@@ -78,7 +78,10 @@ jobs:
       - name: Apply committed PostgreSQL migrations
         run: npm run db:deploy
       - run: npm run db:seed
-      - run: npm run build
+      - name: Build backend from a clean generated-client state
+        run: |
+          rm -rf node_modules/.prisma/client
+          npm run build
       - name: Verify authenticated organization-scoped API
         run: |
           node dist/main.js > /tmp/pmo-api.log 2>&1 &
