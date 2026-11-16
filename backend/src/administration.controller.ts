@@ -49,7 +49,7 @@ export class AdministrationController {
       organizationId: req.principal.organizationId, actorId: req.principal.userId,
       action: 'REVIEW_SUBMITTED', entityType: 'MEMBERSHIP_UPDATE', entityId: review.id
     } });
-    await notifyReviewers(this.prisma, req.principal.organizationId, req.principal.userId, review.summary, true);
+    await notifyReviewers(this.prisma, req.principal.organizationId, req.principal.userId, review.summary, true, 'MEMBERSHIP_UPDATE');
     return { success: true, data: { id: review.id, status: review.status } };
   }
   @Get('audit')
