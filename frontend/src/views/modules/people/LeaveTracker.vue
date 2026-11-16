@@ -1,13 +1,13 @@
 <template>
   <main class="leave-screen">
-    <header class="header"><div><p class="eyebrow">PEOPLE OPERATIONS / LEAVE TRACKER</p><h1>Leave Tracker Management</h1><p>Request leave, monitor approvals and coordinate project availability.</p></div><div class="module-shortcuts"><router-link class="heading-link" to="/leave/team">Team calendar</router-link><router-link class="heading-link" to="/approvals">Open approval center</router-link></div></header>
+    <header class="header"><div><p class="eyebrow">PEOPLE OPERATIONS / LEAVE TRACKER</p><h1>Leave Tracker Management</h1><p>Request leave, monitor approvals and coordinate project availability.</p></div><div class="module-shortcuts"><router-link class="heading-link" to="/leave/team">Team calendar</router-link></div></header>
     <p v-if="error" class="message error" role="alert">{{ error }}</p><p v-if="success" class="message" role="status">{{ success }}</p>
     <div class="summary">
       <section><span>Annual leave available</span><strong>{{ balance?.remaining?.ANNUAL ?? '—' }}</strong><small>Weekdays remaining this year</small></section>
       <section><span>Medical leave available</span><strong>{{ balance?.remaining?.MEDICAL ?? '—' }}</strong><small>Approved entitlement remaining</small></section>
       <section><span>Pending requests</span><strong>{{ pendingCount }}</strong><small>Awaiting independent check</small></section>
       <section><span>Approved requests</span><strong>{{ approvedCount }}</strong><small>Confirmed absences</small></section>
-      <section><span>Rejected / returned</span><strong>{{ declinedCount }}</strong><small>See remarks in approval center</small></section>
+      <section><span>Rejected / returned</span><strong>{{ declinedCount }}</strong><small>See decisions in the Approvals tab</small></section>
     </div>
     <div class="columns">
       <section class="card">

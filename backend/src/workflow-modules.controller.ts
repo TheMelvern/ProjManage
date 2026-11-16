@@ -201,7 +201,7 @@ export class LeaveController {
       organizationId: req.principal.organizationId, actorId: req.principal.userId,
       action: 'REVIEW_SUBMITTED', entityType: 'LEAVE_REQUEST', entityId: request.id
     } });
-    await notifyReviewers(this.prisma, req.principal.organizationId, req.principal.userId, request.summary);
+    await notifyReviewers(this.prisma, req.principal.organizationId, req.principal.userId, request.summary, false, 'LEAVE_REQUEST');
     return { success: true, data: { id: request.id, status: request.status } };
   }
 }
@@ -235,7 +235,7 @@ export class ParametersController {
       organizationId: req.principal.organizationId, actorId: req.principal.userId,
       action: 'REVIEW_SUBMITTED', entityType: 'PARAMETER_UPDATE', entityId: review.id
     } });
-    await notifyReviewers(this.prisma, req.principal.organizationId, req.principal.userId, review.summary, true);
+    await notifyReviewers(this.prisma, req.principal.organizationId, req.principal.userId, review.summary, true, 'PARAMETER_UPDATE');
     return { success: true, data: { id: review.id, status: review.status } };
   }
 }

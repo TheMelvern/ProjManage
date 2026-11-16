@@ -1,7 +1,6 @@
 <template>
   <main class="users-screen">
-    <header class="page-head"><div><p class="eyebrow">ADMINISTRATION / IDENTITY & ACCESS</p><h1>Users & Roles</h1><p>Manage organization memberships with independent role-change approval.</p></div>
-      <router-link class="subnav" to="/admin/parameters">Parameter Overview</router-link></header>
+    <header class="page-head"><div><p class="eyebrow">ADMINISTRATION / IDENTITY & ACCESS</p><h1>Users & Roles</h1><p>Manage organization memberships with independent role-change approval.</p></div></header>
     <p v-if="error" class="alert error" role="alert">{{ error }}</p>
     <p v-if="notice" class="alert" role="status">{{ notice }}</p>
     <div class="kpis"><div><small>Organization members</small><strong>{{ people.length }}</strong></div><div><small>Administrators</small><strong>{{ admins }}</strong></div><div><small>Pending access changes</small><strong>{{ pendingChanges }}</strong></div></div>
@@ -29,7 +28,6 @@
       <tr><td>Review project & leave changes</td><td>Yes</td><td>Yes</td><td>Yes</td><td>No</td></tr>
       <tr><td>Submit own timesheets and leave</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
       <tr><td>Approve user registrations and role changes</td><td>Yes</td><td>No</td><td>No</td><td>No</td></tr></tbody></table></div>
-      <router-link class="subnav" to="/approvals">Open maker–checker queue</router-link>
     </section>
   </main>
 </template>

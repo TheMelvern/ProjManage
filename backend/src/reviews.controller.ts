@@ -1,4 +1,4 @@
-import { BadRequestException, Body, ConflictException, Controller, ForbiddenException, Get, NotFoundException, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, ConflictException, Controller, ForbiddenException, Get, NotFoundException, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { HealthStatus, Prisma, ProjectStatus, ReviewStatus } from '@prisma/client';
 import { IsEmail, IsEnum, IsIn, IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
 import { hash } from 'bcryptjs';
@@ -7,7 +7,7 @@ import { PrismaService } from './prisma.service';
 import { parseHolidays, workdays } from './workflow-modules.controller';
 import { ThrottleService } from './throttle.service';
 import { EmailTokenService } from './email-token.service';
-import { notifyReviewers } from './review-notifications';
+import { notifyReviewers, reviewApprovalPath } from './review-notifications';
 import type { Request } from 'express';
 
 class RegisterDto {
@@ -63,7 +63,7 @@ export class RegistrationController {
         payload: { email, name: input.name.trim(), passwordHash }
       }
     });
-    await notifyReviewers(this.prisma, org.id, null, 'New account registration awaiting approval', true);
+    await notifyReviewers(this.prisma, org.id, null, 'New account registration awaiting approval', true, 'REGISTRATION');
     return { success: true, data: { id: request.id, status: request.status, message: 'Registration submitted for administrator approval' } };
   }
 }
@@ -81,14 +81,27 @@ export class ReviewsController {
   }
 
   @Get()
-  async list(@Req() req: AuthenticatedRequest) {
+  async list(@Req() req: AuthenticatedRequest, @Query('module') module?: string) {
+    const kinds: Record<string,string[]> = {
+      projects:['PROJECT_CREATE','PROJECT_UPDATE','TASK_CREATE','TASK_UPDATE'],
+      raid:['RISK_CREATE','RISK_UPDATE','ISSUE_CREATE','ISSUE_UPDATE','DECISION_CREATE','ACTION_CREATE','ACTION_UPDATE'],
+      timesheets:['TIMESHEET_CREATE'], reports:['REPORT_PUBLISH'], leave:['LEAVE_REQUEST'],
+      admin:['REGISTRATION','PARAMETER_UPDATE','MEMBERSHIP_UPDATE']
+    };
+    if (module && !kinds[module]) throw new BadRequestException('Unknown approval module');
     const role = req.principal.role;
     const requests = await this.prisma.reviewRequest.findMany({
       where: {
         organizationId: req.principal.organizationId,
-        ...(role === 'ADMIN' ? {} : role === 'PMO' || role === 'PROJECT_MANAGER'
-          ? { kind: { notIn: ['REGISTRATION', 'PARAMETER_UPDATE', 'MEMBERSHIP_UPDATE'] } }
-          : { makerId: req.principal.userId })
+        ...(module || (role !== 'ADMIN' && role !== 'MEMBER') ? {
+          kind: {
+            ...(module ? { in: kinds[module] } : {}),
+            ...(role !== 'ADMIN' && role !== 'MEMBER' ? {
+              notIn: ['REGISTRATION', 'PARAMETER_UPDATE', 'MEMBERSHIP_UPDATE']
+            } : {})
+          }
+        } : {}),
+        ...(['ADMIN', 'PMO', 'PROJECT_MANAGER'].includes(role) ? {} : { makerId: req.principal.userId })
       },
       orderBy: { createdAt: 'desc' }, take: 150
     });
@@ -132,7 +145,7 @@ export class ReviewsController {
       organizationId: req.principal.organizationId, actorId: req.principal.userId,
       action: 'REVIEW_SUBMITTED', entityType: 'PROJECT_UPDATE', entityId: change.id
     } });
-    await notifyReviewers(this.prisma, req.principal.organizationId, req.principal.userId, change.summary);
+    await notifyReviewers(this.prisma, req.principal.organizationId, req.principal.userId, change.summary, false, 'PROJECT_UPDATE');
     return { success: true, data: safeRequest(change) };
   }
 
@@ -382,7 +395,7 @@ export class ReviewsController {
           kind: 'REVIEW_DECISION',
           title: 'Request ' + body.decision.toLowerCase(),
           body: review.summary.slice(0, 350),
-          link: '/approvals'
+          link: reviewApprovalPath(review.kind)
         } });
       }
       return updated;

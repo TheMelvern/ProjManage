@@ -19,10 +19,6 @@
       </table></div>
       <p class="disclaimer">Access restricted to administrators. Exporting audit records should follow organizational retention and privacy rules.</p>
     </section>
-    <section class="card"><h2>Related administration controls</h2>
-      <div class="links"><router-link to="/admin/parameters">Parameter configuration</router-link>
-        <router-link to="/admin/users">User directory</router-link><router-link to="/approvals">Independent review queue</router-link></div>
-    </section>
   </main>
 </template>
 <script setup>

@@ -152,7 +152,7 @@ export class OperationProposalsController {
       action: 'REVIEW_SUBMITTED', entityType: kind, entityId: review.id
     } });
     await notifyReviewers(this.prisma, req.principal.organizationId, req.principal.userId,
-      input.summary, kind === 'REPORT_PUBLISH');
+      input.summary, kind === 'REPORT_PUBLISH', kind);
     return { success: true, data: { id: review.id, kind: review.kind, status: review.status } };
   }
 }

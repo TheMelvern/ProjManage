@@ -157,9 +157,27 @@ try {
   await page.getByLabel('Approved executive snapshots').selectOption({index:1});
   assert.equal(await page.getByRole('button',{name:'Export approved CSV'}).isEnabled(),true);
 
-  await page.getByRole('link',{name:/Approval Center/}).click();
-  await page.getByRole('heading',{name:'Approval Center'}).waitFor();
+  // Each business module owns its own maker-checker approval subtab.
+  assert.equal(await sidebar.getByRole('link',{name:'Approval Center'}).count(),0);
+  assert.equal(await sidebar.getByRole('link',{name:'Admin Parameters'}).count(),0);
+  assert.equal(await sidebar.getByRole('link',{name:'Users & Roles'}).count(),0);
+  assert.equal(await sidebar.getByRole('link',{name:'Audit & Security'}).count(),0);
+  assert.equal(await sidebar.getByRole('link',{name:'Administration'}).count(),1);
+  await page.getByRole('navigation',{name:'Executive Reports tabs'}).getByRole('link',{name:'Approvals'}).click();
+  await page.getByRole('heading',{name:'Report approvals'}).waitFor();
+  await page.getByText('Publication submitted').count().then(count=>assert.equal(count,0));
+  await page.getByRole('link',{name:/RAID Register/}).click();
+  await page.getByRole('navigation',{name:'RAID Register tabs'}).getByRole('link',{name:'Approvals'}).click();
+  await page.getByRole('heading',{name:'RAID approvals'}).waitFor();
   await page.getByText('Approved Browser Risk').first().waitFor({timeout:15000});
+  await page.getByRole('link',{name:/Projects & Tasks/}).click();
+  await page.getByRole('navigation',{name:'Projects & Tasks tabs'}).getByRole('link',{name:'Approvals'}).click();
+  await page.getByRole('heading',{name:'Project approvals'}).waitFor();
+  await page.getByText('Approved Browser Project').first().waitFor({timeout:15000});
+  await page.getByRole('link',{name:/Timesheets/}).click();
+  await page.getByRole('navigation',{name:'Timesheets tabs'}).getByRole('link',{name:'Approvals'}).click();
+  await page.getByRole('heading',{name:'Timesheet approvals'}).waitFor();
+  await page.getByText('7.5 hours').first().waitFor({timeout:15000});
 
   await page.getByRole('link',{name:/Leave Tracker/}).click();
   await page.getByRole('heading',{name:'Leave Tracker Management'}).waitFor();
@@ -174,8 +192,14 @@ try {
   await approve('LEAVE_REQUEST','2026-12-20');
   await page.reload();
   await page.getByText('Browser approved leave').waitFor({timeout:15000});
+  await page.getByRole('navigation',{name:'Leave Tracker tabs'}).getByRole('link',{name:'Approvals'}).click();
+  await page.getByRole('heading',{name:'Leave approvals'}).waitFor();
+  await page.getByText('2026-12-20').first().waitFor({timeout:15000});
 
-  await page.getByRole('link',{name:/Admin Parameters/}).click();
+
+  await sidebar.getByRole('link',{name:'Administration'}).click();
+  const adminTabs=page.getByRole('navigation',{name:'Administration tabs'});
+  assert.equal(await adminTabs.getByRole('link').count(),4);
   await page.getByRole('heading',{name:'Admin Parameters'}).waitFor();
   await page.getByLabel('Parameter').selectOption('currency');
   await page.getByLabel('Proposed value').fill('MYR');
@@ -185,6 +209,18 @@ try {
   await approve('PARAMETER_UPDATE','Browser report currency setting');
   await page.reload();
   await page.getByText('Approved configuration').first().waitFor({timeout:15000});
+  await adminTabs.getByRole('link',{name:'Users & Roles'}).click();
+  await page.getByRole('heading',{name:'Users & Roles'}).waitFor();
+  await adminTabs.getByRole('link',{name:'Audit & Security'}).click();
+  await page.getByRole('heading',{name:'Audit & Security'}).waitFor();
+  assert.equal(await page.getByRole('heading',{name:'Related administration controls'}).count(),0);
+  await adminTabs.getByRole('link',{name:'Approvals'}).click();
+  await page.getByRole('heading',{name:'Administration approvals'}).waitFor();
+  await page.getByText('Browser report currency setting').first().waitFor({timeout:15000});
+  await adminTabs.getByRole('link',{name:'Admin Parameters'}).click();
+  await page.getByRole('heading',{name:'Admin Parameters'}).waitFor();
+  assert.equal(await page.getByRole('heading',{name:'Connected administration workflows'}).count(),0);
+
 
   await mkdir('test-results',{recursive:true});
   await page.screenshot({path:'test-results/desktop-admin.png',fullPage:true});

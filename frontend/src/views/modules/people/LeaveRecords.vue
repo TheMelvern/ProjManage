@@ -30,7 +30,7 @@
   <section class="card"><h2>Organization policy</h2>
     <p>{{ balances?.note || 'Entitlements are retrieved from your organization policy.' }}</p>
     <div class="links"><router-link to="/leave">Apply for Leave</router-link><router-link to="/leave/team" v-if="isManager">Team Calendar</router-link>
-      <router-link to="/admin/workflows" v-if="isAdmin">Configure leave policies</router-link><router-link to="/approvals">Review approvals</router-link></div>
+      <router-link to="/admin/parameters" v-if="isAdmin">Configure leave policies</router-link><router-link to="/leave/approvals">Review leave approvals</router-link></div>
   </section>
  </main>
 </template>
