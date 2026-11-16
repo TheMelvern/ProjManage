@@ -21,8 +21,8 @@ class OperationDto {
 
 const writable: Record<Kind, string[]> = {
   PROJECT_CREATE: ['name','client','description','startDate','targetEndDate','deliveryMethod'],
-  TASK_CREATE: ['title','description','dueDate','startDate','itemType','priority','phase'],
-  TASK_UPDATE: ['title','description','dueDate','startDate','itemType','priority','phase','status'],
+  TASK_CREATE: ['title','description','dueDate','startDate','itemType','priority','phase','parentId','dependsOnId'],
+  TASK_UPDATE: ['title','description','dueDate','startDate','itemType','priority','phase','parentId','dependsOnId','status'],
   RISK_CREATE: ['title','description','severity','ownerName','mitigation','targetDate'],
   RISK_UPDATE: ['title','description','severity','ownerName','mitigation','targetDate','status'],
   ISSUE_CREATE: ['title','description','severity','ownerName','resolution','targetDate'],
@@ -49,7 +49,7 @@ function validateValues(kind: Kind, values: Record<string, unknown>): Record<str
   const checked: Record<string, string | number | null> = {};
   for (const [key, value] of Object.entries(values)) {
     if (value === null) {
-      if (!['dueDate','targetDate','startDate','targetEndDate','phase','description','client','ownerName','resolution','mitigation'].includes(key)) {
+      if (!['dueDate','targetDate','startDate','targetEndDate','phase','description','parentId','dependsOnId','client','ownerName','resolution','mitigation'].includes(key)) {
         throw new BadRequestException('This field cannot be null');
       }
       checked[key] = null;
@@ -67,6 +67,7 @@ function validateValues(kind: Kind, values: Record<string, unknown>): Record<str
     if (key === 'deliveryMethod' && !['KANBAN','WATERFALL'].includes(clean)) throw new BadRequestException('Invalid delivery method');
     if (key === 'itemType' && !['EPIC','STORY','TASK','BUG','MILESTONE'].includes(clean)) throw new BadRequestException('Invalid work item type');
     if (key === 'priority' && !['LOW','MEDIUM','HIGH','CRITICAL'].includes(clean)) throw new BadRequestException('Invalid priority');
+    if (['parentId','dependsOnId'].includes(key) && !/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(clean)) throw new BadRequestException('Invalid task reference');
     if (key === 'status' && !statusValues.includes(clean as typeof statusValues[number])) throw new BadRequestException('Invalid status');
     if (key === 'severity' && !severityValues.includes(clean)) throw new BadRequestException('Invalid severity');
     if (['dueDate','targetDate','startDate','targetEndDate','workDate'].includes(key) && (!Number.isFinite(Date.parse(clean)))) {
@@ -113,6 +114,39 @@ export class OperationProposalsController {
           where: { id: input.projectId, organizationId: req.principal.organizationId }
         });
         if (!project) throw new NotFoundException('Project not found');
+      }
+    }
+    if (kind === 'TASK_CREATE' || kind === 'TASK_UPDATE') {
+      const parentId = values.parentId;
+      const dependsOnId = values.dependsOnId;
+      if (parentId && dependsOnId && parentId === dependsOnId) throw new BadRequestException('A parent cannot also be a dependency');
+      const refs = [parentId, dependsOnId].filter((id): id is string => typeof id === 'string');
+      if (refs.length) {
+        const related = await this.prisma.task.findMany({
+          where: { id: { in: refs }, projectId: input.projectId },
+          select: { id: true, parentId: true, dependsOnId: true }
+        });
+        if (new Set(refs).size !== related.length) throw new BadRequestException('Related work items must belong to this project');
+        if (input.targetId && refs.includes(input.targetId)) throw new BadRequestException('Work items cannot reference themselves');
+        if (input.targetId) {
+          // Reject direct and transitive cycles in both hierarchy and dependency graph.
+          const graph = await this.prisma.task.findMany({
+            where: { projectId: input.projectId }, select: { id: true, parentId: true, dependsOnId: true }
+          });
+          for (const id of refs) {
+            const seen = new Set<string>();
+            const queue = [id];
+            while (queue.length) {
+              const current = queue.pop()!;
+              if (current === input.targetId) throw new BadRequestException('Circular work item relationship');
+              if (seen.has(current)) continue;
+              seen.add(current);
+              const node = graph.find(t => t.id === current);
+              if (node?.parentId) queue.push(node.parentId);
+              if (node?.dependsOnId) queue.push(node.dependsOnId);
+            }
+          }
+        }
       }
     }
     let previousUpdatedAt: string | undefined;
