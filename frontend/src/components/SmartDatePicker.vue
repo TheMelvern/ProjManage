@@ -10,7 +10,7 @@
         <button type="button" aria-label="Next month" @click="shift(1)">›</button>
       </div>
       <div class="calendar-grid">
-        <span v-for="day in ['M','T','W','T','F','S','S']" :key="'h'+day+Math.random()" class="weekday">{{day}}</span>
+        <span v-for="(day,index) in ['M','T','W','T','F','S','S']" :key="index" class="weekday">{{day}}</span>
         <button v-for="date in cells" :key="date.key" type="button"
           :disabled="!date.current || (min && date.key < min) || (max && date.key > max)"
           :aria-label="date.label" :aria-pressed="modelValue===date.key" :class="{selected:modelValue===date.key,today:date.key===today}" @click="pick(date.key)">
