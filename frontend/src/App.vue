@@ -26,9 +26,25 @@
         </button>
         <div class="topbar-label">{{ pageTitle }}</div>
         <div class="topbar-right">
-          <router-link to="/notifications" class="notification-shortcut" title="Notification Center" aria-label="Notification Center"><span class="material-symbols-outlined">notifications</span><span v-if="unreadCount" class="notification-count">{{ unreadCount > 99 ? "99+" : unreadCount }}</span></router-link>
+          <div class="notification-anchor" ref="notificationAnchor">
+            <button type="button" class="notification-shortcut" title="Recent notifications" aria-label="Recent notifications" :aria-expanded="notificationsOpen" aria-haspopup="dialog" @click="toggleNotifications">
+              <span class="material-symbols-outlined">notifications</span><span v-if="unreadCount" class="notification-count">{{ unreadCount > 99 ? "99+" : unreadCount }}</span>
+            </button>
+            <section v-if="notificationsOpen" class="notification-popover" role="dialog" aria-label="Recent notifications">
+              <div class="notification-popover-head"><strong>Recent activity</strong><span>{{ unreadCount }} unread</span></div>
+              <p v-if="notificationError" class="notification-popover-error" role="alert">{{ notificationError }}</p>
+              <p v-else-if="notificationLoading" class="notification-popover-empty">Loading updates…</p>
+              <p v-else-if="!recentNotifications.length" class="notification-popover-empty">No notifications yet.</p>
+              <div v-else class="notification-popover-list">
+                <article v-for="item in recentNotifications" :key="item.id" class="notification-popover-item" :class="{ unread: !item.readAt }">
+                  <strong>{{ item.title }}</strong><p>{{ item.body }}</p><small>{{ new Date(item.createdAt).toLocaleString() }}</small>
+                </article>
+              </div>
+              <router-link class="notification-view-all" to="/notifications" @click="notificationsOpen = false">View details · Notification Center</router-link>
+            </section>
+          </div>
           <button type="button" class="profile-badge profile-badge-button" :title="currentUser"
-            :aria-label="'Manage profile for ' + currentUser" @click="profileOpen = true">{{ userInitials }}</button>
+            :aria-label="'Manage profile for ' + currentUser" @click="profileOpen = true"><img v-if="profileData.avatarDataUrl" :src="profileData.avatarDataUrl" alt="" class="topbar-avatar-image" />{{ profileData.avatarDataUrl ? '' : userInitials }}</button>
         </div>
       </header>
       <router-view />
@@ -40,7 +56,7 @@
   </div>
 </template>
 <script setup>
-import { computed, ref, watch, onMounted } from 'vue';
+import { computed, ref, watch, onMounted, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axiosInstance from './api/axiosConfig';
 import ProfileManagementModal from './views/modules/administration/ProfileManagementModal.vue';
@@ -54,20 +70,24 @@ function readStoredProfile(){
   catch { return {}; }
 }
 const unreadCount = ref(0);
+const notificationsOpen=ref(false),recentNotifications=ref([]),notificationLoading=ref(false),notificationError=ref(''),notificationAnchor=ref(null);
 async function refreshUnread(){
   if (!localStorage.getItem('access_token')) { unreadCount.value=0; return; }
-  try { const result = await axiosInstance.get('/notifications'); unreadCount.value=result.data.data.unread; }
+  try { const result = await axiosInstance.get('/notifications'); unreadCount.value=result.data.data.unread; recentNotifications.value=result.data.data.items.slice(0,5); }
   catch { unreadCount.value=0; }
 }
-watch(()=>route.fullPath, refreshUnread);
-onMounted(refreshUnread);
+watch(()=>route.fullPath,()=>{notificationsOpen.value=false;refreshUnread();});
+function onOutsideClick(event){if(notificationAnchor.value&&!notificationAnchor.value.contains(event.target))notificationsOpen.value=false;}
+function onEscape(event){if(event.key==='Escape')notificationsOpen.value=false;}
+async function toggleNotifications(){notificationsOpen.value=!notificationsOpen.value;if(!notificationsOpen.value)return;notificationLoading.value=true;notificationError.value='';try{await refreshUnread();}catch{notificationError.value='Unable to load recent notifications.';}finally{notificationLoading.value=false;}}
+onMounted(()=>{refreshUnread();document.addEventListener('pointerdown',onOutsideClick);document.addEventListener('keydown',onEscape);});
+onUnmounted(()=>{document.removeEventListener('pointerdown',onOutsideClick);document.removeEventListener('keydown',onEscape);});
 const navigation = [
   { to: '/portfolio', label: 'Portfolio Overview', icon: 'dashboard' },
   { to: '/projects', label: 'Projects & Tasks', icon: 'task_alt' },
   { to: '/raid', label: 'RAID Register', icon: 'warning_amber' },
   { to: '/timesheets', label: 'Timesheets', icon: 'schedule' },
   { to: '/leave', label: 'Leave Tracker', icon: 'event_available' },
-  { to: '/leave/team', label: 'Team Calendar', icon: 'calendar_month', managerOnly: true },
   { to: '/reports', label: 'Executive Reports', icon: 'summarize' },
   { to: '/admin/parameters', label: 'Administration', icon: 'settings', adminOnly: true }
 ];
@@ -82,7 +102,7 @@ const visibleNavigation = computed(() => navigation.filter(item =>
 const pageTitle = computed(() =>
   route.path === '/notifications' ? 'Notification Center' :
   route.path.startsWith('/admin/') ? 'Administration' :
-  navigation.find(item => route.path === item.to || route.path === item.to + '/approvals')?.label || 'PMO Portal'
+  (route.path.startsWith('/leave/') ? 'Leave Tracker' : navigation.find(item => route.path === item.to || route.path === item.to + '/approvals')?.label) || 'PMO Portal'
 );
 const currentUser = computed(() => {
   return profileData.value.name || profileData.value.email || 'Signed in';
@@ -102,6 +122,7 @@ function clearLocalSession(){
   profileData.value = {};
   menuOpen.value = false;
   unreadCount.value = 0;
+  notificationsOpen.value=false;
 }
 
 async function logout() {
