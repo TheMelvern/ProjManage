@@ -6,7 +6,7 @@
         <h1>Projects & tasks</h1>
         <p>Manage delivery records that power your executive status reports.</p>
       </div>
-      <div class="module-shortcuts"><router-link to="/projects/detail" class="report-link">View details</router-link><router-link to="/reports" class="report-link">Open reports</router-link></div>
+      <button type="button" class="create-project-action" @click="showCreate = !showCreate">{{ showCreate ? 'Close form' : '+ Create project' }}</button>
     </header>
 
     <p v-if="!liveMode" class="notice" role="status">
@@ -15,13 +15,13 @@
     <p v-if="error" class="notice error" role="alert">{{ error }}</p>
     <p v-if="success" class="notice success" role="status">{{ success }}</p>
 
-    <div class="workspace-layout">
+    <div class="project-overview">
       <section class="workspace-card project-list">
         <div class="section-heading">
           <h2>Projects</h2>
           <span>{{ projects.length }} total</span>
         </div>
-        <form class="create-form" @submit.prevent="createProject">
+        <form v-if="showCreate" class="create-form" @submit.prevent="createProject">
           <label for="project-name">New project name</label>
           <input id="project-name" v-model.trim="newProjectName" required minlength="2" maxlength="140"
             placeholder="e.g. Customer Portal Rollout" :disabled="!liveMode || busy" />
@@ -31,7 +31,7 @@
           <button type="submit" :disabled="!liveMode || busy || newProjectName.length < 2">Submit project</button>
         </form>
         <div v-if="loading" class="loading" role="status">Loading projects…</div>
-        <div v-else-if="projects.length === 0" class="loading">No projects created yet.</div>
+        <div v-else-if="projects.length === 0" class="empty-project-landing"><span class="material-symbols-outlined" aria-hidden="true">folder_off</span><h3>No projects yet</h3><p>Create your first project to start tracking work.</p><button type="button" @click="showCreate = true">Create project</button></div>
         <div v-else class="project-choices" role="list">
           <button v-for="project in projects" :key="project.id" type="button"
             :class="{ selected: project.id === selectedId }" @click="selectProject(project.id)">
@@ -42,6 +42,8 @@
         </div>
       </section>
 
+      </div>
+    <div v-if="selectedProject" class="workspace-layout">
       <section class="workspace-card project-detail">
         <template v-if="selectedProject">
           <div class="section-heading"><h2>{{ selectedProject.name }}</h2><span>{{ tasks.length }} tasks</span></div>
@@ -49,15 +51,11 @@
           <form class="detail-settings" @submit.prevent="saveProject">
             <div>
               <label for="project-status">Status</label>
-              <select id="project-status" v-model="projectStatus" :disabled="!liveMode || busy">
-                <option v-for="status in projectStatuses" :key="status" :value="status">{{ formatLabel(status) }}</option>
-              </select>
+              <SmartSelect id="project-status" v-model="projectStatus" aria-label="Status" :disabled="!liveMode || busy" :options="projectStatuses.map(v => ({value:v,label:formatLabel(v)}))" />
             </div>
             <div>
               <label for="project-health">Health</label>
-              <select id="project-health" v-model="projectHealth" :disabled="!liveMode || busy">
-                <option v-for="health in projectHealthOptions" :key="health" :value="health">{{ formatLabel(health) }}</option>
-              </select>
+              <SmartSelect id="project-health" v-model="projectHealth" aria-label="Health" :disabled="!liveMode || busy" :options="projectHealthOptions.map(v => ({value:v,label:formatLabel(v)}))" />
             </div>
             <button type="submit" :disabled="!liveMode || busy">Submit for check</button>
           </form>
@@ -81,10 +79,7 @@
                 <small>{{ task.dueDate ? 'Due ' + formatDate(task.dueDate) : 'No due date' }}</small>
               </div>
               <label :for="'task-status-' + task.id">Status</label>
-              <select :id="'task-status-' + task.id" :value="task.status"
-                :disabled="!liveMode || busy" @change="changeTaskStatus(task, $event.target.value)">
-                <option v-for="status in taskStatuses" :key="status" :value="status">{{ formatLabel(status) }}</option>
-              </select>
+              <SmartSelect :id="'task-status-' + task.id" :model-value="task.status" aria-label="Status" :disabled="!liveMode || busy" :options="taskStatuses.map(v => ({value:v,label:formatLabel(v)}))" @change="changeTaskStatus(task, $event)" />
             </li>
             <li v-if="tasks.length === 0" class="task-empty">No tasks logged yet. Add a delivery task to measure progress.</li>
           </ul>
@@ -98,10 +93,11 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import axiosInstance from '../../../api/axiosConfig';
+import SmartSelect from '../../../components/SmartSelect.vue';
 
 const liveMode = import.meta.env.VITE_USE_LIVE_API === 'true';
 const loading = ref(false), busy = ref(false), error = ref(''), success = ref('');
-const projects = ref([]), selectedId = ref(null), tasks = ref([]);
+const projects = ref([]), selectedId = ref(null), tasks = ref([]), showCreate=ref(false);
 const newProjectName = ref(''), newClient = ref(''), newTaskTitle = ref(''), newTaskDue = ref('');
 const projectStatus = ref('PLANNING'), projectHealth = ref('UNKNOWN');
 const projectStatuses = ['PLANNING', 'ACTIVE', 'ON_HOLD', 'COMPLETED', 'CANCELLED'];
@@ -157,6 +153,7 @@ async function createProject() {
     });
     newProjectName.value = '';
     newClient.value = '';
+    showCreate.value = false;
     showSuccess('Project proposal submitted for independent approval.');
   } catch (cause) { showError(cause); } finally { busy.value = false; }
 }
@@ -212,7 +209,14 @@ onMounted(loadProjects);
 .notice {background:#edf3fe;color:#3b58a2;padding:15px 20px;border-radius:10px;margin:0 0 22px;font-size:13px;}
 .notice.error {background:#ffebee;color:#ad2f4b;}
 .notice.success {background:#e6f9ee;color:#166b4d;}
-.workspace-layout {display:grid;grid-template-columns:minmax(300px,370px) minmax(0,1fr);gap:22px;align-items:start;}
+.workspace-layout {display:block;margin-top:20px;}
+.project-overview{display:block}.project-choices{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px!important;margin-top:20px!important}
+.project-choices button{min-height:136px;justify-content:space-between;gap:12px!important;padding:19px!important;box-shadow:0 5px 18px #15244209}
+.project-choices button.selected{box-shadow:0 0 0 2px #6d91ee55}
+.project-list{width:100%}.create-project-action,.empty-project-landing button{border:0;border-radius:10px;background:#315ac4;color:white;padding:12px 18px;font-weight:750;cursor:pointer}
+.create-form{max-width:520px;background:#f7f9fd;padding:20px;border-radius:14px}
+.empty-project-landing{text-align:center;padding:48px 18px;color:#61728b}.empty-project-landing .material-symbols-outlined{font-size:44px;color:#98a9c4}.empty-project-landing h3{font-size:20px;color:#263955;margin:8px 0}.empty-project-landing p{font-size:13px}
+@media(max-width:1200px){.project-choices{grid-template-columns:repeat(2,minmax(0,1fr))!important}}@media(max-width:620px){.project-choices{grid-template-columns:1fr!important}}
 .workspace-card {background:#fff;border-radius:18px;padding:25px;border:1px solid #e7ebf2;}
 .section-heading {display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px;}
 .section-heading h2 {font-size:20px;font-weight:750;margin:0;}
