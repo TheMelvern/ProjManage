@@ -114,6 +114,15 @@ try {
   },201);
   assert.equal(signup.data.status,'PENDING');
   await request('POST','/auth/login',null,{email:registrant,password:'new-user-password-1234'},401);
+  // The approval API applies category filtering server-side, preserving tenant and role guards.
+  await request('GET','/reviews?module=unknown',maker,undefined,400);
+  const adminQueue=(await request('GET','/reviews?module=admin',maker,undefined,200)).data;
+  assert.ok(adminQueue.some(r=>r.id===signup.data.id));
+  assert.ok(adminQueue.every(r=>['REGISTRATION','PARAMETER_UPDATE','MEMBERSHIP_UPDATE'].includes(r.kind)));
+  const projectQueue=(await request('GET','/reviews?module=projects',maker,undefined,200)).data;
+  assert.ok(projectQueue.every(r=>['PROJECT_CREATE','PROJECT_UPDATE','TASK_CREATE','TASK_UPDATE'].includes(r.kind)));
+  const memberAdminQueue=(await request('GET','/reviews?module=admin',member,undefined,200)).data;
+  assert.equal(memberAdminQueue.length,0);
   const queue=await request('GET','/reviews',maker,undefined,200);
   assert.ok(queue.data.some(r=>r.id===signup.data.id));
   const visible=queue.data.find(r=>r.id===signup.data.id);
@@ -147,6 +156,7 @@ try {
   const makerInbox=(await request('GET','/notifications',maker,undefined,200)).data;
   const decisionNotice=makerInbox.items.find(n=>n.kind==='REVIEW_DECISION' && n.body.includes('Create approved integration project'));
   assert.ok(decisionNotice,'Maker must receive an approved-decision notification');
+  assert.equal(decisionNotice.link,'/projects/approvals');
   const outsiderInbox=(await request('GET','/notifications',outsider,undefined,200)).data;
   assert.ok(!outsiderInbox.items.some(n=>n.id===decisionNotice.id));
   const otherMemberInbox=(await request('GET','/notifications',member,undefined,200)).data;
@@ -378,5 +388,17 @@ try {
   },401);
   const updatedOutsider=await login(outsiderUser.email,'changed-password-123456');
   assert.equal((await request('GET','/profile',updatedOutsider,undefined,200)).data.id,outsiderUser.id);
+  const approvalGroups={
+    projects:['PROJECT_CREATE','PROJECT_UPDATE','TASK_CREATE','TASK_UPDATE'],
+    raid:['RISK_CREATE','RISK_UPDATE','ISSUE_CREATE','ISSUE_UPDATE','DECISION_CREATE','ACTION_CREATE','ACTION_UPDATE'],
+    timesheets:['TIMESHEET_CREATE'],leave:['LEAVE_REQUEST'],
+    reports:['REPORT_PUBLISH'],admin:['REGISTRATION','PARAMETER_UPDATE','MEMBERSHIP_UPDATE']
+  };
+  for (const [module,kinds] of Object.entries(approvalGroups)) {
+    const items=(await request('GET','/reviews?module='+module,maker,undefined,200)).data;
+    assert.ok(items.every(item=>kinds.includes(item.kind)),'Wrong category in '+module+' approvals');
+  }
+  const managerAdmin=(await request('GET','/reviews?module=admin',checker,undefined,200)).data;
+  assert.ok(managerAdmin.every(item=>approvalGroups.admin.includes(item.kind)));
   console.log('PASS: tenant isolation, registration, projects/tasks, RAID, timesheets, reports, leave, parameters, users, role approvals, audit, JWT revocation');
 } finally { await db.$disconnect(); await new Promise(resolve=>mailServer.close(resolve)); }
