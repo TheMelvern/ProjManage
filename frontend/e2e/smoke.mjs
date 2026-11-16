@@ -132,13 +132,6 @@ try {
   await approve('TASK_CREATE','Approved Browser Task');
   await page.reload();
   await page.getByRole('button',{name:/Approved Browser Project/}).click();
-  const taskVisibility=await page.getByText('Approved Browser Task').evaluate(el=>{
-    const chain=[];for(let node=el;node&&chain.length<8;node=node.parentElement){
-      const style=getComputedStyle(node);
-      chain.push({tag:node.tagName,classes:node.className,display:style.display,visibility:style.visibility,opacity:style.opacity,rect:node.getBoundingClientRect().toJSON()});
-    }return chain;
-  });
-  console.log('TASK_VISIBILITY_DIAGNOSTIC',JSON.stringify(taskVisibility));
   await page.getByText('Approved Browser Task').waitFor({timeout:15000});
 
   await page.getByRole('link',{name:/RAID Register/}).click();
@@ -167,7 +160,8 @@ try {
   await page.getByText(/Publication submitted/).waitFor({timeout:15000});
   await approve('REPORT_PUBLISH');
   await page.getByRole('button',{name:'Refresh'}).click();
-  await page.getByLabel('Approved executive snapshots').selectOption({index:1});
+  await page.getByRole('combobox',{name:'Approved executive snapshots'}).click();
+  await page.getByRole('listbox',{name:'Approved executive snapshots'}).getByRole('option').nth(1).click();
   assert.equal(await page.getByRole('button',{name:'Export approved CSV'}).isEnabled(),true);
 
   // Each business module owns its own maker-checker approval subtab.
@@ -217,7 +211,8 @@ try {
   const adminTabs=page.getByRole('navigation',{name:'Administration tabs'});
   assert.equal(await adminTabs.getByRole('link').count(),4);
   await page.getByRole('heading',{name:'Admin Parameters'}).waitFor();
-  await page.getByLabel('Parameter').selectOption('currency');
+  await page.getByRole('combobox',{name:'Parameter'}).click();
+  await page.getByRole('listbox',{name:'Parameter'}).getByRole('option',{name:/Currency/i}).click();
   await page.getByLabel('Proposed value').fill('MYR');
   await page.getByLabel('Change rationale').fill('Browser report currency setting');
   await page.getByRole('button',{name:'Submit for check'}).click();
