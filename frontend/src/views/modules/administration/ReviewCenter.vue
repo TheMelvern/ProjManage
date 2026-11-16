@@ -76,7 +76,7 @@ const initials = value => value ? String(value).trim().split(/\\s+/).slice(0,2).
 function describe(e) { const m=e.response?.data?.message; return Array.isArray(m)?m.join(', '):m||e.message||'Request failed'; }
 async function load() {
   error.value = ''; loading.value = true;
-  try { const items=(await axios.get('/reviews')).data.data; reviews.value=items.filter(r=>(kindGroups[props.module]||[]).includes(r.kind)); if(!reviews.value.some(r=>r.id===selectedId.value))selectedId.value=''; }
+  try { const items=(await axios.get('/reviews',{params:{module:props.module}})).data.data; reviews.value=items.filter(r=>(kindGroups[props.module]||[]).includes(r.kind)); if(!reviews.value.some(r=>r.id===selectedId.value))selectedId.value=''; }
   catch(e) { error.value = describe(e); }
   finally { loading.value = false; }
 }
