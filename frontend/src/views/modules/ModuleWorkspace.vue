@@ -35,6 +35,9 @@ import TeamAvailability from './people/TeamAvailability.vue';
 import ReportsView from './projects/reports/ReportsView.vue';
 const props=defineProps({module:{type:String,required:true}});
 const route=useRoute();
+const canSeeCalendar=computed(()=>{
+  try{return ['ADMIN','PMO','PROJECT_MANAGER'].includes(JSON.parse(localStorage.getItem('user')||'{}').role);}catch{return false;}
+});
 const labels={admin:'Administration',projects:'Projects & Tasks',raid:'RAID Register',timesheets:'Timesheets',leave:'Leave Tracker',reports:'Executive Reports'};
 const moduleLabel=computed(()=>labels[props.module]||props.module);
 const tabs=computed(()=>props.module==='admin' ? [
@@ -44,7 +47,7 @@ const tabs=computed(()=>props.module==='admin' ? [
   {to:'/admin/approvals',label:'Approvals',key:'approvals'}
 ] : props.module === 'leave' ? [
   {to:'/leave',label:'My leave',key:'overview'},
-  {to:'/leave/team',label:'Team calendar',key:'calendar'},
+  ...(canSeeCalendar.value ? [{to:'/leave/team',label:'Team calendar',key:'calendar'}] : []),
   {to:'/leave/approvals',label:'Approvals',key:'approvals'}
 ] : [
   {to:'/'+props.module,label:'Overview',key:'overview'},
