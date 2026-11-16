@@ -105,10 +105,18 @@ model Task {
   itemType    String @default("TASK")
   priority    String @default("MEDIUM")
   phase       String?
+  parentId    String?
+  dependsOnId String?
+  parent      Task?      @relation("TaskHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  subtasks    Task[]     @relation("TaskHierarchy")
+  dependsOn   Task?      @relation("TaskDependencies", fields: [dependsOnId], references: [id], onDelete: SetNull)
+  dependents  Task[]     @relation("TaskDependencies")
   project     Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   @@index([projectId, status])
+  @@index([parentId])
+  @@index([dependsOnId])
 }
 
 enum RegisterStatus {
