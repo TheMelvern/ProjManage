@@ -132,6 +132,13 @@ try {
   await approve('TASK_CREATE','Approved Browser Task');
   await page.reload();
   await page.getByRole('button',{name:/Approved Browser Project/}).click();
+  const taskVisibility=await page.getByText('Approved Browser Task').evaluate(el=>{
+    const chain=[];for(let node=el;node&&chain.length<8;node=node.parentElement){
+      const style=getComputedStyle(node);
+      chain.push({tag:node.tagName,classes:node.className,display:style.display,visibility:style.visibility,opacity:style.opacity,rect:node.getBoundingClientRect().toJSON()});
+    }return chain;
+  });
+  console.log('TASK_VISIBILITY_DIAGNOSTIC',JSON.stringify(taskVisibility));
   await page.getByText('Approved Browser Task').waitFor({timeout:15000});
 
   await page.getByRole('link',{name:/RAID Register/}).click();
