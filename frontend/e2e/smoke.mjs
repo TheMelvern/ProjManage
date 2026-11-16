@@ -131,6 +131,7 @@ try {
   await page.getByText(/Task proposal submitted/).waitFor({timeout:15000});
   await approve('TASK_CREATE','Approved Browser Task');
   await page.reload();
+  await page.getByRole('button',{name:/Approved Browser Project/}).click();
   await page.getByText('Approved Browser Task').waitFor({timeout:15000});
 
   await page.getByRole('link',{name:/RAID Register/}).click();
