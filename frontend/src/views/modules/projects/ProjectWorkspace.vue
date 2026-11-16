@@ -71,7 +71,7 @@
             <input id="task-title" v-model.trim="newTaskTitle" placeholder="Task or deliverable name"
               minlength="2" maxlength="200" required :disabled="!liveMode || busy" />
             <label for="task-due">Due date (optional)</label>
-            <input id="task-due" v-model="newTaskDue" type="date" :disabled="!liveMode || busy" />
+            <SmartDatePicker id="task-due" v-model="newTaskDue" aria-label="Due date (optional)" :disabled="!liveMode || busy" />
             <button type="submit" :disabled="!liveMode || busy || newTaskTitle.length < 2">Submit task</button>
           </form>
           <ul class="tasks">
@@ -93,6 +93,7 @@
 </template>
 
 <script setup>
+import SmartDatePicker from "../../../components/SmartDatePicker.vue";
 import { computed, onMounted, ref } from 'vue';
 import axiosInstance from '../../../api/axiosConfig';
 import SmartSelect from '../../../components/SmartSelect.vue';
