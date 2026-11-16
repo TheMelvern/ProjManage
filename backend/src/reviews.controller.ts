@@ -184,7 +184,10 @@ export class ReviewsController {
           await tx.project.create({ data: {
             organizationId: review.organizationId, name: String(values.name),
             client: typeof values.client === 'string' ? values.client : undefined,
-            description: typeof values.description === 'string' ? values.description : undefined
+            description: typeof values.description === 'string' ? values.description : undefined,
+            deliveryMethod: ['WATERFALL','KANBAN'].includes(String(values.deliveryMethod)) ? String(values.deliveryMethod) : 'KANBAN',
+            startDate: typeof values.startDate === 'string' ? new Date(values.startDate) : undefined,
+            targetEndDate: typeof values.targetEndDate === 'string' ? new Date(values.targetEndDate) : undefined
           } });
         } else if (['TASK_CREATE', 'TASK_UPDATE', 'RISK_CREATE', 'RISK_UPDATE',
           'ISSUE_CREATE', 'ISSUE_UPDATE', 'ACTION_CREATE', 'ACTION_UPDATE',
@@ -207,13 +210,15 @@ export class ReviewsController {
           };
           if (review.kind === 'TASK_CREATE') {
             await tx.task.create({ data: { projectId, title: str('title')!,
-              description: str('description'), dueDate: date('dueDate') } });
+              description: str('description'), dueDate: date('dueDate'), startDate: date('startDate'),
+              itemType: str('itemType') || 'TASK', priority: str('priority') || 'MEDIUM', phase: str('phase') } });
           } else if (review.kind === 'TASK_UPDATE') {
             const current = await tx.task.findFirst({ where: { id: targetId, projectId } });
             assertVersion(current);
             await tx.task.update({ where: { id: targetId }, data: {
               title: str('title'), description: str('description'),
-              dueDate: date('dueDate'), status: str('status') as any
+              dueDate: date('dueDate'), startDate: date('startDate'),
+              itemType: str('itemType'), priority: str('priority'), phase: str('phase'), status: str('status') as any
             } });
           } else if (review.kind === 'RISK_CREATE') {
             await tx.risk.create({ data: { projectId, title: str('title')!,
