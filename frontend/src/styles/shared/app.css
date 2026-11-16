@@ -13,25 +13,24 @@ button:focus-visible,a:focus-visible{outline:3px solid #86a8ff;outline-offset:3p
 .sidebar-links a:hover{background:#243658}
 .sidebar-links a.router-link-active{background:#344b82;color:#fff}
 .sidebar-links .material-symbols-outlined{font-size:21px}
-.sidebar-bottom{margin-top:auto;padding:24px;color:#a5b7d2}
+.sidebar-bottom{margin-top:auto;padding:14px 12px 22px;border-top:1px solid #ffffff1b}
+.sidebar-signout{width:100%;display:flex;align-items:center;gap:14px;text-align:left;padding:13px 14px;border:0;border-radius:11px;background:transparent;color:#d0d9eb;font-size:13px;font-weight:650;cursor:pointer;transition:background .15s ease,color .15s ease}
+.sidebar-signout .material-symbols-outlined{font-size:21px}
+.sidebar-signout:hover{background:#243658;color:#fff}
+.sidebar-signout:focus-visible{outline:3px solid #8da6ff;outline-offset:2px}
 .app-content{margin-left:245px;min-width:0;flex:1}
 .app-topbar{min-height:68px;background:#fff;border-bottom:1px solid #e7edf5;display:flex;align-items:center;gap:16px;justify-content:space-between;padding:0 28px}
 .topbar-label{font-size:14px;font-weight:750;color:#2b3950;margin-right:auto}
-.topbar-right{display:flex;align-items:center;gap:18px}
-.user-label{color:#728199;font-size:13px}
-.logout-btn{background:#f0f4fb;border:1px solid #dce5f2;color:#2857a4;padding:9px 14px;border-radius:10px;cursor:pointer;font-size:12px;font-weight:700}
+.topbar-right{display:flex;align-items:center;gap:14px}
 .menu-toggle{display:none;background:none;border:0;color:#263650;cursor:pointer}
 .mobile-backdrop{display:none}
 @media(max-width:900px){.app-sidebar{transform:translateX(-100%);transition:transform .2s}.app-sidebar.sidebar-open{transform:translateX(0)}.app-content{margin-left:0}.menu-toggle{display:inline-flex;padding:4px}.mobile-backdrop{display:block;position:fixed;inset:0;border:0;background:#0a173a70;z-index:10}.app-topbar{padding:0 15px}}
-@media(max-width:520px){.user-label{display:none}}
 
 /* Framer parity: identity badge and compact enterprise top bar */
 .profile-badge{display:inline-grid;place-items:center;flex:none;width:33px;height:33px;border-radius:50%;background:#e0e9fc;color:#315ac4;font-size:11px;font-weight:800;border:2px solid #fff;box-shadow:0 0 0 1px #dce5f2}
 .app-topbar{min-height:74px}
 .sidebar-links a{transition:background .15s ease}
 
-.profile-role{font-size:10px;letter-spacing:.04em;font-weight:800;color:#3256ae;background:#ecf2fe;border-radius:14px;padding:6px 9px}
-@media(max-width:680px){.profile-role{display:none}}
 
 .notification-shortcut{display:inline-flex;align-items:center;justify-content:center;position:relative;width:36px;height:36px;border-radius:9px;background:#edf2fc;text-decoration:none;color:#315ac4}
 .notification-shortcut .material-symbols-outlined{font-size:21px}

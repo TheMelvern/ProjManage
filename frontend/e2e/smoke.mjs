@@ -64,6 +64,17 @@ try {
   await page.getByRole('button',{name:/Sign In/i}).click();
   await page.waitForURL('**/#/portfolio',{timeout:15000});
   await page.getByRole('heading',{name:'Portfolio Overview'}).waitFor();
+  // Shared shell: signout belongs in sidebar; profile and notifications stay in topbar.
+  const sidebar=page.getByRole('complementary',{name:'Primary navigation'});
+  const topbar=page.locator('.app-topbar');
+  assert.equal(await sidebar.getByRole('button',{name:'Sign out'}).count(),1);
+  assert.equal(await topbar.getByRole('button',{name:'Sign out'}).count(),0);
+  assert.equal(await topbar.locator('.profile-badge').count(),1);
+  assert.equal(await topbar.locator('.user-label, .profile-role').count(),0);
+  assert.equal(await sidebar.getByRole('link',{name:'Notification Center'}).count(),0);
+  assert.equal(await sidebar.getByRole('link',{name:'Connected Workflows'}).count(),0);
+  assert.equal(await topbar.getByRole('link',{name:'Notification Center'}).count(),1);
+
   const headingSize=await page.getByRole('heading',{name:'Portfolio Overview'}).evaluate(el=>getComputedStyle(el).fontSize);
   assert.equal(headingSize,'30px','Portfolio page title should follow global type scale');
   const portfolioH2=await page.getByRole('heading',{name:'Portfolio health'}).evaluate(el=>getComputedStyle(el).fontSize);
@@ -154,7 +165,7 @@ try {
 
   await mkdir('test-results',{recursive:true});
   await page.screenshot({path:'test-results/desktop-admin.png',fullPage:true});
-  await page.getByRole('button',{name:'Sign out'}).click();
+  await sidebar.getByRole('button',{name:'Sign out'}).click();
   await page.waitForURL('**/#/login',{timeout:15000});
   assert.equal(await page.evaluate(()=>localStorage.getItem('access_token')),null);
   // Exercise responsive mobile sidebar, navigation and leave form.
@@ -169,6 +180,9 @@ try {
   await mobile.getByRole('button',{name:/Sign In/i}).click();
   await mobile.waitForURL('**/#/portfolio',{timeout:15000});
   await mobile.getByRole('button',{name:'Toggle navigation'}).click();
+  assert.ok(await mobile.locator('.sidebar-signout').isVisible(),'Sign out should be accessible in mobile navigation');
+  assert.equal(await mobile.getByRole('complementary',{name:'Primary navigation'}).getByRole('link',{name:'Notification Center'}).count(),0);
+
   await mobile.getByRole('link',{name:/Leave Tracker/}).click();
   await mobile.getByRole('heading',{name:'Leave Tracker Management'}).waitFor();
   await mobile.screenshot({path:'test-results/mobile-leave.png',fullPage:true});
