@@ -6,7 +6,7 @@
         <h1>Projects & tasks</h1>
         <p>Manage delivery records that power your executive status reports.</p>
       </div>
-      <button type="button" class="create-project-action" @click="showCreate = !showCreate">{{ showCreate ? 'Close form' : '+ Create project' }}</button>
+      <router-link to="/projects/new" class="create-project-action">+ Create project</router-link>
     </header>
 
     <p v-if="!liveMode" class="notice" role="status">
@@ -21,7 +21,7 @@
           <h2>Projects</h2>
           <span>{{ projects.length }} total</span>
         </div>
-        <form v-if="showCreate" class="create-form" @submit.prevent="createProject">
+        <form v-if="false" class="create-form" @submit.prevent="createProject">
           <label for="project-name">New project name</label>
           <input id="project-name" v-model.trim="newProjectName" required minlength="2" maxlength="140"
             placeholder="e.g. Customer Portal Rollout" :disabled="!liveMode || busy" />
@@ -31,7 +31,7 @@
           <button type="submit" :disabled="!liveMode || busy || newProjectName.length < 2">Submit project</button>
         </form>
         <div v-if="loading" class="loading" role="status">Loading projects…</div>
-        <div v-else-if="projects.length === 0" class="empty-project-landing"><span class="material-symbols-outlined" aria-hidden="true">folder_off</span><h3>No projects yet</h3><p>Create your first project to start tracking work.</p><button type="button" @click="showCreate = true">Create project</button></div>
+        <div v-else-if="projects.length === 0" class="empty-project-landing"><span class="material-symbols-outlined" aria-hidden="true">folder_off</span><h3>No projects yet</h3><p>Create your first project to start tracking work.</p><router-link to="/projects/new" class="create-project-action">Create project</router-link></div>
         <div v-else class="project-choices" role="list">
           <button v-for="project in projects" :key="project.id" type="button"
             :class="{ selected: project.id === selectedId }" @click="selectProject(project.id)">
@@ -39,6 +39,7 @@
             <small>{{ project.client || 'No client' }}</small>
             <span class="project-status">{{ formatLabel(project.status) }}</span>
           </button>
+          <router-link class="project-workspace-link" :to="'/projects/'+encodeURIComponent(project.id)+'/workspace'">Open workspace</router-link>
         </div>
       </section>
 
@@ -46,6 +47,7 @@
     <div v-if="selectedProject" class="workspace-layout">
       <section class="workspace-card project-detail">
         <template v-if="selectedProject">
+          <router-link class="project-workspace-link" :to="'/projects/'+encodeURIComponent(selectedProject.id)+'/workspace'">Open project workspace →</router-link>
           <div class="section-heading"><h2>{{ selectedProject.name }}</h2><span>{{ tasks.length }} tasks</span></div>
           <p class="detail-desc">{{ selectedProject.description || 'Project delivery and milestone tracking.' }}</p>
           <form class="detail-settings" @submit.prevent="saveProject">
@@ -216,6 +218,7 @@ onMounted(loadProjects);
 .project-overview{display:block}.project-choices{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px!important;margin-top:20px!important}
 .project-choices button{min-height:136px;justify-content:space-between;gap:12px!important;padding:19px!important;box-shadow:0 5px 18px #15244209}
 .project-choices button.selected{box-shadow:0 0 0 2px #6d91ee55}
+.project-workspace-link{font-size:12px;font-weight:750;text-decoration:none;color:#315ac4;background:#edf3ff;padding:10px 13px;border-radius:9px;display:inline-block;margin:9px 0}.project-list .project-workspace-link{margin:0;align-self:start}.create-project-action{display:inline-block;text-decoration:none}
 .project-list{width:100%}.create-project-action,.empty-project-landing button{border:0;border-radius:10px;background:#315ac4;color:white;padding:12px 18px;font-weight:750;cursor:pointer}
 .create-form{max-width:520px;background:#f7f9fd;padding:20px;border-radius:14px}
 .empty-project-landing{text-align:center;padding:48px 18px;color:#61728b}.empty-project-landing .material-symbols-outlined{font-size:44px;color:#98a9c4}.empty-project-landing h3{font-size:20px;color:#263955;margin:8px 0}.empty-project-landing p{font-size:13px}
