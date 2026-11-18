@@ -8,7 +8,8 @@
     <p v-if="!liveMode" class="notice" role="status">Enable VITE_USE_LIVE_API=true and sign in to log time.</p>
     <p v-if="error" class="notice error" role="alert">{{ error }}</p>
     <p v-if="message" class="notice success" role="status">{{ message }}</p>
-    <section class="panel">
+    <section class="panel premium-add-bar"><div><h2>Log project effort</h2><p>Record your contribution and submit it for independent review.</p></div><button type="button" class="premium-add-trigger" @click="composeOpen=true"><span class="material-symbols-outlined" aria-hidden="true">add_circle</span> New time entry</button></section>
+    <PremiumComposeDialog :open="composeOpen" title="New time entry" eyebrow="RESOURCE / TIMESHEETS" description="Add approved project effort with the correct work date and supporting description." @close="composeOpen=false">
       <form class="entry-form" @submit.prevent="submit">
         <div class="field full"><label for="timesheet-project">Project</label>
           <SmartSelect id="timesheet-project" v-model="projectId" aria-label="Project" :disabled="!liveMode || busy" @change="loadEntries" :options="[{value:'',label:'Select project'},...projects.map(project=>({value:project.id,label:project.name}))]" /></div>
@@ -23,7 +24,7 @@
         <div class="field full form-bottom"><button type="submit" :disabled="!liveMode || busy || !projectId">Submit for check</button>
           <span>Entries are associated with your authenticated account.</span></div>
       </form>
-    </section>
+    </PremiumComposeDialog>
     <section class="panel">
       <div class="section-title"><h2>Time entries</h2><span>{{ totalHours.toFixed(2) }} total hours</span></div>
       <p v-if="loading" class="empty" role="status">Loading time entries…</p>
@@ -40,9 +41,11 @@
 <script setup>
 import SmartDatePicker from "../../../components/SmartDatePicker.vue";
 import SmartSelect from '../../../components/SmartSelect.vue';
+import PremiumComposeDialog from '../../../components/PremiumComposeDialog.vue';
 import { computed, onMounted, ref } from 'vue';
 import axiosInstance from '../../../api/axiosConfig';
 
+const composeOpen = ref(false);
 const liveMode = import.meta.env.VITE_USE_LIVE_API === 'true';
 const localToday = () => {
   const now = new Date();
@@ -89,7 +92,7 @@ async function submit() {
       values: { workDate: new Date(workDate.value + 'T12:00:00').toISOString(),
         hours: Number(hours.value), description: description.value }
     });
-    description.value = '';
+    description.value = '';composeOpen.value=false;
     message.value = 'Timesheet submitted for independent approval.';
   } catch (cause) { reportError(cause); } finally { busy.value = false; }
 }
