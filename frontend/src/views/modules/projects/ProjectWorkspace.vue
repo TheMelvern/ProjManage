@@ -193,6 +193,7 @@ async function createTask() {
     });
     newTaskTitle.value = '';
     newTaskDue.value = '';
+    composeOpen.value=false;
     showSuccess('Task proposal submitted for independent approval.');
   } catch (cause) { showError(cause); } finally { busy.value = false; }
 }
