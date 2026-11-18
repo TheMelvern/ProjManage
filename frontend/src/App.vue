@@ -96,7 +96,7 @@ const navigation = [
   { to: '/timesheets', label: 'Timesheets', icon: 'schedule' },
   { to: '/leave', label: 'Leave Tracker', icon: 'event_available' },
   { to: '/reports', label: 'Executive Reports', icon: 'summarize' },
-  { to: '/admin/parameters', label: 'Parameters', icon: 'tune', adminOnly: true }
+  { to: '/admin/parameters', label: 'Parameters', icon: 'tune' }
 ];
 const isLogin = computed(() => ['Login', 'Signup', 'VerifyEmail', 'ResendVerification', 'ForgotPassword', 'ResetPassword'].includes(route.name));
 const currentRole = computed(() => {
