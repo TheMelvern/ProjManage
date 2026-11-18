@@ -117,7 +117,7 @@ try {
   const headingSize=await page.getByRole('heading',{name:'Portfolio Overview'}).evaluate(el=>getComputedStyle(el).fontSize);
   assert.equal(headingSize,'34px','Portfolio page title should follow Figma type scale');
   const portfolioH2=await page.getByRole('heading',{name:'Portfolio health'}).evaluate(el=>getComputedStyle(el).fontSize);
-  assert.equal(portfolioH2,'18px','Portfolio card heading should follow global section scale');
+  assert.equal(portfolioH2,'21px','Portfolio card heading should follow Figma section scale');
   const tableHeader=await page.locator('thead th').first().evaluate(el=>getComputedStyle(el).fontSize);
   assert.equal(tableHeader,'11px','Table headings should share type scale');
 
