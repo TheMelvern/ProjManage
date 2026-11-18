@@ -115,7 +115,7 @@ try {
   assert.equal(await topbar.getByRole('button',{name:'Recent notifications'}).count(),1);
 
   const headingSize=await page.getByRole('heading',{name:'Portfolio Overview'}).evaluate(el=>getComputedStyle(el).fontSize);
-  assert.equal(headingSize,'30px','Portfolio page title should follow global type scale');
+  assert.equal(headingSize,'34px','Portfolio page title should follow Figma type scale');
   const portfolioH2=await page.getByRole('heading',{name:'Portfolio health'}).evaluate(el=>getComputedStyle(el).fontSize);
   assert.equal(portfolioH2,'18px','Portfolio card heading should follow global section scale');
   const tableHeader=await page.locator('thead th').first().evaluate(el=>getComputedStyle(el).fontSize);
