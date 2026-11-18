@@ -11,7 +11,7 @@
           <span class="material-symbols-outlined" aria-hidden="true">close</span>
         </button>
       </header>
-      <div class="premium-compose-body"><slot /></div>
+      <div class="premium-compose-body"><p v-if="error" class="premium-compose-error" role="alert">{{ error }}</p><slot /></div>
       <footer v-if="$slots.footer" class="premium-compose-footer"><slot name="footer" /></footer>
     </section>
   </div>
@@ -22,7 +22,8 @@ const props = defineProps({
   open: { type: Boolean, default: false },
   title: { type: String, required: true },
   eyebrow: { type: String, default: 'NEW RECORD' },
-  description: { type: String, default: '' }
+  description: { type: String, default: '' },
+  error: { type: String, default: '' }
 });
 defineEmits(['close']);
 const dialog = ref(null);
@@ -58,7 +59,7 @@ const headingId = 'pmo-compose-heading';
 .premium-compose-heading h2{font-size:25px;letter-spacing:-.035em;line-height:1.2;margin:0;font-weight:700}
 .premium-compose-description{font-size:13px;color:var(--pmo-muted,#6e6e73);line-height:1.6;margin:9px 0 0}
 .premium-compose-close{width:38px;height:38px;border:1px solid var(--pmo-border,#e6e6ea);background:var(--pmo-surface-alt,#f5f5f7);color:var(--pmo-muted,#6e6e73);border-radius:13px;display:grid;place-items:center;cursor:pointer;flex:none}
-.premium-compose-body{padding:26px 32px;overflow:auto;overscroll-behavior:contain}
+.premium-compose-body{padding:26px 32px;overflow:auto;overscroll-behavior:contain}.premium-compose-error{padding:12px 15px;background:#fce9ed;color:#9b2741;border-radius:12px;font-size:12px}
 .premium-compose-body :deep(form){display:grid;gap:15px}
 .premium-compose-body :deep(label){display:grid;gap:8px;font-weight:650;font-size:12px;color:var(--pmo-text,#1d1d1f)}
 .premium-compose-body :deep(input),.premium-compose-body :deep(textarea){width:100%;border-radius:13px;padding:13px 15px;background:var(--pmo-input,#fff);border:1px solid var(--pmo-border,#e6e6ea);color:var(--pmo-text,#1d1d1f);outline:none;font-size:13px}
