@@ -40,8 +40,8 @@ try {
     family:getComputedStyle(el).fontFamily,size:getComputedStyle(el).fontSize,
     weight:Number(getComputedStyle(el).fontWeight)
   }));
-  assert.ok(loginType.family.includes('system') || loginType.family.includes('Segoe UI') || loginType.family.includes('-apple-system'),'Authentication header must use the premium system font stack');
-  assert.equal(loginType.size,'30px','Authentication headings must use global display size');
+  assert.ok(loginType.family.includes('Inter'),'Authentication header must use Figma Inter typography');
+  assert.equal(loginType.size,'34px','Authentication headings must use Figma display size');
   assert.ok(loginType.weight>=700);
   const loginInput=await page.locator('#login-email').evaluate(el=>getComputedStyle(el).fontSize);
   assert.equal(loginInput,'13px','Authentication input typography must match design system');
@@ -184,6 +184,8 @@ try {
   await page.getByRole('button',{name:'Timesheets'}).click();
   await page.getByRole('link',{name:'← Projects & Tasks'}).click();
   await page.getByRole('button',{name:/Approved Browser Project/}).click();
+  await page.getByRole('button',{name:'Add delivery task'}).click();
+  await page.getByRole('dialog',{name:'New delivery task'}).waitFor();
   await page.getByLabel('New task').fill('Approved Browser Task');
   await page.getByRole('button',{name:'Submit task'}).click();
   await page.getByText(/Task proposal submitted/).waitFor({timeout:15000});
@@ -194,6 +196,8 @@ try {
 
   await page.getByRole('link',{name:/RAID Register/}).click();
   await page.getByRole('heading',{name:'RAID Register'}).waitFor();
+  await page.getByRole('button',{name:'Add risk'}).click();
+  await page.getByRole('dialog',{name:'New risk'}).waitFor();
   await page.getByLabel('New risk title').fill('Approved Browser Risk');
   await page.getByRole('button',{name:'Submit item'}).click();
   await page.getByText(/RAID item submitted/).waitFor({timeout:15000});
@@ -203,6 +207,8 @@ try {
 
   await page.getByRole('link',{name:/Timesheets/}).click();
   await page.getByRole('heading',{name:'Project timesheets'}).waitFor();
+  await page.getByRole('button',{name:'New time entry'}).click();
+  await page.getByRole('dialog',{name:'New time entry'}).waitFor();
   await page.getByLabel('Hours worked').fill('7.5');
   await page.getByLabel('Work completed').fill('Browser approval walkthrough');
   await page.getByRole('button',{name:'Submit for check'}).click();
@@ -250,6 +256,8 @@ try {
   assert.equal(await page.getByRole('navigation',{name:'Leave Tracker tabs'}).getByRole('link',{name:'Team calendar'}).count(),1);
   assert.equal(await page.getByRole('heading',{name:'Connected workflows'}).count(),0);
 
+  await page.getByRole('button',{name:'New leave request'}).click();
+  await page.getByRole('dialog',{name:'New leave request'}).waitFor();
   await page.getByRole('combobox',{name:'Leave type'}).click();
   await page.getByRole('option',{name:'Annual leave'}).click();
   async function chooseDate(label, dateString) {
@@ -283,6 +291,8 @@ try {
   const adminTabs=page.getByRole('navigation',{name:'Administration tabs'});
   assert.equal(await adminTabs.getByRole('link').count(),4);
   await page.getByRole('heading',{name:'Admin Parameters'}).waitFor();
+  await page.getByRole('button',{name:'Propose parameter change'}).click();
+  await page.getByRole('dialog',{name:'Change organization parameter'}).waitFor();
   await page.getByRole('combobox',{name:'Parameter'}).click();
   await page.getByRole('listbox',{name:'Parameter'}).getByRole('option',{name:/Currency/i}).click();
   await page.getByLabel('Proposed value').fill('MYR');
@@ -310,6 +320,8 @@ try {
   await sidebar.getByRole('button',{name:'Sign out'}).click();
   await page.waitForURL('**/#/login',{timeout:15000});
   assert.equal(await page.evaluate(()=>localStorage.getItem('access_token')),null);
+  assert.equal(await page.locator('html').getAttribute('data-theme'),'light','Login must inherit the previously chosen appearance');
+  assert.equal(await page.locator('html').getAttribute('data-accent'),'blue','Login must inherit the last accent color');
   // Exercise responsive mobile sidebar, navigation and leave form.
   const mobile=await browser.newPage({viewport:{width:390,height:844}});
   mobile.on('pageerror',e=>errors.push(e.message));
