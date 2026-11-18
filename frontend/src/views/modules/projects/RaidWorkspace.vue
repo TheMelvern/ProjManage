@@ -25,7 +25,7 @@
           @click="activeTab = tab.key">{{ tab.label }} <span>{{ register[tab.key].length }}</span></button>
       </div>
       <div class="premium-add-bar"><div><strong>{{ activeTab.charAt(0).toUpperCase()+activeTab.slice(1) }} register</strong><p>Capture a new entry for independent review.</p></div><button type="button" class="premium-add-trigger" @click="composeOpen=true"><span class="material-symbols-outlined" aria-hidden="true">add_circle</span> Add {{ activeTab.slice(0,-1) }}</button></div>
-      <PremiumComposeDialog :open="composeOpen" :title="'New '+activeTab.slice(0,-1)" eyebrow="GOVERNANCE / NEW ENTRY" description="Document a clear description before routing this item for approval." @close="composeOpen=false">
+      <PremiumComposeDialog :open="composeOpen" :title="'New '+activeTab.slice(0,-1)" eyebrow="GOVERNANCE / NEW ENTRY" description="Document a clear description before routing this item for approval." :error="error" @close="composeOpen=false">
       <form class="add-form" @submit.prevent="addEntry">
         <label for="raid-title">New {{ activeTab.slice(0,-1) }} title</label>
         <input id="raid-title" v-model.trim="title" maxlength="200" minlength="2" required
