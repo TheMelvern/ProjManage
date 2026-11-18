@@ -24,6 +24,8 @@
           :class="{ active: activeTab === tab.key }" :aria-pressed="activeTab === tab.key"
           @click="activeTab = tab.key">{{ tab.label }} <span>{{ register[tab.key].length }}</span></button>
       </div>
+      <div class="premium-add-bar"><div><strong>{{ activeTab.charAt(0).toUpperCase()+activeTab.slice(1) }} register</strong><p>Capture a new entry for independent review.</p></div><button type="button" class="premium-add-trigger" @click="composeOpen=true"><span class="material-symbols-outlined" aria-hidden="true">add_circle</span> Add {{ activeTab.slice(0,-1) }}</button></div>
+      <PremiumComposeDialog :open="composeOpen" :title="'New '+activeTab.slice(0,-1)" eyebrow="GOVERNANCE / NEW ENTRY" description="Document a clear description before routing this item for approval." @close="composeOpen=false">
       <form class="add-form" @submit.prevent="addEntry">
         <label for="raid-title">New {{ activeTab.slice(0,-1) }} title</label>
         <input id="raid-title" v-model.trim="title" maxlength="200" minlength="2" required
@@ -34,6 +36,7 @@
         </template>
         <button type="submit" :disabled="busy || title.length < 2">Submit item</button>
       </form>
+      </PremiumComposeDialog>
       <div class="entries">
         <article v-for="item in register[activeTab]" :key="item.id" class="entry">
           <div>
@@ -53,6 +56,7 @@
 
 <script setup>
 import SmartSelect from '../../../components/SmartSelect.vue';
+import PremiumComposeDialog from '../../../components/PremiumComposeDialog.vue';
 import { onMounted, ref } from 'vue';
 import axiosInstance from '../../../api/axiosConfig';
 
@@ -61,6 +65,7 @@ const tabs = [
   { key: 'risks', label: 'Risks' }, { key: 'issues', label: 'Issues' },
   { key: 'decisions', label: 'Decisions' }, { key: 'actions', label: 'Actions' }
 ];
+const composeOpen = ref(false);
 const activeTab = ref('risks');
 const selectedProjectId = ref('');
 const projects = ref([]);
@@ -109,7 +114,7 @@ async function addEntry() {
       kind, projectId: selectedProjectId.value, summary: 'Create ' + activeTab.value.slice(0, -1) + ' ' + title.value,
       values: payload
     });
-    title.value = '';
+    title.value = '';composeOpen.value=false;
     message.value = 'RAID item submitted for independent approval.';
   } catch (cause) { reportError(cause); }
   finally { busy.value = false; }
