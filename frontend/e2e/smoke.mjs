@@ -96,6 +96,17 @@ try {
   await page.reload();
   assert.equal(await page.locator('html').getAttribute('data-theme'),'dark','Theme must persist on reload');
   assert.equal(await page.locator('html').getAttribute('data-accent'),'purple','Accent must persist on reload');
+  const accentBackground=await page.locator('.app-sidebar .brand-symbol').evaluate(el=>getComputedStyle(el).backgroundColor);
+  await sidebar.getByRole('button',{name:'Sign out'}).click();
+  await page.waitForURL('**/#/login',{timeout:15000});
+  assert.equal(await page.locator('html').getAttribute('data-theme'),'dark','Dark appearance must carry over to sign-in');
+  assert.equal(await page.locator('html').getAttribute('data-accent'),'purple','Accent appearance must carry over to sign-in');
+  assert.equal(await page.locator('.auth-primary').evaluate(el=>getComputedStyle(el).backgroundColor),accentBackground,'Sign-in primary button must use the same accent');
+  await page.getByPlaceholder('name@company.com').fill('admin@pmo.test');
+  await page.getByPlaceholder('••••••••').fill('local-test-password-12345');
+  await page.getByRole('button',{name:/Sign In/i}).click();
+  await page.waitForURL('**/#/portfolio',{timeout:15000});
+  assert.equal(await page.locator('html').getAttribute('data-theme'),'dark','Theme must restore after signing back in');
   await page.getByRole('button',{name:/Manage profile for/}).click();
   const preferencesDialog=page.getByRole('dialog',{name:'Profile management'});
   await preferencesDialog.getByRole('button',{name:'Light'}).click();
