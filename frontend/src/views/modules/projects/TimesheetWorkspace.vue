@@ -9,7 +9,7 @@
     <p v-if="error" class="notice error" role="alert">{{ error }}</p>
     <p v-if="message" class="notice success" role="status">{{ message }}</p>
     <section class="panel premium-add-bar"><div><h2>Log project effort</h2><p>Record your contribution and submit it for independent review.</p></div><button type="button" class="premium-add-trigger" @click="composeOpen=true"><span class="material-symbols-outlined" aria-hidden="true">add_circle</span> New time entry</button></section>
-    <PremiumComposeDialog :open="composeOpen" title="New time entry" eyebrow="RESOURCE / TIMESHEETS" description="Add approved project effort with the correct work date and supporting description." @close="composeOpen=false">
+    <PremiumComposeDialog :open="composeOpen" title="New time entry" eyebrow="RESOURCE / TIMESHEETS" description="Add approved project effort with the correct work date and supporting description." :error="error" @close="composeOpen=false">
       <form class="entry-form" @submit.prevent="submit">
         <div class="field full"><label for="timesheet-project">Project</label>
           <SmartSelect id="timesheet-project" v-model="projectId" aria-label="Project" :disabled="!liveMode || busy" @change="loadEntries" :options="[{value:'',label:'Select project'},...projects.map(project=>({value:project.id,label:project.name}))]" /></div>
