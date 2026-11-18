@@ -67,7 +67,7 @@
             <div class="progress-fill" :style="{ width: progress + '%' }"></div>
           </div>
           <button type="button" class="premium-add-trigger" @click="composeOpen=true"><span class="material-symbols-outlined" aria-hidden="true">add_circle</span> Add delivery task</button>
-          <PremiumComposeDialog :open="composeOpen" title="New delivery task" eyebrow="PROJECTS / TASKS" description="Create a deliverable for independent approval. Use the project workspace for stories, priorities and dependencies." @close="composeOpen=false">
+          <PremiumComposeDialog :open="composeOpen" title="New delivery task" eyebrow="PROJECTS / TASKS" description="Create a deliverable for independent approval. Use the project workspace for stories, priorities and dependencies." :error="error" @close="composeOpen=false">
           <form class="task-create" @submit.prevent="createTask">
             <label for="task-title">New task</label>
             <input id="task-title" v-model.trim="newTaskTitle" placeholder="Task or deliverable name"
