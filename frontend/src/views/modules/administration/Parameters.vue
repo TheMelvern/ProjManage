@@ -10,7 +10,9 @@
     </section>
     <div class="columns">
       <section class="card">
-        <h2>Organization settings</h2><p>Submit proposed values for maker–checker approval.</p>
+        <h2>Organization settings</h2><p>Propose updates to governed parameters.</p>
+        <button type="button" class="premium-add-trigger" @click="composeOpen=true"><span class="material-symbols-outlined" aria-hidden="true">tune</span> Propose parameter change</button>
+        <PremiumComposeDialog :open="composeOpen" title="Change organization parameter" eyebrow="ADMINISTRATION / PARAMETERS" description="Review the current approved value, enter a proposed value, and explain the reason." @close="composeOpen=false">
         <form @submit.prevent="submit">
           <label for="param-key">Parameter</label>
           <SmartSelect id="param-key" v-model="key" aria-label="Parameter" :options="allowed.map(k=>({value:k.key,label:k.name}))" />
@@ -22,6 +24,7 @@
           <textarea id="param-summary" v-model.trim="summary" maxlength="400" rows="3" placeholder="Why is this parameter being changed?"></textarea>
           <button type="submit" :disabled="busy || !value"> {{ busy ? 'Submitting…' : 'Submit for check' }} </button>
         </form>
+        </PremiumComposeDialog>
       </section>
       <section class="card">
         <h2>Approved master parameters</h2>
@@ -42,8 +45,10 @@
 </template>
 <script setup>
 import SmartSelect from '../../../components/SmartSelect.vue';
+import PremiumComposeDialog from '../../../components/PremiumComposeDialog.vue';
 import { computed, onMounted, ref } from 'vue';
 import axios from '../../../api/axiosConfig';
+const composeOpen = ref(false);
 const allowed=[
 {key:'timezone',name:'Organization time zone'},{key:'currency',name:'Reporting currency'},
 {key:'dateFormat',name:'Date display format'},{key:'fiscalYearStart',name:'Fiscal year start'},
@@ -66,7 +71,7 @@ async function load(){loading.value=true;error.value='';try{
 async function submit(){error.value='';notice.value='';busy.value=true;try{
   await axios.post('/admin/parameters/proposals',{key:key.value,value:value.value,summary:summary.value || 'Update '+title(key.value)});
   notice.value='Change request created. A different administrator must approve it before the value changes.';
-  value.value='';summary.value='';await load();
+  value.value='';summary.value='';composeOpen.value=false;await load();
 }catch(e){error.value=describe(e);}finally{busy.value=false;}}
 onMounted(load);
 </script>
