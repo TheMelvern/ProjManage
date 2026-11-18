@@ -66,6 +66,8 @@
             :aria-valuenow="progress" aria-valuemin="0" aria-valuemax="100">
             <div class="progress-fill" :style="{ width: progress + '%' }"></div>
           </div>
+          <button type="button" class="premium-add-trigger" @click="composeOpen=true"><span class="material-symbols-outlined" aria-hidden="true">add_circle</span> Add delivery task</button>
+          <PremiumComposeDialog :open="composeOpen" title="New delivery task" eyebrow="PROJECTS / TASKS" description="Create a deliverable for independent approval. Use the project workspace for stories, priorities and dependencies." :error="error" @close="composeOpen=false">
           <form class="task-create" @submit.prevent="createTask">
             <label for="task-title">New task</label>
             <input id="task-title" v-model.trim="newTaskTitle" placeholder="Task or deliverable name"
@@ -74,6 +76,7 @@
             <SmartDatePicker id="task-due" v-model="newTaskDue" aria-label="Due date (optional)" :disabled="!liveMode || busy" />
             <button type="submit" :disabled="!liveMode || busy || newTaskTitle.length < 2">Submit task</button>
           </form>
+          </PremiumComposeDialog>
           <ul class="tasks">
             <li v-for="task in tasks" :key="task.id">
               <div class="task-details">
@@ -97,8 +100,10 @@ import SmartDatePicker from "../../../components/SmartDatePicker.vue";
 import { computed, onMounted, ref } from 'vue';
 import axiosInstance from '../../../api/axiosConfig';
 import SmartSelect from '../../../components/SmartSelect.vue';
+import PremiumComposeDialog from '../../../components/PremiumComposeDialog.vue';
 
 const liveMode = import.meta.env.VITE_USE_LIVE_API === 'true';
+const composeOpen=ref(false);
 const loading = ref(false), busy = ref(false), error = ref(''), success = ref('');
 const projects = ref([]), selectedId = ref(sessionStorage.getItem('pmo-selected-project') || null), tasks = ref([]), showCreate=ref(false);
 const newProjectName = ref(''), newClient = ref(''), newTaskTitle = ref(''), newTaskDue = ref('');
@@ -188,6 +193,7 @@ async function createTask() {
     });
     newTaskTitle.value = '';
     newTaskDue.value = '';
+    composeOpen.value=false;
     showSuccess('Task proposal submitted for independent approval.');
   } catch (cause) { showError(cause); } finally { busy.value = false; }
 }

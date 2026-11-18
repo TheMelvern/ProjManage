@@ -6,7 +6,8 @@
         {{ tab.label }}
       </router-link>
     </nav>
-    <ReviewCenter v-if="activeTab === 'approvals'" :module="module" />
+    <section v-if="module === 'admin' && !canManageParameters" class="permission-explainer" role="status"><span class="material-symbols-outlined" aria-hidden="true">admin_panel_settings</span><h2>Parameters</h2><p>Organization parameters and security administration require an Administrator role. Contact your workspace administrator if you need to propose configuration changes.</p></section>
+    <ReviewCenter v-else-if="activeTab === 'approvals'" :module="module" />
     <TeamAvailability v-else-if="module === 'leave' && activeTab === 'calendar'" />
     <template v-else>
       <Parameters v-if="module === 'admin' && activeTab === 'parameters'" />
@@ -35,6 +36,7 @@ import TeamAvailability from './people/TeamAvailability.vue';
 import ReportsView from './projects/reports/ReportsView.vue';
 const props=defineProps({module:{type:String,required:true}});
 const route=useRoute();
+const canManageParameters=computed(()=>{try{return JSON.parse(localStorage.getItem('user')||'{}').role==='ADMIN';}catch{return false;}});
 const canSeeCalendar=computed(()=>{
   try{return ['ADMIN','PMO','PROJECT_MANAGER'].includes(JSON.parse(localStorage.getItem('user')||'{}').role);}catch{return false;}
 });
@@ -64,4 +66,5 @@ const activeTab=computed(()=>route.path.endsWith('/approvals')?'approvals':
 .module-tabs a:hover{background:#f0f4fd;color:#315ac4}
 .module-tabs a.selected{background:#f0f4fd;color:#315ac4;border-bottom-color:#315ac4}
 @media(max-width:600px){.module-tabs{padding:10px 14px 0;gap:3px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:thin}.module-tabs a{white-space:nowrap;padding:11px 12px}}
+.permission-explainer{margin:34px;padding:38px;max-width:720px;background:var(--pmo-panel,#fff);color:var(--pmo-text,#1d1d1f);border:1px solid var(--pmo-border,#eee);border-radius:22px}.permission-explainer .material-symbols-outlined{font-size:32px;color:var(--pmo-accent,#0071e3)}.permission-explainer h2{font-size:24px;margin:16px 0 10px}.permission-explainer p{line-height:1.6;color:var(--pmo-muted,#6e6e73)}
 </style>

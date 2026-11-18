@@ -11,7 +11,9 @@
     </div>
     <div class="columns">
       <section class="card">
-        <h2>Apply for leave</h2><p>New requests are routed to an independent approver.</p>
+        <h2>Request time off</h2><p>Plan your absence through a guided form. Submissions still require approval.</p>
+        <button type="button" class="premium-add-trigger" @click="composeOpen=true"><span class="material-symbols-outlined" aria-hidden="true">add_circle</span> New leave request</button>
+        <PremiumComposeDialog :open="composeOpen" title="New leave request" eyebrow="PEOPLE / LEAVE" description="Choose your dates and prepare a clear handover before requesting approval." :error="error" @close="composeOpen=false">
         <form @submit.prevent="submit">
           <label for="leave-type">Leave type</label><SmartSelect id="leave-type" v-model="type" aria-label="Leave type" :options="[{value:'ANNUAL',label:'Annual leave'},{value:'MEDICAL',label:'Medical leave'},{value:'EMERGENCY',label:'Emergency leave'},{value:'UNPAID',label:'Unpaid leave'}]" />
           <div class="date-grid">
@@ -24,6 +26,7 @@
           <textarea id="leave-reason" v-model.trim="reason" rows="4" minlength="3" maxlength="500" required placeholder="Reason and coverage plan"></textarea>
           <button type="submit" :disabled="busy || !startDate || !endDate || !reason"> {{ busy ? 'Submitting…' : 'Submit for check' }} </button>
         </form>
+        </PremiumComposeDialog>
       </section>
       <section class="card">
         <div class="section-header"><h2>My leave requests</h2><button class="secondary" @click="load">Refresh</button></div>
@@ -45,6 +48,8 @@ import SmartDatePicker from "../../../components/SmartDatePicker.vue";
 import { computed, onMounted, ref } from 'vue';
 import axios from '../../../api/axiosConfig';
 import SmartSelect from '../../../components/SmartSelect.vue';
+import PremiumComposeDialog from '../../../components/PremiumComposeDialog.vue';
+const composeOpen = ref(false);
 const type=ref('ANNUAL'),startDate=ref(''),endDate=ref(''),reason=ref(''),dayType=ref('FULL');
 const loading=ref(false),busy=ref(false),error=ref(''),success=ref(''),requests=ref([]),balance=ref(null);
 const pendingCount=computed(()=>requests.value.filter(v=>v.status==='PENDING').length);
@@ -56,7 +61,7 @@ async function load(){error.value='';loading.value=true;try{const [mine,balances
 async function submit(){error.value='';success.value='';busy.value=true;try{
   await axios.post('/leave',{type:type.value,startDate:startDate.value,endDate:endDate.value,reason:reason.value,dayType:dayType.value});
   success.value='Request submitted for independent approval. Your balance is not reduced while pending.';
-  startDate.value='';endDate.value='';reason.value='';await load();
+  startDate.value='';endDate.value='';reason.value='';composeOpen.value=false;await load();
 }catch(e){error.value=describe(e);}finally{busy.value=false;}}
 async function cancelRequest(item) {
   if (!window.confirm('Cancel this pending leave request?')) return;

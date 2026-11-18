@@ -14,6 +14,8 @@ import ModuleWorkspace from './views/modules/ModuleWorkspace.vue';
 import './styles/shared/tailwind.css';
 import './styles/shared/app.css';
 import './styles/shared/typography.css';
+import { initializeAppearance } from './utils/appearance';
+initializeAppearance();
 import './styles/shared/adaptive-premium.css';
 
 const router = createRouter({
