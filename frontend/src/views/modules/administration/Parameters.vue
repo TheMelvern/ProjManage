@@ -12,7 +12,7 @@
       <section class="card">
         <h2>Organization settings</h2><p>Propose updates to governed parameters.</p>
         <button type="button" class="premium-add-trigger" @click="composeOpen=true"><span class="material-symbols-outlined" aria-hidden="true">tune</span> Propose parameter change</button>
-        <PremiumComposeDialog :open="composeOpen" title="Change organization parameter" eyebrow="ADMINISTRATION / PARAMETERS" description="Review the current approved value, enter a proposed value, and explain the reason." @close="composeOpen=false">
+        <PremiumComposeDialog :open="composeOpen" title="Change organization parameter" eyebrow="ADMINISTRATION / PARAMETERS" description="Review the current approved value, enter a proposed value, and explain the reason." :error="error" @close="composeOpen=false">
         <form @submit.prevent="submit">
           <label for="param-key">Parameter</label>
           <SmartSelect id="param-key" v-model="key" aria-label="Parameter" :options="allowed.map(k=>({value:k.key,label:k.name}))" />
