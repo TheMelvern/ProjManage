@@ -355,6 +355,8 @@ try {
   await mobile.getByRole('link',{name:/Leave Tracker/}).click();
   await mobile.getByRole('heading',{name:'Leave Tracker Management'}).waitFor();
   await mobile.screenshot({path:'test-results/mobile-leave.png',fullPage:true});
+  await mobile.getByRole('button',{name:'New leave request'}).click();
+  assert.ok(await mobile.getByRole('dialog',{name:'New leave request'}).isVisible(),'Premium leave composer must work on mobile');
   assert.ok(await mobile.getByLabel('Leave duration').isVisible());
   await mobile.close();
   assert.deepEqual(errors,[],'Browser runtime exceptions');
