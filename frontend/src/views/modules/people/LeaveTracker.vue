@@ -13,7 +13,7 @@
       <section class="card">
         <h2>Request time off</h2><p>Plan your absence through a guided form. Submissions still require approval.</p>
         <button type="button" class="premium-add-trigger" @click="composeOpen=true"><span class="material-symbols-outlined" aria-hidden="true">add_circle</span> New leave request</button>
-        <PremiumComposeDialog :open="composeOpen" title="New leave request" eyebrow="PEOPLE / LEAVE" description="Choose your dates and prepare a clear handover before requesting approval." @close="composeOpen=false">
+        <PremiumComposeDialog :open="composeOpen" title="New leave request" eyebrow="PEOPLE / LEAVE" description="Choose your dates and prepare a clear handover before requesting approval." :error="error" @close="composeOpen=false">
         <form @submit.prevent="submit">
           <label for="leave-type">Leave type</label><SmartSelect id="leave-type" v-model="type" aria-label="Leave type" :options="[{value:'ANNUAL',label:'Annual leave'},{value:'MEDICAL',label:'Medical leave'},{value:'EMERGENCY',label:'Emergency leave'},{value:'UNPAID',label:'Unpaid leave'}]" />
           <div class="date-grid">
