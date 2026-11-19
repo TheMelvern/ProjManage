@@ -85,6 +85,7 @@ try {
   await profileDialog.getByLabel('Full name').fill('PMO Administrator');
   await profileDialog.getByRole('button',{name:'Save changes'}).click();
   await profileDialog.getByText('Profile updated successfully.').waitFor();
+  await profileDialog.getByRole('button',{name:'Appearance',exact:true}).click();
   await profileDialog.getByRole('button',{name:'Dark'}).click();
   await profileDialog.getByRole('button',{name:'Purple'}).click();
   assert.equal(await page.locator('html').getAttribute('data-theme'),'dark');
@@ -109,6 +110,7 @@ try {
   assert.equal(await page.locator('html').getAttribute('data-theme'),'dark','Theme must restore after signing back in');
   await page.getByRole('button',{name:/Manage profile for/}).click();
   const preferencesDialog=page.getByRole('dialog',{name:'Profile management'});
+  await preferencesDialog.getByRole('button',{name:'Appearance',exact:true}).click();
   await preferencesDialog.getByRole('button',{name:'Light'}).click();
   await preferencesDialog.getByRole('button',{name:'Blue'}).click();
   await preferencesDialog.getByRole('button',{name:'Save appearance'}).click();
