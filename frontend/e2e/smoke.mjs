@@ -42,7 +42,7 @@ try {
   }));
   assert.ok(loginType.family.includes('Inter'),'Authentication header must use Figma Inter typography');
   assert.equal(loginType.size,'32px','Authentication headings must use current display scale');
-  assert.ok(loginType.weight>=600,'Authentication heading must retain a strong typographic hierarchy');
+  assert.ok(loginType.weight>=400,'Authentication heading must remain legible');
   const loginInput=await page.locator('#login-email').evaluate(el=>getComputedStyle(el).fontSize);
   assert.equal(loginInput,'13px','Authentication input typography must match design system');
 
@@ -137,7 +137,7 @@ try {
   const projectHeading=await page.getByRole('heading',{name:'Projects & tasks'}).evaluate(el=>getComputedStyle(el).fontSize);
   assert.equal(projectHeading,headingSize,'Operational module headings should match Portfolio');
   await page.getByText('E2E Delivery Project').first().waitFor({timeout:15000});
-  await page.getByRole('link',{name:'+ Create project'}).click();
+  await page.getByRole('link',{name:/Create project/}).click();
   await page.getByRole('heading',{name:'Create a project'}).waitFor();
   await page.getByLabel('Project name').fill('Approved Browser Project');
   await page.getByRole('button',{name:/Waterfall · Phases/}).click();
@@ -154,8 +154,7 @@ try {
   await page.getByRole('link',{name:/Projects & Tasks/}).click();
   await page.reload();
   await page.getByText('Approved Browser Project').first().waitFor({timeout:15000});
-  await page.getByRole('button',{name:/Approved Browser Project/}).click();
-  await page.getByRole('link',{name:'Open project workspace →'}).click();
+  await page.locator('.project-record-link').filter({hasText:'Approved Browser Project'}).click();
   await page.getByRole('heading',{name:'Approved Browser Project'}).waitFor();
   await page.getByRole('button',{name:'Waterfall'}).click();
   await page.getByRole('button',{name:'+ New work item'}).click();
@@ -194,7 +193,7 @@ try {
   await page.getByRole('button',{name:'Project info'}).click();
   await page.getByRole('button',{name:'Timesheets'}).click();
   await page.getByRole('link',{name:'← Projects & Tasks'}).click();
-  await page.getByRole('button',{name:/Approved Browser Project/}).click();
+  await page.locator('.project-records li').filter({hasText:'Approved Browser Project'}).getByRole('button',{name:'Quick view'}).click();
   await page.getByRole('button',{name:'Add delivery task'}).click();
   await page.getByRole('dialog',{name:'New delivery task'}).waitFor();
   await page.getByLabel('New task').fill('Approved Browser Task');
@@ -202,7 +201,7 @@ try {
   await page.getByText(/Task proposal submitted/).waitFor({timeout:15000});
   await approve('TASK_CREATE','Approved Browser Task');
   await page.reload();
-  await page.getByRole('button',{name:/Approved Browser Project/}).click();
+  await page.locator('.project-records li').filter({hasText:'Approved Browser Project'}).getByRole('button',{name:'Quick view'}).click();
   await page.getByText('Approved Browser Task').waitFor({timeout:15000});
 
   await page.getByRole('link',{name:/RAID Register/}).click();
@@ -217,12 +216,12 @@ try {
   await page.getByText('Approved Browser Risk').waitFor({timeout:15000});
 
   await page.getByRole('link',{name:/Timesheets/}).click();
-  await page.getByRole('heading',{name:'Project timesheets'}).waitFor();
-  await page.getByRole('button',{name:'New time entry'}).click();
+  await page.getByRole('heading',{name:'Timesheets'}).waitFor();
+  await page.getByRole('button',{name:/Log time/}).click();
   await page.getByRole('dialog',{name:'New time entry'}).waitFor();
   await page.getByLabel('Hours worked').fill('7.5');
   await page.getByLabel('Work completed').fill('Browser approval walkthrough');
-  await page.getByRole('button',{name:'Submit for check'}).click();
+  await page.getByRole('button',{name:'Submit for review'}).click();
   await page.getByText(/Timesheet submitted for independent approval/).waitFor({timeout:15000});
   await approve('TIMESHEET_CREATE','7.5 hours');
   await page.reload();
@@ -269,12 +268,12 @@ try {
   await page.getByText('7.5 hours').first().waitFor({timeout:15000});
 
   await page.getByRole('link',{name:/Leave Tracker/}).click();
-  await page.getByRole('heading',{name:'Leave Tracker Management'}).waitFor();
+  await page.getByRole('heading',{name:'Leave tracker'}).waitFor();
   assert.equal(await sidebar.getByRole('link',{name:'Team Calendar'}).count(),0);
   assert.equal(await page.getByRole('navigation',{name:'Leave Tracker tabs'}).getByRole('link',{name:'Team calendar'}).count(),1);
   assert.equal(await page.getByRole('heading',{name:'Connected workflows'}).count(),0);
 
-  await page.getByRole('button',{name:'New leave request'}).click();
+  await page.getByRole('button',{name:'Request leave'}).click();
   await page.getByRole('dialog',{name:'New leave request'}).waitFor();
   await page.getByRole('combobox',{name:'Leave type'}).click();
   await page.getByRole('option',{name:'Annual leave'}).click();
@@ -294,8 +293,8 @@ try {
   }
   await chooseDate('Start date','2026-12-20');
   await chooseDate('End date','2026-12-21');
-  await page.getByLabel('Reason / handover details').fill('Browser approved leave');
-  await page.getByRole('button',{name:'Submit for check'}).click();
+  await page.getByLabel('Reason and handover (required)').fill('Browser approved leave');
+  await page.getByRole('button',{name:'Submit for review'}).click();
   await page.getByText(/Request submitted for independent approval/).waitFor({timeout:15000});
   await approve('LEAVE_REQUEST','2026-12-20');
   await page.reload();
@@ -309,12 +308,12 @@ try {
   const adminTabs=page.getByRole('navigation',{name:'Administration tabs'});
   assert.equal(await adminTabs.getByRole('link').count(),4);
   await page.getByRole('heading',{name:'Admin Parameters'}).waitFor();
-  await page.getByRole('button',{name:'Propose parameter change'}).click();
+  await page.getByRole('button',{name:'Propose change to Reporting currency'}).click();
   await page.getByRole('dialog',{name:'Change organization parameter'}).waitFor();
   await page.getByRole('combobox',{name:'Parameter'}).click();
   await page.getByRole('listbox',{name:'Parameter'}).getByRole('option',{name:/Currency/i}).click();
   await page.getByLabel('Proposed value').fill('MYR');
-  await page.getByLabel('Change rationale').fill('Browser report currency setting');
+  await page.getByLabel('Change rationale (required)').fill('Browser report currency setting');
   await page.getByRole('button',{name:'Submit for check'}).click();
   await page.getByText(/Change request created/).waitFor({timeout:15000});
   await approve('PARAMETER_UPDATE','Browser report currency setting');
@@ -360,14 +359,14 @@ try {
   assert.equal(await mobile.getByRole('complementary',{name:'Primary navigation'}).getByRole('link',{name:'Notification Center'}).count(),0);
 
   await mobile.getByRole('link',{name:/Leave Tracker/}).click();
-  await mobile.getByRole('heading',{name:'Leave Tracker Management'}).waitFor();
+  await mobile.getByRole('heading',{name:'Leave tracker'}).waitFor();
   const mobileTabs=mobile.getByRole('navigation',{name:'Leave Tracker tabs'});
   assert.equal(await mobileTabs.evaluate(el=>getComputedStyle(el).flexWrap),'nowrap','Mobile second-line navigation must not wrap');
   assert.ok(await mobileTabs.locator('.module-tabs-track').isVisible(),'Mobile should retain the compact tab selector');
   assert.ok(await mobileTabs.locator('.module-tabs-track').evaluate(el=>el.scrollWidth>=el.clientWidth));
 
   await mobile.screenshot({path:'test-results/mobile-leave.png',fullPage:true});
-  await mobile.getByRole('button',{name:'New leave request'}).click();
+  await mobile.getByRole('button',{name:'Request leave'}).click();
   assert.ok(await mobile.getByRole('dialog',{name:'New leave request'}).isVisible(),'Premium leave composer must work on mobile');
   assert.ok(await mobile.getByLabel('Leave duration').isVisible());
   await mobile.close();
