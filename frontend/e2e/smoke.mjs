@@ -232,8 +232,9 @@ try {
   await page.getByRole('link',{name:/Executive Reports/}).click();
   await page.getByRole('heading',{name:'Executive status reports'}).waitFor();
   await page.getByText('Approved Browser Project').waitFor({timeout:15000});
-  await page.getByRole('button',{name:/Submit.*snapshot/i}).first().click();
-  await page.getByRole('dialog',{name:'Submit executive snapshot'}).getByRole('button',{name:'Submit snapshot'}).click();
+  await page.getByRole('button',{name:'Submit snapshot for review'}).click();
+  if (await page.getByRole('dialog',{name:'Submit executive snapshot'}).count())
+    await page.getByRole('dialog',{name:'Submit executive snapshot'}).getByRole('button',{name:'Submit snapshot'}).click();
   await page.getByText(/Publication submitted/).waitFor({timeout:15000});
   await approve('REPORT_PUBLISH');
   await page.getByRole('button',{name:'Refresh snapshots'}).click();
