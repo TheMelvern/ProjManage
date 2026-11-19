@@ -262,15 +262,15 @@ try {
   await page.getByRole('link',{name:/RAID Register/}).click();
   await page.getByRole('navigation',{name:'RAID Register tabs'}).getByRole('link',{name:'Approvals'}).click();
   await page.getByRole('heading',{name:'RAID approvals'}).waitFor();
-  await page.getByText('Approved Browser Risk').first().waitFor({timeout:15000});
+  await page.getByRole('region',{name:'Approval requests table'}).getByText('Approved Browser Risk').first().waitFor({timeout:15000});
   await page.getByRole('link',{name:/Projects & Tasks/}).click();
   await page.getByRole('navigation',{name:'Projects & Tasks tabs'}).getByRole('link',{name:'Approvals'}).click();
   await page.getByRole('heading',{name:'Project approvals'}).waitFor();
-  await page.getByText('Approved Browser Project').first().waitFor({timeout:15000});
+  await page.getByRole('region',{name:'Approval requests table'}).getByText('Approved Browser Project').first().waitFor({timeout:15000});
   await page.getByRole('link',{name:/Timesheets/}).click();
   await page.getByRole('navigation',{name:'Timesheets tabs'}).getByRole('link',{name:'Approvals'}).click();
   await page.getByRole('heading',{name:'Timesheet approvals'}).waitFor();
-  await page.getByText('7.5 hours').first().waitFor({timeout:15000});
+  await page.getByRole('region',{name:'Approval requests table'}).getByText('7.5 hours').first().waitFor({timeout:15000});
 
   await page.getByRole('link',{name:/Leave Tracker/}).click();
   await page.getByRole('heading',{name:'Leave tracker'}).waitFor();
@@ -306,7 +306,7 @@ try {
   await page.getByText('Browser approved leave').waitFor({timeout:15000});
   await page.getByRole('navigation',{name:'Leave Tracker tabs'}).getByRole('link',{name:'Approvals'}).click();
   await page.getByRole('heading',{name:'Leave approvals'}).waitFor();
-  await page.getByText('2026-12-20').first().waitFor({timeout:15000});
+  await page.getByRole('region',{name:'Approval requests table'}).getByText('2026-12-20').first().waitFor({timeout:15000});
 
 
   await sidebar.getByRole('link',{name:'Parameters'}).click();
@@ -331,7 +331,7 @@ try {
   assert.equal(await page.getByRole('heading',{name:'Related administration controls'}).count(),0);
   await adminTabs.getByRole('link',{name:'Approvals'}).click();
   await page.getByRole('heading',{name:'Administration approvals'}).waitFor();
-  await page.getByText('Browser report currency setting').first().waitFor({timeout:15000});
+  await page.getByRole('region',{name:'Approval requests table'}).getByText('Browser report currency setting').first().waitFor({timeout:15000});
   await adminTabs.getByRole('link',{name:'Admin Parameters'}).click();
   await page.getByRole('heading',{name:'Admin Parameters'}).waitFor();
   assert.equal(await page.getByRole('heading',{name:'Connected administration workflows'}).count(),0);
