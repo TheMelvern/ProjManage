@@ -253,6 +253,13 @@ try {
   await page.getByRole('heading',{name:'RAID approvals'}).waitFor();
   await page.getByText('Approved Browser Risk').first().waitFor({timeout:15000});
   await page.getByRole('link',{name:/Projects & Tasks/}).click();
+  const projectTabs=page.getByRole('navigation',{name:'Projects & Tasks tabs'});
+  const tabChrome=await projectTabs.evaluate(el=>({display:getComputedStyle(el).display,wrapping:getComputedStyle(el).flexWrap,background:getComputedStyle(el).backgroundColor,height:el.getBoundingClientRect().height}));
+  assert.equal(tabChrome.display,'flex','Secondary module navigation must be flex-aligned');
+  assert.equal(tabChrome.wrapping,'nowrap','Secondary navigation must stay on one line');
+  assert.ok(tabChrome.height<=74,'Secondary navigation should remain compact');
+  assert.ok(await projectTabs.locator('.module-tabs-track').isVisible(),'Module navigation must use an inset segmented track');
+  assert.equal(await projectTabs.locator('a[aria-current="page"]').count(),1,'Exactly one contextual tab must be active');
   await page.getByRole('navigation',{name:'Projects & Tasks tabs'}).getByRole('link',{name:'Approvals'}).click();
   await page.getByRole('heading',{name:'Project approvals'}).waitFor();
   await page.getByText('Approved Browser Project').first().waitFor({timeout:15000});
@@ -354,6 +361,11 @@ try {
 
   await mobile.getByRole('link',{name:/Leave Tracker/}).click();
   await mobile.getByRole('heading',{name:'Leave Tracker Management'}).waitFor();
+  const mobileTabs=mobile.getByRole('navigation',{name:'Leave Tracker tabs'});
+  assert.equal(await mobileTabs.evaluate(el=>getComputedStyle(el).flexWrap),'nowrap','Mobile second-line navigation must not wrap');
+  assert.ok(await mobileTabs.locator('.module-tabs-track').isVisible(),'Mobile should retain the compact tab selector');
+  assert.ok(await mobileTabs.locator('.module-tabs-track').evaluate(el=>el.scrollWidth>=el.clientWidth));
+
   await mobile.screenshot({path:'test-results/mobile-leave.png',fullPage:true});
   await mobile.getByRole('button',{name:'New leave request'}).click();
   assert.ok(await mobile.getByRole('dialog',{name:'New leave request'}).isVisible(),'Premium leave composer must work on mobile');
