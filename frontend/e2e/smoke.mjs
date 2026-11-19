@@ -141,8 +141,8 @@ try {
   await page.getByText('E2E Delivery Project').first().waitFor({timeout:15000});
   await page.getByRole('link',{name:/Create project/}).click();
   await page.getByRole('heading',{name:'Create a project'}).waitFor();
-  await page.getByLabel('Project name').fill('Approved Browser Project');
-  await page.getByRole('button',{name:/Waterfall · Phases/}).click();
+  await page.getByLabel('Project name (required)').fill('Approved Browser Project');
+  await page.getByRole('radio',{name:/Waterfall/}).check();
   await page.getByRole('button',{name:'Submit project for approval'}).click();
   await page.getByRole('heading',{name:'Project submitted for approval'}).waitFor({timeout:15000});
   await approve('PROJECT_CREATE','Approved Browser Project');
@@ -232,13 +232,14 @@ try {
   await page.getByRole('link',{name:/Executive Reports/}).click();
   await page.getByRole('heading',{name:'Executive status reports'}).waitFor();
   await page.getByText('Approved Browser Project').waitFor({timeout:15000});
-  await page.getByRole('button',{name:'Submit report for check'}).click();
+  await page.getByRole('button',{name:/Submit.*snapshot/i}).first().click();
+  await page.getByRole('dialog',{name:'Submit executive snapshot'}).getByRole('button',{name:'Submit snapshot'}).click();
   await page.getByText(/Publication submitted/).waitFor({timeout:15000});
   await approve('REPORT_PUBLISH');
-  await page.getByRole('button',{name:'Refresh'}).click();
+  await page.getByRole('button',{name:'Refresh snapshots'}).click();
   await page.getByRole('combobox',{name:'Approved executive snapshots'}).click();
   await page.getByRole('listbox',{name:'Approved executive snapshots'}).getByRole('option').nth(1).click();
-  assert.equal(await page.getByRole('button',{name:'Export approved CSV'}).isEnabled(),true);
+  assert.equal(await page.getByRole('button',{name:'Download CSV'}).isEnabled(),true);
 
   // Each business module owns its own maker-checker approval subtab.
   assert.equal(await sidebar.getByRole('link',{name:'Approval Center'}).count(),0);
