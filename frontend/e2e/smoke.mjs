@@ -136,6 +136,14 @@ try {
 
   await page.getByRole('link',{name:/Projects & Tasks/}).click();
   await page.getByRole('heading',{name:'Projects & tasks'}).waitFor();
+  const projectTabs=page.getByRole('navigation',{name:'Projects & Tasks tabs'});
+  const tabChrome=await projectTabs.evaluate(el=>({display:getComputedStyle(el).display,wrapping:getComputedStyle(el).flexWrap,background:getComputedStyle(el).backgroundColor,height:el.getBoundingClientRect().height}));
+  assert.equal(tabChrome.display,'flex','Secondary module navigation must be flex-aligned');
+  assert.equal(tabChrome.wrapping,'nowrap','Secondary navigation must stay on one line');
+  assert.ok(tabChrome.height<=74,'Secondary navigation should remain compact');
+  assert.ok(await projectTabs.locator('.module-tabs-track').isVisible(),'Module navigation must use an inset segmented track');
+  assert.equal(await projectTabs.locator('a[aria-current="page"]').count(),1,'Exactly one contextual tab must be active');
+
   const projectHeading=await page.getByRole('heading',{name:'Projects & tasks'}).evaluate(el=>getComputedStyle(el).fontSize);
   assert.equal(projectHeading,headingSize,'Operational module headings should match Portfolio');
   await page.getByText('E2E Delivery Project').first().waitFor({timeout:15000});
@@ -239,7 +247,7 @@ try {
   await approve('REPORT_PUBLISH');
   await page.getByRole('button',{name:'Refresh snapshots'}).click();
   await page.getByRole('combobox',{name:'Approved executive snapshots'}).click();
-  await page.getByRole('listbox',{name:'Approved executive snapshots'}).getByRole('option').nth(1).click();
+  await page.getByRole('listbox',{name:'Approved executive snapshots'}).getByRole('option').first().click();
   assert.equal(await page.getByRole('button',{name:'Download CSV'}).isEnabled(),true);
 
   // Each business module owns its own maker-checker approval subtab.
@@ -256,13 +264,6 @@ try {
   await page.getByRole('heading',{name:'RAID approvals'}).waitFor();
   await page.getByText('Approved Browser Risk').first().waitFor({timeout:15000});
   await page.getByRole('link',{name:/Projects & Tasks/}).click();
-  const projectTabs=page.getByRole('navigation',{name:'Projects & Tasks tabs'});
-  const tabChrome=await projectTabs.evaluate(el=>({display:getComputedStyle(el).display,wrapping:getComputedStyle(el).flexWrap,background:getComputedStyle(el).backgroundColor,height:el.getBoundingClientRect().height}));
-  assert.equal(tabChrome.display,'flex','Secondary module navigation must be flex-aligned');
-  assert.equal(tabChrome.wrapping,'nowrap','Secondary navigation must stay on one line');
-  assert.ok(tabChrome.height<=74,'Secondary navigation should remain compact');
-  assert.ok(await projectTabs.locator('.module-tabs-track').isVisible(),'Module navigation must use an inset segmented track');
-  assert.equal(await projectTabs.locator('a[aria-current="page"]').count(),1,'Exactly one contextual tab must be active');
   await page.getByRole('navigation',{name:'Projects & Tasks tabs'}).getByRole('link',{name:'Approvals'}).click();
   await page.getByRole('heading',{name:'Project approvals'}).waitFor();
   await page.getByText('Approved Browser Project').first().waitFor({timeout:15000});
@@ -322,7 +323,7 @@ try {
   await page.getByText(/Change request created/).waitFor({timeout:15000});
   await approve('PARAMETER_UPDATE','Browser report currency setting');
   await page.reload();
-  await page.getByText('Approved configuration').first().waitFor({timeout:15000});
+  await page.getByText('MYR',{exact:true}).first().waitFor({timeout:15000});
   await adminTabs.getByRole('link',{name:'Users & Roles'}).click();
   await page.getByRole('heading',{name:'Users & Roles'}).waitFor();
   await adminTabs.getByRole('link',{name:'Audit & Security'}).click();
