@@ -1,10 +1,13 @@
 <template>
   <div class="module-space">
     <nav class="module-tabs" :aria-label="moduleLabel + ' tabs'">
-      <router-link v-for="tab in tabs" :key="tab.to" :to="tab.to"
-        :class="{ selected: activeTab === tab.key }" :aria-current="activeTab === tab.key ? 'page' : undefined">
-        {{ tab.label }}
-      </router-link>
+      <span class="module-tabs-caption" aria-hidden="true">Workspace views</span>
+      <div class="module-tabs-track">
+        <router-link v-for="tab in tabs" :key="tab.to" :to="tab.to"
+          :class="{ selected: activeTab === tab.key }" :aria-current="activeTab === tab.key ? 'page' : undefined">
+          {{ tab.label }}
+        </router-link>
+      </div>
     </nav>
     <section v-if="module === 'admin' && !canManageParameters" class="permission-explainer" role="status"><span class="material-symbols-outlined" aria-hidden="true">admin_panel_settings</span><h2>Parameters</h2><p>Organization parameters and security administration require an Administrator role. Contact your workspace administrator if you need to propose configuration changes.</p></section>
     <ReviewCenter v-else-if="activeTab === 'approvals'" :module="module" />
@@ -64,11 +67,45 @@ const activeTab=computed(()=>route.path.split('/').includes('approvals')?'approv
   props.module==='leave' && route.path==='/leave/records' ? 'records' : 'overview');
 </script>
 <style scoped>
-.module-space{min-width:0;min-height:100vh;background:var(--pmo-accent-soft)}
-.module-tabs{display:flex;flex-wrap:wrap;gap:7px;padding:14px 30px 0;border-bottom:1px solid var(--pmo-border);background:#fff}
-.module-tabs a{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;color:#586b87;padding:12px 17px;font-size:12px;font-weight:750;border-radius:10px 10px 0 0;border-bottom:3px solid transparent;transition:color .15s,background .15s}
-.module-tabs a:hover{background:var(--pmo-accent-soft);color:var(--pmo-accent-ink)}
-.module-tabs a.selected{background:var(--pmo-accent-soft);color:var(--pmo-accent-ink);border-bottom-color:var(--pmo-accent)}
-@media(max-width:600px){.module-tabs{padding:10px 14px 0;gap:3px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:thin}.module-tabs a{white-space:nowrap;padding:11px 12px}}
+.module-space{min-width:0;min-height:100vh;background:var(--pmo-canvas)}
+/* Inset, single-line contextual navigation: calm chrome, prominent active destination. */
+.module-tabs{
+ display:flex;align-items:center;justify-content:space-between;gap:20px;
+ min-height:66px;padding:10px var(--product-gutter,32px);
+ background:var(--pmo-canvas);border-bottom:1px solid var(--pmo-border);
+}
+.module-tabs-caption{
+ flex:0 0 auto;color:var(--pmo-muted);font-size:11px;line-height:16px;
+ font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+}
+.module-tabs-track{
+ display:flex;align-items:center;gap:4px;min-width:0;padding:4px;
+ border:1px solid var(--pmo-border);border-radius:13px;
+ background:var(--pmo-surface-alt);overflow-x:auto;overscroll-behavior-x:contain;
+ scrollbar-width:none;
+}
+.module-tabs-track::-webkit-scrollbar{display:none}
+.module-tabs-track a{
+ display:inline-flex;align-items:center;justify-content:center;flex:none;
+ white-space:nowrap;text-decoration:none;font-size:12px;font-weight:650;
+ min-height:36px;padding:8px 15px;border:1px solid transparent;
+ border-radius:9px;color:var(--pmo-muted);
+ transition:background-color .16s,color .16s,box-shadow .16s;
+}
+.module-tabs-track a:hover:not(.selected){background:var(--pmo-surface);color:var(--pmo-text)}
+.module-tabs-track a.selected{
+ color:var(--pmo-accent-ink,var(--pmo-accent));
+ background:var(--pmo-surface);border-color:var(--pmo-border);
+ box-shadow:0 1px 4px rgba(15,25,35,.06);
+}
+.module-tabs-track a:focus-visible{
+ outline:2px solid var(--pmo-accent);outline-offset:2px;position:relative;z-index:1;
+}
+@media(max-width:780px){
+ .module-tabs{gap:0;min-height:60px;padding:9px var(--product-gutter,16px)}
+ .module-tabs-caption{display:none}
+ .module-tabs-track{width:100%;justify-content:flex-start}
+}
+@media(prefers-reduced-motion:reduce){.module-tabs-track a{transition:none}}
 .permission-explainer{margin:34px;padding:38px;max-width:720px;background:var(--pmo-panel,#fff);color:var(--pmo-text,#1d1d1f);border:1px solid var(--pmo-border,#eee);border-radius:22px}.permission-explainer .material-symbols-outlined{font-size:32px;color:var(--pmo-accent,var(--pmo-accent-ink))}.permission-explainer h2{font-size:24px;margin:16px 0 10px}.permission-explainer p{line-height:1.6;color:var(--pmo-muted,#6e6e73)}
 </style>

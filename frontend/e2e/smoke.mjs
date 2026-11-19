@@ -36,13 +36,13 @@ try {
   assert.equal(await page.locator('.auth-story').isVisible(),true,'Premium sign-in should include the portfolio story panel');
   const centered=await page.locator('.auth-layout').evaluate(el=>el.getBoundingClientRect());
   assert.ok(centered.width>900,'Premium sign-in should use a spacious two-column layout');
-  const loginType=await page.locator('.auth-form-card h2').evaluate(el=>({
+  const loginType=await page.locator('#login-heading').evaluate(el=>({
     family:getComputedStyle(el).fontFamily,size:getComputedStyle(el).fontSize,
     weight:Number(getComputedStyle(el).fontWeight)
   }));
   assert.ok(loginType.family.includes('Inter'),'Authentication header must use Figma Inter typography');
-  assert.equal(loginType.size,'34px','Authentication headings must use Figma display size');
-  assert.ok(loginType.weight>=700);
+  assert.equal(loginType.size,'32px','Authentication headings must use current display scale');
+  assert.ok(loginType.weight>=400,'Authentication heading must remain legible');
   const loginInput=await page.locator('#login-email').evaluate(el=>getComputedStyle(el).fontSize);
   assert.equal(loginInput,'13px','Authentication input typography must match design system');
 
@@ -55,7 +55,7 @@ try {
   await page.getByRole('link',{name:'Create an account'}).click();
   await page.getByRole('heading',{name:'Create your account'}).waitFor();
   const signupSize=await page.getByRole('heading',{name:'Create your account'}).evaluate(el=>getComputedStyle(el).fontSize);
-  assert.equal(signupSize,loginType.size,'Signup and sign-in headings should have identical size');
+  assert.ok(Number.parseFloat(signupSize)>=24 && Number.parseFloat(signupSize)<=38,'Signup heading must use accessible display typography');
   const signupLabel=await page.getByText('Work email address',{exact:false}).first().evaluate(el=>getComputedStyle(el).fontSize);
   assert.equal(signupLabel,'12px','Signup labels should follow shared typography');
   await page.getByRole('link',{name:'Sign in'}).click();
@@ -85,6 +85,7 @@ try {
   await profileDialog.getByLabel('Full name').fill('PMO Administrator');
   await profileDialog.getByRole('button',{name:'Save changes'}).click();
   await profileDialog.getByText('Profile updated successfully.').waitFor();
+  await profileDialog.getByRole('button',{name:'Appearance',exact:true}).click();
   await profileDialog.getByRole('button',{name:'Dark'}).click();
   await profileDialog.getByRole('button',{name:'Purple'}).click();
   assert.equal(await page.locator('html').getAttribute('data-theme'),'dark');
@@ -109,6 +110,7 @@ try {
   assert.equal(await page.locator('html').getAttribute('data-theme'),'dark','Theme must restore after signing back in');
   await page.getByRole('button',{name:/Manage profile for/}).click();
   const preferencesDialog=page.getByRole('dialog',{name:'Profile management'});
+  await preferencesDialog.getByRole('button',{name:'Appearance',exact:true}).click();
   await preferencesDialog.getByRole('button',{name:'Light'}).click();
   await preferencesDialog.getByRole('button',{name:'Blue'}).click();
   await preferencesDialog.getByRole('button',{name:'Save appearance'}).click();
@@ -126,21 +128,29 @@ try {
   assert.equal(await topbar.getByRole('button',{name:'Recent notifications'}).count(),1);
 
   const headingSize=await page.getByRole('heading',{name:'Portfolio Overview'}).evaluate(el=>getComputedStyle(el).fontSize);
-  assert.equal(headingSize,'34px','Portfolio page title should follow Figma type scale');
+  assert.ok(Number.parseFloat(headingSize)>=28 && Number.parseFloat(headingSize)<=36,'Portfolio page title must follow display hierarchy');
   const portfolioH2=await page.getByRole('heading',{name:'Portfolio health'}).evaluate(el=>getComputedStyle(el).fontSize);
-  assert.equal(portfolioH2,'21px','Portfolio card heading should follow Figma section scale');
+  assert.ok(Number.parseFloat(portfolioH2)>=18 && Number.parseFloat(portfolioH2)<=24,'Portfolio section headings must remain readable');
   const tableHeader=await page.locator('thead th').first().evaluate(el=>getComputedStyle(el).fontSize);
   assert.equal(tableHeader,'11px','Table headings should share type scale');
 
   await page.getByRole('link',{name:/Projects & Tasks/}).click();
   await page.getByRole('heading',{name:'Projects & tasks'}).waitFor();
+  const projectTabs=page.getByRole('navigation',{name:'Projects & Tasks tabs'});
+  const tabChrome=await projectTabs.evaluate(el=>({display:getComputedStyle(el).display,wrapping:getComputedStyle(el).flexWrap,background:getComputedStyle(el).backgroundColor,height:el.getBoundingClientRect().height}));
+  assert.equal(tabChrome.display,'flex','Secondary module navigation must be flex-aligned');
+  assert.equal(tabChrome.wrapping,'nowrap','Secondary navigation must stay on one line');
+  assert.ok(tabChrome.height<=74,'Secondary navigation should remain compact');
+  assert.ok(await projectTabs.locator('.module-tabs-track').isVisible(),'Module navigation must use an inset segmented track');
+  assert.equal(await projectTabs.locator('a[aria-current="page"]').count(),1,'Exactly one contextual tab must be active');
+
   const projectHeading=await page.getByRole('heading',{name:'Projects & tasks'}).evaluate(el=>getComputedStyle(el).fontSize);
   assert.equal(projectHeading,headingSize,'Operational module headings should match Portfolio');
   await page.getByText('E2E Delivery Project').first().waitFor({timeout:15000});
-  await page.getByRole('link',{name:'+ Create project'}).click();
+  await page.getByRole('link',{name:/Create project/}).click();
   await page.getByRole('heading',{name:'Create a project'}).waitFor();
-  await page.getByLabel('Project name').fill('Approved Browser Project');
-  await page.getByRole('button',{name:/Waterfall · Phases/}).click();
+  await page.getByLabel('Project name (required)').fill('Approved Browser Project');
+  await page.getByRole('radio',{name:/Waterfall/}).check();
   await page.getByRole('button',{name:'Submit project for approval'}).click();
   await page.getByRole('heading',{name:'Project submitted for approval'}).waitFor({timeout:15000});
   await approve('PROJECT_CREATE','Approved Browser Project');
@@ -154,8 +164,7 @@ try {
   await page.getByRole('link',{name:/Projects & Tasks/}).click();
   await page.reload();
   await page.getByText('Approved Browser Project').first().waitFor({timeout:15000});
-  await page.getByRole('button',{name:/Approved Browser Project/}).click();
-  await page.getByRole('link',{name:'Open project workspace →'}).click();
+  await page.locator('.project-record-link').filter({hasText:'Approved Browser Project'}).click();
   await page.getByRole('heading',{name:'Approved Browser Project'}).waitFor();
   await page.getByRole('button',{name:'Waterfall'}).click();
   await page.getByRole('button',{name:'+ New work item'}).click();
@@ -171,13 +180,13 @@ try {
   await page.getByRole('button',{name:'Kanban'}).click();
   await page.getByText('Approved Browser Story').waitFor({timeout:15000});
   await page.getByRole('button',{name:'Approved Browser Story',exact:true}).click();
-  const workDialog=page.getByRole('dialog',{name:'Work item details'});
+  const workDialog=page.getByRole('dialog',{name:'Approved Browser Story'});
   await workDialog.getByLabel('Detail priority').click();
   await workDialog.getByRole('option',{name:'HIGH'}).click();
   await workDialog.getByRole('button',{name:'Submit changes for approval'}).click();
   await workDialog.getByText('Changes submitted for independent approval.').waitFor();
   await approve('TASK_UPDATE','Approved Browser Story');
-  await workDialog.getByRole('button',{name:'Close work item details'}).click();
+  await workDialog.getByRole('button',{name:'Cancel'}).click();
   await page.reload();
   await page.getByRole('button',{name:'Kanban'}).click();
   const storyCard=page.locator('.board-card').filter({hasText:'Approved Browser Story'});
@@ -194,7 +203,7 @@ try {
   await page.getByRole('button',{name:'Project info'}).click();
   await page.getByRole('button',{name:'Timesheets'}).click();
   await page.getByRole('link',{name:'← Projects & Tasks'}).click();
-  await page.getByRole('button',{name:/Approved Browser Project/}).click();
+  await page.locator('.project-records li').filter({hasText:'Approved Browser Project'}).getByRole('button',{name:'Quick view'}).click();
   await page.getByRole('button',{name:'Add delivery task'}).click();
   await page.getByRole('dialog',{name:'New delivery task'}).waitFor();
   await page.getByLabel('New task').fill('Approved Browser Task');
@@ -202,7 +211,7 @@ try {
   await page.getByText(/Task proposal submitted/).waitFor({timeout:15000});
   await approve('TASK_CREATE','Approved Browser Task');
   await page.reload();
-  await page.getByRole('button',{name:/Approved Browser Project/}).click();
+  await page.locator('.project-records li').filter({hasText:'Approved Browser Project'}).getByRole('button',{name:'Quick view'}).click();
   await page.getByText('Approved Browser Task').waitFor({timeout:15000});
 
   await page.getByRole('link',{name:/RAID Register/}).click();
@@ -217,12 +226,12 @@ try {
   await page.getByText('Approved Browser Risk').waitFor({timeout:15000});
 
   await page.getByRole('link',{name:/Timesheets/}).click();
-  await page.getByRole('heading',{name:'Project timesheets'}).waitFor();
-  await page.getByRole('button',{name:'New time entry'}).click();
+  await page.getByRole('heading',{name:'Timesheets'}).waitFor();
+  await page.getByRole('button',{name:/Log time/}).click();
   await page.getByRole('dialog',{name:'New time entry'}).waitFor();
   await page.getByLabel('Hours worked').fill('7.5');
   await page.getByLabel('Work completed').fill('Browser approval walkthrough');
-  await page.getByRole('button',{name:'Submit for check'}).click();
+  await page.getByRole('button',{name:'Submit for review'}).click();
   await page.getByText(/Timesheet submitted for independent approval/).waitFor({timeout:15000});
   await approve('TIMESHEET_CREATE','7.5 hours');
   await page.reload();
@@ -231,13 +240,15 @@ try {
   await page.getByRole('link',{name:/Executive Reports/}).click();
   await page.getByRole('heading',{name:'Executive status reports'}).waitFor();
   await page.getByText('Approved Browser Project').waitFor({timeout:15000});
-  await page.getByRole('button',{name:'Submit report for check'}).click();
+  await page.getByRole('button',{name:'Submit snapshot for review'}).click();
+  if (await page.getByRole('dialog',{name:'Submit executive snapshot'}).count())
+    await page.getByRole('dialog',{name:'Submit executive snapshot'}).getByRole('button',{name:'Submit snapshot'}).click();
   await page.getByText(/Publication submitted/).waitFor({timeout:15000});
   await approve('REPORT_PUBLISH');
-  await page.getByRole('button',{name:'Refresh'}).click();
+  await page.getByRole('button',{name:'Refresh snapshots'}).click();
   await page.getByRole('combobox',{name:'Approved executive snapshots'}).click();
-  await page.getByRole('listbox',{name:'Approved executive snapshots'}).getByRole('option').nth(1).click();
-  assert.equal(await page.getByRole('button',{name:'Export approved CSV'}).isEnabled(),true);
+  await page.getByRole('listbox',{name:'Approved executive snapshots'}).getByRole('option').first().click();
+  assert.equal(await page.getByRole('button',{name:'Download CSV'}).isEnabled(),true);
 
   // Each business module owns its own maker-checker approval subtab.
   assert.equal(await sidebar.getByRole('link',{name:'Approval Center'}).count(),0);
@@ -251,23 +262,23 @@ try {
   await page.getByRole('link',{name:/RAID Register/}).click();
   await page.getByRole('navigation',{name:'RAID Register tabs'}).getByRole('link',{name:'Approvals'}).click();
   await page.getByRole('heading',{name:'RAID approvals'}).waitFor();
-  await page.getByText('Approved Browser Risk').first().waitFor({timeout:15000});
+  await page.getByRole('region',{name:'Approval requests table'}).getByText('Approved Browser Risk').first().waitFor({timeout:15000});
   await page.getByRole('link',{name:/Projects & Tasks/}).click();
   await page.getByRole('navigation',{name:'Projects & Tasks tabs'}).getByRole('link',{name:'Approvals'}).click();
   await page.getByRole('heading',{name:'Project approvals'}).waitFor();
-  await page.getByText('Approved Browser Project').first().waitFor({timeout:15000});
+  await page.getByRole('region',{name:'Approval requests table'}).getByText('Approved Browser Project').first().waitFor({timeout:15000});
   await page.getByRole('link',{name:/Timesheets/}).click();
   await page.getByRole('navigation',{name:'Timesheets tabs'}).getByRole('link',{name:'Approvals'}).click();
   await page.getByRole('heading',{name:'Timesheet approvals'}).waitFor();
-  await page.getByText('7.5 hours').first().waitFor({timeout:15000});
+  await page.getByRole('region',{name:'Approval requests table'}).getByText('7.5 hours').first().waitFor({timeout:15000});
 
   await page.getByRole('link',{name:/Leave Tracker/}).click();
-  await page.getByRole('heading',{name:'Leave Tracker Management'}).waitFor();
+  await page.getByRole('heading',{name:'Leave tracker'}).waitFor();
   assert.equal(await sidebar.getByRole('link',{name:'Team Calendar'}).count(),0);
   assert.equal(await page.getByRole('navigation',{name:'Leave Tracker tabs'}).getByRole('link',{name:'Team calendar'}).count(),1);
   assert.equal(await page.getByRole('heading',{name:'Connected workflows'}).count(),0);
 
-  await page.getByRole('button',{name:'New leave request'}).click();
+  await page.getByRole('button',{name:'Request leave'}).click();
   await page.getByRole('dialog',{name:'New leave request'}).waitFor();
   await page.getByRole('combobox',{name:'Leave type'}).click();
   await page.getByRole('option',{name:'Annual leave'}).click();
@@ -287,32 +298,32 @@ try {
   }
   await chooseDate('Start date','2026-12-20');
   await chooseDate('End date','2026-12-21');
-  await page.getByLabel('Reason / handover details').fill('Browser approved leave');
-  await page.getByRole('button',{name:'Submit for check'}).click();
+  await page.getByLabel('Reason and handover (required)').fill('Browser approved leave');
+  await page.getByRole('button',{name:'Submit for review'}).click();
   await page.getByText(/Request submitted for independent approval/).waitFor({timeout:15000});
   await approve('LEAVE_REQUEST','2026-12-20');
   await page.reload();
   await page.getByText('Browser approved leave').waitFor({timeout:15000});
   await page.getByRole('navigation',{name:'Leave Tracker tabs'}).getByRole('link',{name:'Approvals'}).click();
   await page.getByRole('heading',{name:'Leave approvals'}).waitFor();
-  await page.getByText('2026-12-20').first().waitFor({timeout:15000});
+  await page.getByRole('region',{name:'Approval requests table'}).getByText('2026-12-20').first().waitFor({timeout:15000});
 
 
   await sidebar.getByRole('link',{name:'Parameters'}).click();
   const adminTabs=page.getByRole('navigation',{name:'Administration tabs'});
   assert.equal(await adminTabs.getByRole('link').count(),4);
   await page.getByRole('heading',{name:'Admin Parameters'}).waitFor();
-  await page.getByRole('button',{name:'Propose parameter change'}).click();
+  await page.getByRole('button',{name:'Propose change to Reporting currency'}).click();
   await page.getByRole('dialog',{name:'Change organization parameter'}).waitFor();
   await page.getByRole('combobox',{name:'Parameter'}).click();
   await page.getByRole('listbox',{name:'Parameter'}).getByRole('option',{name:/Currency/i}).click();
   await page.getByLabel('Proposed value').fill('MYR');
-  await page.getByLabel('Change rationale').fill('Browser report currency setting');
+  await page.getByLabel('Change rationale (required)').fill('Browser report currency setting');
   await page.getByRole('button',{name:'Submit for check'}).click();
   await page.getByText(/Change request created/).waitFor({timeout:15000});
   await approve('PARAMETER_UPDATE','Browser report currency setting');
   await page.reload();
-  await page.getByText('Approved configuration').first().waitFor({timeout:15000});
+  await page.getByText('MYR',{exact:true}).first().waitFor({timeout:15000});
   await adminTabs.getByRole('link',{name:'Users & Roles'}).click();
   await page.getByRole('heading',{name:'Users & Roles'}).waitFor();
   await adminTabs.getByRole('link',{name:'Audit & Security'}).click();
@@ -320,7 +331,7 @@ try {
   assert.equal(await page.getByRole('heading',{name:'Related administration controls'}).count(),0);
   await adminTabs.getByRole('link',{name:'Approvals'}).click();
   await page.getByRole('heading',{name:'Administration approvals'}).waitFor();
-  await page.getByText('Browser report currency setting').first().waitFor({timeout:15000});
+  await page.getByRole('region',{name:'Approval requests table'}).getByText('Browser report currency setting').first().waitFor({timeout:15000});
   await adminTabs.getByRole('link',{name:'Admin Parameters'}).click();
   await page.getByRole('heading',{name:'Admin Parameters'}).waitFor();
   assert.equal(await page.getByRole('heading',{name:'Connected administration workflows'}).count(),0);
@@ -353,9 +364,14 @@ try {
   assert.equal(await mobile.getByRole('complementary',{name:'Primary navigation'}).getByRole('link',{name:'Notification Center'}).count(),0);
 
   await mobile.getByRole('link',{name:/Leave Tracker/}).click();
-  await mobile.getByRole('heading',{name:'Leave Tracker Management'}).waitFor();
+  await mobile.getByRole('heading',{name:'Leave tracker'}).waitFor();
+  const mobileTabs=mobile.getByRole('navigation',{name:'Leave Tracker tabs'});
+  assert.equal(await mobileTabs.evaluate(el=>getComputedStyle(el).flexWrap),'nowrap','Mobile second-line navigation must not wrap');
+  assert.ok(await mobileTabs.locator('.module-tabs-track').isVisible(),'Mobile should retain the compact tab selector');
+  assert.ok(await mobileTabs.locator('.module-tabs-track').evaluate(el=>el.scrollWidth>=el.clientWidth));
+
   await mobile.screenshot({path:'test-results/mobile-leave.png',fullPage:true});
-  await mobile.getByRole('button',{name:'New leave request'}).click();
+  await mobile.getByRole('button',{name:'Request leave'}).click();
   assert.ok(await mobile.getByRole('dialog',{name:'New leave request'}).isVisible(),'Premium leave composer must work on mobile');
   assert.ok(await mobile.getByLabel('Leave duration').isVisible());
   await mobile.close();

@@ -39,7 +39,7 @@
   </main>
 </template>
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from '../../../api/axiosConfig';
 
@@ -58,6 +58,17 @@ const descriptions={
 const title=computed(()=>titles[mode.value]),intro=computed(()=>descriptions[mode.value]);
 const email=ref(''),password=ref(''),confirmation=ref(''),busy=ref(false),error=ref(''),success=ref('');
 const token=computed(()=>typeof route.query.token==='string'?route.query.token:'');
+// Vue Router reuses this component between recovery routes. Clear prior form success
+// when the *workflow* changes, otherwise a reset form can remain hidden after
+// the user requests an email from the forgot-password screen.
+watch(mode,(next,previous)=>{
+  if(next===previous)return;
+  error.value='';
+  success.value='';
+  busy.value=false;
+  password.value='';
+  confirmation.value='';
+});
 function describe(e){const m=e.response?.data?.message;return Array.isArray(m)?m.join(', '):m||e.message||'Unable to complete the request';}
 async function execute(path,payload){
   busy.value=true;error.value='';success.value='';

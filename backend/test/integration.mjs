@@ -170,7 +170,7 @@ try {
   const makerInbox=(await request('GET','/notifications',maker,undefined,200)).data;
   const decisionNotice=makerInbox.items.find(n=>n.kind==='REVIEW_DECISION' && n.body.includes('Create approved integration project'));
   assert.ok(decisionNotice,'Maker must receive an approved-decision notification');
-  assert.equal(decisionNotice.link,'/projects/approvals');
+  assert.equal(decisionNotice.link,'/projects/approvals/'+projectProposal.id);
   const outsiderInbox=(await request('GET','/notifications',outsider,undefined,200)).data;
   assert.ok(!outsiderInbox.items.some(n=>n.id===decisionNotice.id));
   const otherMemberInbox=(await request('GET','/notifications',member,undefined,200)).data;
