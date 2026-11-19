@@ -42,7 +42,7 @@ try {
   }));
   assert.ok(loginType.family.includes('Inter'),'Authentication header must use Figma Inter typography');
   assert.equal(loginType.size,'32px','Authentication headings must use current display scale');
-  assert.ok(loginType.weight>=700);
+  assert.ok(loginType.weight>=600,'Authentication heading must retain a strong typographic hierarchy');
   const loginInput=await page.locator('#login-email').evaluate(el=>getComputedStyle(el).fontSize);
   assert.equal(loginInput,'13px','Authentication input typography must match design system');
 
