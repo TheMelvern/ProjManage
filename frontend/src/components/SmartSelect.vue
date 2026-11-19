@@ -33,11 +33,11 @@ onUnmounted(()=>{document.removeEventListener('pointerdown',outside);document.re
 </script>
 <style scoped>
 .smart-select{position:relative;min-width:0;width:100%}
-.smart-trigger{min-height:43px;width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;padding:10px 13px;border:1px solid #d8e0ec;border-radius:11px;background:#fff;color:#263958;font-size:13px;cursor:pointer}
-.smart-trigger:focus-visible{outline:3px solid #99b6ef;outline-offset:2px}
+.smart-trigger{min-height:43px;width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;padding:10px 13px;border:1px solid var(--pmo-border);border-radius:11px;background:#fff;color:var(--pmo-text);font-size:13px;cursor:pointer}
+.smart-trigger:focus-visible{outline:3px solid var(--pmo-accent-ink);outline-offset:2px}
 .smart-chevron{font-size:20px;color:#70819a}
-.smart-menu{position:absolute;z-index:100;left:0;right:0;top:calc(100% + 5px);background:#fff;border:1px solid #dce5f2;border-radius:12px;padding:6px;box-shadow:0 16px 35px #17284b26;max-height:235px;overflow-y:auto}
-.smart-menu button{display:flex;align-items:center;justify-content:space-between;text-align:left;width:100%;border:0;border-radius:8px;padding:11px 12px;background:transparent;color:#263958;font-size:13px;cursor:pointer}
-.smart-menu button:hover,.smart-menu button.selected{background:#eef3ff;color:#315ac4}
+.smart-menu{position:absolute;z-index:100;left:0;right:0;top:calc(100% + 5px);background:#fff;border:1px solid var(--pmo-border);border-radius:12px;padding:6px;box-shadow:0 16px 35px color-mix(in srgb, var(--pmo-accent) 15%, transparent);max-height:235px;overflow-y:auto}
+.smart-menu button{display:flex;align-items:center;justify-content:space-between;text-align:left;width:100%;border:0;border-radius:8px;padding:11px 12px;background:transparent;color:var(--pmo-text);font-size:13px;cursor:pointer}
+.smart-menu button:hover,.smart-menu button.selected{background:var(--pmo-accent-soft);color:var(--pmo-accent-ink)}
 .disabled{opacity:.6}
 </style>

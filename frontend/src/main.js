@@ -1,10 +1,9 @@
-import { createApp } from 'vue';
+import { createApp, nextTick } from 'vue';
 import { createRouter, createWebHashHistory } from 'vue-router';
 import App from './App.vue';
 import Login from './views/modules/authentication/Login.vue';
 import Signup from './views/modules/authentication/Signup.vue';
 import AccountAccess from './views/modules/authentication/AccountAccess.vue';
-import LeaveRecords from './views/modules/people/LeaveRecords.vue';
 import DetailWorkspace from './views/modules/projects/DetailWorkspace.vue';
 import ProjectCreate from './views/modules/projects/ProjectCreate.vue';
 import ProjectHub from './views/modules/projects/ProjectHub.vue';
@@ -17,9 +16,21 @@ import './styles/shared/typography.css';
 import { initializeAppearance } from './utils/appearance';
 initializeAppearance();
 import './styles/shared/adaptive-premium.css';
+import './styles/shared/product-design.css';
 
 const router = createRouter({
   history: createWebHashHistory(),
+  async scrollBehavior(to, from, savedPosition) {
+    if (savedPosition) return savedPosition;
+    if (to.path === from.path) return false;
+    await nextTick();
+    const heading = document.querySelector('.app-content main h1, .app-content .permission-explainer h2');
+    if (heading && from.name && !document.querySelector('[role="dialog"][aria-modal="true"]')) {
+      heading.setAttribute('tabindex', '-1');
+      heading.focus({ preventScroll: true });
+    }
+    return { top: 0, left: 0 };
+  },
   routes: [
     { path: '/login', name: 'Login', component: Login, meta: { public: true } },
     { path: '/signup', name: 'Signup', component: Signup, meta: { public: true } },
@@ -31,11 +42,11 @@ const router = createRouter({
     { path: '/approvals', redirect: '/projects/approvals' },
     { path: '/approvals/detail', redirect: '/projects/approvals' },
     { path: '/leave', name: 'Leave', component: ModuleWorkspace, props: {module:'leave'} },
-    { path: '/leave/approvals', name: 'LeaveApprovals', component: ModuleWorkspace, props: {module:'leave'} },
-    { path: '/leave/records', name: 'LeaveRecords', component: LeaveRecords },
+    { path: '/leave/approvals/:requestId?', name: 'LeaveApprovals', component: ModuleWorkspace, props: {module:'leave'} },
+    { path: '/leave/records', name: 'LeaveRecords', component: ModuleWorkspace, props: {module:'leave'} },
 
     { path: '/admin/parameters', name: 'Parameters', component: ModuleWorkspace, props: {module:'admin'} },
-    { path: '/admin/approvals', name: 'AdminApprovals', component: ModuleWorkspace, props: {module:'admin'} },
+    { path: '/admin/approvals/:requestId?', name: 'AdminApprovals', component: ModuleWorkspace, props: {module:'admin'} },
     { path: '/admin', redirect: '/admin/parameters' },
     { path: '/admin/workflows', redirect: '/admin/parameters' },
     { path: '/admin/users', name: 'UserAdmin', component: ModuleWorkspace, props: {module:'admin'} },
@@ -48,17 +59,17 @@ const router = createRouter({
     { path: '/projects', name: 'Projects', component: ModuleWorkspace, props: {module:'projects'} },
     { path: '/projects/new', name: 'ProjectCreate', component: ProjectCreate },
     { path: '/projects/:id/workspace', name: 'ProjectHub', component: ProjectHub },
-    { path: '/projects/approvals', name: 'ProjectApprovals', component: ModuleWorkspace, props: {module:'projects'} },
+    { path: '/projects/approvals/:requestId?', name: 'ProjectApprovals', component: ModuleWorkspace, props: {module:'projects'} },
     { path: '/projects/detail', name: 'ProjectDetail', component: DetailWorkspace },
     { path: '/raid/detail', name: 'RaidDetail', component: DetailWorkspace },
     { path: '/timesheets/detail', name: 'TimesheetDetail', component: DetailWorkspace },
     { path: '/reports/detail', name: 'ReportDetail', component: DetailWorkspace },
     { path: '/raid', name: 'RAID', component: ModuleWorkspace, props: {module:'raid'} },
-    { path: '/raid/approvals', name: 'RaidApprovals', component: ModuleWorkspace, props: {module:'raid'} },
+    { path: '/raid/approvals/:requestId?', name: 'RaidApprovals', component: ModuleWorkspace, props: {module:'raid'} },
     { path: '/timesheets', name: 'Timesheets', component: ModuleWorkspace, props: {module:'timesheets'} },
-    { path: '/timesheets/approvals', name: 'TimesheetApprovals', component: ModuleWorkspace, props: {module:'timesheets'} },
+    { path: '/timesheets/approvals/:requestId?', name: 'TimesheetApprovals', component: ModuleWorkspace, props: {module:'timesheets'} },
     { path: '/reports', name: 'Reports', component: ModuleWorkspace, props: {module:'reports'} },
-    { path: '/reports/approvals', name: 'ReportApprovals', component: ModuleWorkspace, props: {module:'reports'} },
+    { path: '/reports/approvals/:requestId?', name: 'ReportApprovals', component: ModuleWorkspace, props: {module:'reports'} },
     { path: '/:pathMatch(.*)*', redirect: '/portfolio' }
   ]
 });

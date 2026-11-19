@@ -2,18 +2,17 @@
   <main class="raid-workspace">
     <header class="raid-header">
       <div>
-        <p class="eyebrow">PROJECT GOVERNANCE</p>
         <h1>RAID Register</h1>
         <p>Track risks, issues, decisions and action items across your project portfolio.</p>
       </div>
-      <div class="module-shortcuts"><router-link to="/raid/detail" class="nav-link">View details</router-link><router-link to="/workspace" class="nav-link">Delivery workspace</router-link></div>
+      <div class="module-shortcuts"><router-link :to="{path:'/raid/detail',query:selectedProjectId ? {projectId:selectedProjectId} : {}}" class="pmo-control quiet">Register history</router-link></div>
     </header>
     <p v-if="!liveMode" role="status" class="notice">
       This workspace requires local API mode. Set VITE_USE_LIVE_API=true and sign in.
     </p>
     <p v-if="error" role="alert" class="notice error">{{ error }}</p>
     <p v-if="message" role="status" class="notice success">{{ message }}</p>
-    <div class="selector">
+    <div v-if="projects.length" class="selector">
       <label for="raid-project">Project</label>
       <SmartSelect id="raid-project" v-model="selectedProjectId" aria-label="Project" @change="loadRegister" :disabled="!liveMode || loading" :options="[{value:'',label:'Select a project'},...projects.map(project=>({value:project.id,label:project.name}))]" />
       <button type="button" @click="loadRegister" :disabled="!selectedProjectId || loading">Refresh</button>
@@ -38,11 +37,11 @@
       </form>
       </PremiumComposeDialog>
       <div class="entries">
-        <article v-for="item in register[activeTab]" :key="item.id" class="entry">
+        <article v-for="item in register[activeTab]" :key="item.id" class="entry operational-row">
           <div>
             <strong>{{ item.title }}</strong>
             <p v-if="item.description">{{ item.description }}</p>
-            <small>{{ item.severity || 'Recorded' }} · {{ formatDate(item.createdAt || item.decidedAt) }}</small>
+            <small><span v-if="item.severity" class="record-state" :data-state="item.severity">{{ item.severity.toLowerCase() }}</span> {{ formatDate(item.createdAt || item.decidedAt) }}</small>
           </div>
           <label v-if="activeTab !== 'decisions'" :for="'status-' + item.id">Status</label>
           <SmartSelect v-if="activeTab !== 'decisions'" :id="'status-' + item.id" :model-value="item.status" aria-label="RAID item status" @change="changeStatus(item, $event)" :disabled="busy" :options="['OPEN','IN_PROGRESS','CLOSED'].map(v=>({value:v,label:v}))" />
@@ -50,16 +49,23 @@
         <p v-if="!register[activeTab].length" class="empty">No {{ activeTab }} recorded for this project.</p>
       </div>
     </section>
-    <p v-else-if="liveMode && !loading" class="empty">Create or select a project in the Delivery Workspace.</p>
+    <p v-else-if="loading" role="status">Loading projects…</p>
+    <section v-else-if="liveMode && !error && !projects.length" class="workspace-start">
+      <span class="record-icon material-symbols-outlined" aria-hidden="true">fact_check</span>
+      <div><h2>No active projects yet</h2><p>Once a project is approved, you can track its risks, issues, decisions and actions here.</p></div>
+      <router-link class="pmo-control" to="/projects">View projects and requests</router-link>
+    </section>
   </main>
 </template>
 
 <script setup>
+import { useRoute } from 'vue-router';
 import SmartSelect from '../../../components/SmartSelect.vue';
 import PremiumComposeDialog from '../../../components/PremiumComposeDialog.vue';
 import { onMounted, ref } from 'vue';
 import axiosInstance from '../../../api/axiosConfig';
 
+const route = useRoute();
 const liveMode = import.meta.env.VITE_USE_LIVE_API === 'true';
 const tabs = [
   { key: 'risks', label: 'Risks' }, { key: 'issues', label: 'Issues' },
@@ -88,7 +94,7 @@ async function loadProjects() {
   try {
     const response = await axiosInstance.get('/projects');
     projects.value = response.data.data;
-    selectedProjectId.value = projects.value[0]?.id || '';
+    selectedProjectId.value = projects.value.find(project => project.id === route.query.projectId)?.id || projects.value[0]?.id || '';
     await loadRegister();
   } catch (cause) { reportError(cause); }
   finally { loading.value = false; }
@@ -138,27 +144,27 @@ onMounted(loadProjects);
 
 <style scoped>
 .module-shortcuts{display:flex;gap:9px;flex-wrap:wrap}
-.raid-workspace{min-height:100vh;background:#f5f7fb;padding:34px;color:#21334b}
+.raid-workspace{min-height:100vh;background:var(--pmo-accent-soft);padding:34px;color:var(--pmo-text)}
 .raid-header{display:flex;gap:24px;justify-content:space-between;align-items:center;margin-bottom:26px}
-.eyebrow{font-size:11px;font-weight:800;letter-spacing:.1em;color:#4a66ad}
+.eyebrow{font-size:11px;font-weight:800;letter-spacing:.1em;color:var(--pmo-accent-ink)}
 .raid-header h1{font-size:30px;font-weight:750;margin:6px 0}
 .raid-header p:not(.eyebrow){color:#71829b;font-size:14px}
-.nav-link{background:white;border-radius:10px;padding:13px;color:#3158bd;font-size:13px;font-weight:700}
-.notice{padding:17px;background:#e9f1ff;border-radius:12px;color:#395ba2;margin-bottom:20px}
+.nav-link{background:white;border-radius:10px;padding:13px;color:var(--pmo-accent-ink);font-size:13px;font-weight:700}
+.notice{padding:17px;background:var(--pmo-accent-soft);border-radius:12px;color:var(--pmo-accent-ink);margin-bottom:20px}
 .notice.error{background:#fff0f1;color:#b6324a}.notice.success{background:#e9f9ef;color:#196844}
 .selector{display:flex;gap:16px;align-items:center;background:white;border-radius:16px;padding:22px;margin-bottom:20px}
 .selector label,.add-form label,.entry label{font-size:12px;color:#61738a;font-weight:700}
-select,input{padding:11px;border:1px solid #dce3ef;background:white;border-radius:9px;color:#263852;min-width:0}
-.selector select{flex:1}.selector button,.add-form button{padding:12px 19px;border:0;background:#315ac3;color:#fff;font-weight:700;border-radius:9px;cursor:pointer}
+select,input{padding:11px;border:1px solid var(--pmo-border);background:white;border-radius:9px;color:var(--pmo-text);min-width:0}
+.selector select{flex:1}.selector button,.add-form button{padding:12px 19px;border:0;background:var(--pmo-accent);color:var(--pmo-on-accent);font-weight:700;border-radius:9px;cursor:pointer}
 button:disabled{opacity:.5;cursor:not-allowed}
 .register{background:white;border-radius:18px;padding:24px}
-.tabs{display:flex;flex-wrap:wrap;gap:9px;margin-bottom:25px;border-bottom:1px solid #e8edf5;padding-bottom:18px}
-.tabs button{border:1px solid #e2e8f0;background:white;color:#687991;border-radius:10px;padding:12px 18px;font-weight:700;cursor:pointer}
-.tabs button.active{background:#eaf0ff;border-color:#b3c7fb;color:#315ac3}
+.tabs{display:flex;flex-wrap:wrap;gap:9px;margin-bottom:25px;border-bottom:1px solid var(--pmo-border);padding-bottom:18px}
+.tabs button{border:1px solid var(--pmo-border);background:white;color:#687991;border-radius:10px;padding:12px 18px;font-weight:700;cursor:pointer}
+.tabs button.active{background:var(--pmo-accent-soft);border-color:var(--pmo-border);color:var(--pmo-accent-ink)}
 .tabs span{font-size:11px;margin-left:5px;opacity:.65}
 .add-form{display:flex;gap:11px;align-items:center;flex-wrap:wrap;margin-bottom:26px}
 .add-form input{flex:1;min-width:200px}
-.entry{border-top:1px solid #edf1f6;padding:20px 0;display:flex;align-items:center;gap:16px}
+.entry{border-top:1px solid var(--pmo-border);padding:20px 0;display:flex;align-items:center;gap:16px}
 .entry>div{flex:1}.entry strong{font-size:15px}
 .entry p{font-size:13px;color:#718096}.entry small{display:block;margin-top:8px;color:#8190a5;font-size:12px}
 .empty{padding:40px 12px;text-align:center;color:#8290a4;font-size:14px}

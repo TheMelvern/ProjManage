@@ -1,8 +1,9 @@
 import { BadRequestException, Body, ConflictException, Controller, ForbiddenException, Get, NotFoundException, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { IsDateString, IsIn, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsDateString, IsIn, IsOptional, IsString, MaxLength, MinLength, IsUUID } from 'class-validator';
 import { AuthGuard, AuthenticatedRequest } from './auth.guard';
 import { PrismaService } from './prisma.service';
+import { assertReturnedRequest } from './returned-request';
 import { notifyReviewers } from './review-notifications';
 
 class LeaveDto {
@@ -11,6 +12,7 @@ class LeaveDto {
   @IsDateString() endDate!: string;
   @IsString() @MinLength(3) @MaxLength(500) reason!: string;
   @IsOptional() @IsIn(['FULL', 'AM', 'PM']) dayType?: string;
+  @IsOptional() @IsUUID() revisesRequestId?: string;
 }
 
 class ParameterDto {
@@ -155,6 +157,7 @@ export class LeaveController {
 
   @Post()
   async create(@Req() req: AuthenticatedRequest, @Body() body: LeaveDto) {
+    if (body.revisesRequestId) await assertReturnedRequest(this.prisma, req.principal, body.revisesRequestId, 'LEAVE_REQUEST');
     const start = new Date(body.startDate), end = new Date(body.endDate);
     if (!Number.isFinite(start.valueOf()) || !Number.isFinite(end.valueOf()) || end < start) {
       throw new BadRequestException('End date must be on or after start date');
@@ -195,13 +198,14 @@ export class LeaveController {
     const request = await this.prisma.reviewRequest.create({
       data: { organizationId: req.principal.organizationId, makerId: req.principal.userId,
         kind: 'LEAVE_REQUEST', summary: body.type + ' leave: ' + body.startDate + ' to ' + body.endDate,
-        payload: { type: body.type, startDate: body.startDate, endDate: body.endDate, reason: body.reason, dayType } }
+        payload: { type: body.type, startDate: body.startDate, endDate: body.endDate, reason: body.reason, dayType,
+          ...(body.revisesRequestId ? { revisesRequestId: body.revisesRequestId } : {}) } }
     });
     await this.prisma.auditEvent.create({ data: {
       organizationId: req.principal.organizationId, actorId: req.principal.userId,
       action: 'REVIEW_SUBMITTED', entityType: 'LEAVE_REQUEST', entityId: request.id
     } });
-    await notifyReviewers(this.prisma, req.principal.organizationId, req.principal.userId, request.summary, false, 'LEAVE_REQUEST');
+    await notifyReviewers(this.prisma, req.principal.organizationId, req.principal.userId, request.summary, false, 'LEAVE_REQUEST', request.id);
     return { success: true, data: { id: request.id, status: request.status } };
   }
 }
@@ -222,20 +226,31 @@ export class ParametersController {
   @Post('proposals')
   async propose(@Req() req: AuthenticatedRequest, @Body() body: ParameterDto) {
     this.assertAdmin(req);
-    if (body.key === 'leavePublicHolidays') parseHolidays(body.value);
+    const value = body.value.trim();
+    const summary = body.summary?.trim();
+    if (!value) throw new BadRequestException('Proposed value is required');
+    if (!summary) throw new BadRequestException('Change rationale is required');
+    if (body.key === 'timezone') {
+      if (!/^(UTC|[A-Za-z_]+(?:\/[A-Za-z0-9_+\-]+)+)$/i.test(value)) {
+        throw new BadRequestException('Enter a valid IANA time zone');
+      }
+      try { new Intl.DateTimeFormat('en', { timeZone: value }); }
+      catch { throw new BadRequestException('Enter a valid IANA time zone'); }
+    }
+    if (body.key === 'leavePublicHolidays') parseHolidays(value);
     const current = await this.prisma.organizationParameter.findUnique({
       where: { organizationId_key: { organizationId: req.principal.organizationId, key: body.key } }
     });
     const review = await this.prisma.reviewRequest.create({
       data: { organizationId: req.principal.organizationId, makerId: req.principal.userId,
-        kind: 'PARAMETER_UPDATE', entityId: current?.id, summary: body.summary || 'Change ' + body.key,
-        payload: { key: body.key, value: body.value, previousValue: current?.value ?? null } }
+        kind: 'PARAMETER_UPDATE', entityId: current?.id, summary,
+        payload: { key: body.key, value, previousValue: current?.value ?? null } }
     });
     await this.prisma.auditEvent.create({ data: {
       organizationId: req.principal.organizationId, actorId: req.principal.userId,
       action: 'REVIEW_SUBMITTED', entityType: 'PARAMETER_UPDATE', entityId: review.id
     } });
-    await notifyReviewers(this.prisma, req.principal.organizationId, req.principal.userId, review.summary, true, 'PARAMETER_UPDATE');
+    await notifyReviewers(this.prisma, req.principal.organizationId, req.principal.userId, review.summary, true, 'PARAMETER_UPDATE', review.id);
     return { success: true, data: { id: review.id, status: review.status } };
   }
 }

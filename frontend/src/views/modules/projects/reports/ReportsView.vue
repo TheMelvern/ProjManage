@@ -1,15 +1,10 @@
 <template>
-  <section class="executive-reports">
+  <main class="executive-reports">
     <header class="report-heading">
       <div>
         <p class="report-eyebrow">PROJECT MANAGEMENT OFFICE</p>
         <h1>Executive status reports</h1>
         <p class="report-description">Portfolio health calculated from saved projects and task completion.</p>
-      </div>
-      <div class="report-actions">
-        <router-link to="/reports/detail" class="report-detail-link">View details</router-link><button type="button" @click="loadReport" :disabled="loading">Refresh</button>
-        <button type="button" class="primary" @click="submitPublication" :disabled="!report || publishing">Submit report for check</button>
-        <button type="button" @click="downloadCSV" :disabled="!selectedPublication">Export approved CSV</button>
       </div>
     </header>
 
@@ -18,17 +13,44 @@
     </p>
     <p v-else-if="loading" class="report-notice" role="status">Loading portfolio report…</p>
     <div v-else-if="error" class="report-notice report-error" role="alert">
-      {{ error }}
+      {{ error }}{{ report ? ' Showing the last available portfolio.' : '' }}
       <button type="button" @click="loadReport">Try again</button>
     </div>
 
-    <p v-if="publicationNotice" class="report-notice" role="status">{{ publicationNotice }}</p>
-    <div class="report-notice">
-      <label for="approved-report">Approved executive snapshots</label>
-      <SmartSelect id="approved-report" v-model="publicationId" aria-label="Approved executive snapshots" :options="[{value:'',label:'Choose approved publication'},...published.map(item=>({value:item.id,label:item.summary+' · '+formatDate(item.reviewedAt)}))]" />
-      <small>Export is available only for independently approved snapshots.</small>
+    <p v-if="publicationNotice" class="report-notice" :role="publicationFailed ? 'alert' : 'status'">
+      {{ publicationNotice }}
+      <router-link v-if="submittedId" :to="{name:'ReportApprovals',params:{requestId:submittedId}}">Open submitted snapshot</router-link>
+    </p>
+    <PremiumComposeDialog :open="confirmPublication" title="Submit executive snapshot" description="The portal captures a new version when you submit. An independent checker reviews that version before it can be downloaded." @close="confirmPublication=false">
+      <p v-if="!report?.projects.length">The live portfolio currently has no projects. The snapshot may contain no records.</p>
+      <button type="button" class="pmo-control primary" :disabled="publishing" @click="submitPublication">{{ publishing ? 'Submitting…' : 'Submit snapshot' }}</button>
+    </PremiumComposeDialog>
+    <section v-if="liveMode" class="report-notice publication-panel" aria-labelledby="approved-heading">
+      <div class="pmo-action-group"><h2 id="approved-heading">Approved snapshots</h2>
+        <button type="button" class="pmo-control quiet" :disabled="publicationsLoading" @click="loadPublications">Refresh snapshots</button>
+      </div>
+      <p v-if="publicationsLoading" role="status">Loading approved snapshots…</p>
+      <p v-if="publicationsError" role="alert">{{ publicationsError }}{{ published.length ? ' Showing the last available snapshots.' : '' }} Use Refresh snapshots to retry.</p>
+      <p v-if="!publicationsLoading && publicationsLoaded && !published.length">No approved snapshots yet. A checker must approve a submitted snapshot before export.</p>
+      <template v-if="published.length">
+        <SmartSelect id="approved-report" v-model="publicationId" aria-label="Approved executive snapshots" :options="published.map(item=>({value:item.id,label:item.summary+' · '+formatDate(item.reviewedAt)}))" />
+        <button v-if="selectedPublication" type="button" class="pmo-control" @click="downloadCSV">Download CSV</button>
+        <PortfolioSnapshot v-if="selectedPublication" :data="selectedPublication.snapshot" title="Selected approved snapshot" />
+      </template>
+    </section>
+    <div v-if="liveMode" class="pmo-action-group live-report-actions">
+      <div><h2>Live portfolio</h2><p v-if="report">Updated {{ formatDate(report.generatedAt) }}</p></div>
+      <div class="pmo-action-group">
+        <button type="button" class="pmo-control quiet" @click="loadReport" :disabled="loading">Refresh live portfolio</button>
+        <button type="button" class="pmo-control primary" @click="startPublication" :disabled="!report || publishing">Submit snapshot for review</button>
+      </div>
     </div>
-    <template v-if="report">
+    <section v-if="report && !report.projects.length" class="work-empty">
+      <span class="record-icon material-symbols-outlined" aria-hidden="true">monitoring</span>
+      <div><h2>No projects to report yet</h2><p>Approved projects will appear in the live portfolio.</p></div>
+      <router-link class="pmo-control quiet" to="/projects">View projects and requests</router-link>
+    </section>
+    <template v-else-if="report">
       <div class="report-metrics">
         <article v-for="metric in metrics" :key="metric.label" class="report-metric">
           <span>{{ metric.label }}</span>
@@ -50,7 +72,7 @@
             </tr></thead>
             <tbody>
               <tr v-for="project in report.projects" :key="project.id">
-                <td><strong>{{ project.name }}</strong><small>{{ project.client || 'No client specified' }}</small></td>
+                <td><router-link class="queue-record" :to="{path:'/reports/detail',query:{projectId:project.id}}">{{ project.name }}</router-link><small v-if="project.client">{{ project.client }}</small></td>
                 <td>{{ formatLabel(project.status) }}</td>
                 <td><span class="health" :class="'health-' + project.health.toLowerCase()">{{ formatLabel(project.health) }}</span></td>
                 <td>{{ project.progressPercent }}%</td>
@@ -64,10 +86,13 @@
         </div>
       </article>
     </template>
-  </section>
+  </main>
 </template>
 
 <script setup>
+import PortfolioSnapshot from '../../../../components/PortfolioSnapshot.vue';
+import PremiumComposeDialog from '../../../../components/PremiumComposeDialog.vue';
+import { snapshotCSV } from '../../../../utils/portfolioSnapshot';
 import SmartSelect from '../../../../components/SmartSelect.vue';
 import { computed, onMounted, ref } from 'vue';
 import axiosInstance from '../../../../api/axiosConfig';
@@ -80,6 +105,12 @@ const published = ref([]);
 const publicationId = ref('');
 const publishing = ref(false);
 const publicationNotice = ref('');
+const publicationFailed = ref(false);
+const submittedId = ref('');
+const confirmPublication = ref(false);
+const publicationsLoading = ref(false);
+const publicationsLoaded = ref(false);
+const publicationsError = ref('');
 const selectedPublication = computed(() => published.value.find(p => p.id === publicationId.value) || null);
 
 const metrics = computed(() => {
@@ -104,81 +135,95 @@ async function loadReport() {
   try {
     const response = await axiosInstance.get('/reports/portfolio');
     report.value = response.data.data;
-    published.value = (await axiosInstance.get('/reports/published')).data.data;
   } catch (cause) {
-    report.value = null;
     error.value = cause.response?.data?.message || 'Unable to load report. Check API connection and login.';
   } finally {
     loading.value = false;
   }
 }
+async function loadPublications() {
+  if (!liveMode || publicationsLoading.value) return;
+  publicationsLoading.value = true;
+  publicationsError.value = '';
+  try {
+    published.value = (await axiosInstance.get('/reports/published')).data.data;
+    publicationsLoaded.value = true;
+    if (!selectedPublication.value) publicationId.value = published.value[0]?.id || '';
+  } catch {
+    publicationsError.value = 'Approved snapshots could not be loaded.';
+  } finally {
+    publicationsLoading.value = false;
+  }
+}
+function startPublication() {
+  if (!report.value || publishing.value) return;
+  if (!report.value.projects.length) confirmPublication.value = true;
+  else submitPublication();
+}
 async function submitPublication() {
-  if (!report.value) return;
+  if (!report.value || publishing.value) return;
+  confirmPublication.value = false;
+  submittedId.value = '';
+  publicationFailed.value = false;
   publicationNotice.value = '';
   publishing.value = true;
   try {
-    await axiosInstance.post('/reviews/operations', { kind: 'REPORT_PUBLISH', values: {},
+    const { data } = await axiosInstance.post('/reviews/operations', { kind: 'REPORT_PUBLISH', values: {},
       summary: 'Executive portfolio snapshot ' + new Date().toISOString().slice(0, 10) });
+    submittedId.value = data.data.id;
     publicationNotice.value = 'Publication submitted. A separate PMO checker must approve the snapshot before export.';
   } catch (cause) {
+    publicationFailed.value = true;
     publicationNotice.value = cause.response?.data?.message || 'Unable to submit report for review.';
   } finally { publishing.value = false; }
 }
 function downloadCSV() {
   if (!selectedPublication.value) return;
-  const escapeCell = (value) => {
-    let text = String(value ?? '');
-    if (/^[=+\-@]/.test(text)) text = "'" + text;
-    return '"' + text.replace(/"/g, '""') + '"';
-  };
-  const records = [
-    ['Project', 'Client', 'Status', 'Health', 'Progress (%)', 'Completed tasks', 'Total tasks', 'Overdue tasks'],
-    ...selectedPublication.value.snapshot.projects.map((project) => [
-      project.name, project.client, project.status, project.health,
-      project.progressPercent, project.completedTasks, project.totalTasks, project.overdueTasks
-    ])
-  ];
-  const csv = records.map((record) => record.map(escapeCell).join(',')).join('\r\n');
+  const csv = snapshotCSV(selectedPublication.value.snapshot);
   const objectURL = URL.createObjectURL(new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' }));
   const link = document.createElement('a');
   link.href = objectURL;
-  link.download = 'pmo-portfolio-' + new Date().toISOString().slice(0, 10) + '.csv';
+  link.download = 'pmo-portfolio-' + selectedPublication.value.snapshot.generatedAt.slice(0, 10) + '.csv';
   link.click();
   URL.revokeObjectURL(objectURL);
 }
-onMounted(loadReport);
+onMounted(() => { loadReport(); loadPublications(); });
 </script>
 
 <style scoped>
-.report-detail-link{display:inline-flex;align-items:center;padding:10px 15px;background:#edf2fe;color:#315ac4;border-radius:9px;font-size:12px;font-weight:750;text-decoration:none}
-.executive-reports { padding: 32px; background: #f5f7fb; min-height: 100vh; color: #1c2940; }
+.report-detail-link{display:inline-flex;align-items:center;padding:10px 15px;background:var(--pmo-accent-soft);color:var(--pmo-accent-ink);border-radius:9px;font-size:12px;font-weight:750;text-decoration:none}
+.executive-reports { padding: 32px; background:var(--pmo-accent-soft); min-height: 100vh; color:var(--pmo-text); }
 .report-heading { display:flex; justify-content:space-between; gap:24px; align-items:center; margin-bottom:24px; }
 .report-heading h1 { font-size: 29px; font-weight: 750; margin:4px 0 8px; }
-.report-eyebrow { color:#4c65b2; font-size:11px; font-weight:800; letter-spacing:.12em; }
+.report-eyebrow { color:var(--pmo-accent-ink); font-size:11px; font-weight:800; letter-spacing:.12em; }
 .report-description { color:#65718a; font-size:14px; }
-.report-actions { display:flex; gap:10px; }
-.report-actions button, .report-notice button { border:1px solid #cfd8ea; border-radius:10px; padding:10px 16px; color:#3155a5; background:white; cursor:pointer; font-weight:600; }
-.report-actions .primary { background:#2856bc; border-color:#2856bc; color:white; }
+.report-actions { display:flex; gap:10px; flex-wrap:wrap; min-inline-size:0; }
+.publication-panel{display:grid;justify-items:start;min-inline-size:0}
+.publication-panel > *{max-inline-size:100%}
+.publication-panel .snapshot{inline-size:100%}
+@media(max-width:600px){.report-actions .primary{flex-basis:100%}}
+.report-actions button, .report-notice button { border:1px solid var(--pmo-border); border-radius:10px; padding:10px 16px; color:var(--pmo-accent-ink); background:white; cursor:pointer; font-weight:600; }
+.report-actions .primary { background:var(--pmo-accent); border-color:var(--pmo-accent); color:var(--pmo-on-accent); }
 .report-actions button:disabled { opacity:.5; cursor:not-allowed; }
-.report-notice { background:white; border:1px solid #d8e2f0; border-radius:12px; padding:18px; margin:12px 0; display:flex; align-items:center; gap:12px; flex-wrap:wrap; font-size:13px; } .report-notice select { border:1px solid #d4dfee; border-radius:9px; padding:9px; background:#f8fafc; color:#263b5c; } .report-notice small { color:#64748b; }
+.report-notice { background:white; border:1px solid var(--pmo-border); border-radius:12px; padding:18px; margin:12px 0; display:flex; align-items:center; gap:12px; flex-wrap:wrap; font-size:13px; } .report-notice select { border:1px solid var(--pmo-border); border-radius:9px; padding:9px; background:var(--pmo-accent-soft); color:var(--pmo-text); } .report-notice small { color:#64748b; }
 .report-error { color:#ae2f49; }
 .report-metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; margin:24px 0; }
-.report-metric { background:white; border:1px solid #e6eaf2; border-radius:16px; padding:21px; display:flex; flex-direction:column; gap:12px; }
+.report-metric { background:white; border:1px solid var(--pmo-border); border-radius:16px; padding:21px; display:flex; flex-direction:column; gap:12px; }
 .report-metric span { color:#607089; font-size:12px; font-weight:700; text-transform:uppercase; }
-.report-metric strong { font-size:36px; color:#18345e; line-height:1; }
+.report-metric strong { font-size:36px; color:var(--pmo-text); line-height:1; }
 .report-metric small { font-size:12px; color:#66758f; }
-.report-table-card { background:white; border:1px solid #e6eaf2; border-radius:16px; overflow:hidden; }
+.report-table-card { background:white; border:1px solid var(--pmo-border); border-radius:16px; overflow:hidden; }
 .report-table-heading { padding:24px 26px; display:flex; justify-content:space-between; align-items:center; gap:16px; }
 .report-table-heading h2 { font-size:20px; font-weight:700; }
 .report-table-heading p { color:#7a879b; font-size:12px; }
 .report-scroll { overflow-x:auto; }
 table { width:100%; border-collapse:collapse; text-align:left; min-width:710px; }
-th { background:#eef2f8; font-size:11px; letter-spacing:.03em; color:#67768d; text-transform:uppercase; padding:14px 26px; }
-td { border-bottom:1px solid #eef1f6; padding:19px 26px; font-size:14px; }
+th { background:var(--pmo-accent-soft); font-size:11px; letter-spacing:.03em; color:#67768d; text-transform:uppercase; padding:14px 26px; }
+td { border-bottom:1px solid var(--pmo-border); padding:19px 26px; font-size:14px; }
 td strong, td small { display:block; }
 td small { color:#7e8a9a; margin-top:5px; }
 td.empty { color:#748197; text-align:center; padding:45px 20px; }
-.health { font-size:11px; font-weight:800; border-radius:20px; padding:6px 10px; background:#eff3f7; }
+.health { font-size:11px; font-weight:800; border-radius:20px; padding:6px 10px; background:var(--pmo-accent-soft); }
 .health-green { background:#ddf8eb; color:#187e56; }
 .health-amber { background:#fff0d5; color:#a56b13; }
 .health-red { background:#ffdee5; color:#b43551; }

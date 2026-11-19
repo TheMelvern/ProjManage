@@ -1,8 +1,9 @@
 import { BadRequestException, Body, Controller, ForbiddenException, NotFoundException, Post, Req, UseGuards } from '@nestjs/common';
-import { IsIn, IsObject, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsIn, IsObject, IsOptional, IsString, MaxLength, MinLength, IsUUID } from 'class-validator';
 import { Prisma } from '@prisma/client';
 import { AuthGuard, AuthenticatedRequest } from './auth.guard';
 import { PrismaService } from './prisma.service';
+import { assertReturnedRequest } from './returned-request';
 import { notifyReviewers } from './review-notifications';
 
 const kinds = [
@@ -15,6 +16,7 @@ class OperationDto {
   @IsIn(kinds) kind!: Kind;
   @IsOptional() @IsString() projectId?: string;
   @IsOptional() @IsString() targetId?: string;
+  @IsOptional() @IsUUID() revisesRequestId?: string;
   @IsObject() values!: Record<string, unknown>;
   @IsString() @MinLength(5) @MaxLength(400) summary!: string;
 }
@@ -104,6 +106,10 @@ export class OperationProposalsController {
     const { kind } = input;
     const editor = ['ADMIN','PMO','PROJECT_MANAGER'].includes(req.principal.role);
     if (kind !== 'TIMESHEET_CREATE' && !editor) throw new ForbiddenException('Maker permissions required');
+    if (input.revisesRequestId) {
+      if (kind !== 'PROJECT_CREATE') throw new BadRequestException('This request type does not support revisions');
+      await assertReturnedRequest(this.prisma, req.principal, input.revisesRequestId, kind);
+    }
     const values = validateValues(kind, input.values);
     if (kind === 'PROJECT_CREATE') {
       if (typeof values.name !== 'string') throw new BadRequestException('Project name is required');
@@ -189,7 +195,8 @@ export class OperationProposalsController {
         kind, entityId: input.targetId || input.projectId || null,
         summary: input.summary.trim(),
         payload: { projectId: input.projectId || null, targetId: input.targetId || null,
-          values: values as Prisma.InputJsonValue, snapshot, previousUpdatedAt: previousUpdatedAt || null }
+          values: values as Prisma.InputJsonValue, snapshot, previousUpdatedAt: previousUpdatedAt || null,
+          ...(input.revisesRequestId ? { revisesRequestId: input.revisesRequestId } : {}) }
       }
     });
     await this.prisma.auditEvent.create({ data: {
@@ -197,7 +204,7 @@ export class OperationProposalsController {
       action: 'REVIEW_SUBMITTED', entityType: kind, entityId: review.id
     } });
     await notifyReviewers(this.prisma, req.principal.organizationId, req.principal.userId,
-      input.summary, kind === 'REPORT_PUBLISH', kind);
+      input.summary, kind === 'REPORT_PUBLISH', kind, review.id);
     return { success: true, data: { id: review.id, kind: review.kind, status: review.status } };
   }
 }

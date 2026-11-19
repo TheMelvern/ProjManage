@@ -63,7 +63,7 @@ export class RegistrationController {
         payload: { email, name: input.name.trim(), passwordHash }
       }
     });
-    await notifyReviewers(this.prisma, org.id, null, 'New account registration awaiting approval', true, 'REGISTRATION');
+    await notifyReviewers(this.prisma, org.id, null, 'New account registration awaiting approval', true, 'REGISTRATION', request.id);
     return { success: true, data: { id: request.id, status: request.status, message: 'Registration submitted for administrator approval' } };
   }
 }
@@ -81,7 +81,7 @@ export class ReviewsController {
   }
 
   @Get()
-  async list(@Req() req: AuthenticatedRequest, @Query('module') module?: string) {
+  async list(@Req() req: AuthenticatedRequest, @Query('module') module?: string, @Query('id') id?: string) {
     const kinds: Record<string,string[]> = {
       projects:['PROJECT_CREATE','PROJECT_UPDATE','TASK_CREATE','TASK_UPDATE'],
       raid:['RISK_CREATE','RISK_UPDATE','ISSUE_CREATE','ISSUE_UPDATE','DECISION_CREATE','ACTION_CREATE','ACTION_UPDATE'],
@@ -93,6 +93,7 @@ export class ReviewsController {
     const requests = await this.prisma.reviewRequest.findMany({
       where: {
         organizationId: req.principal.organizationId,
+        ...(id ? { id } : {}),
         ...(module || (role !== 'ADMIN' && role !== 'MEMBER') ? {
           kind: {
             ...(module ? { in: kinds[module] } : {}),
@@ -145,7 +146,7 @@ export class ReviewsController {
       organizationId: req.principal.organizationId, actorId: req.principal.userId,
       action: 'REVIEW_SUBMITTED', entityType: 'PROJECT_UPDATE', entityId: change.id
     } });
-    await notifyReviewers(this.prisma, req.principal.organizationId, req.principal.userId, change.summary, false, 'PROJECT_UPDATE');
+    await notifyReviewers(this.prisma, req.principal.organizationId, req.principal.userId, change.summary, false, 'PROJECT_UPDATE', change.id);
     return { success: true, data: safeRequest(change) };
   }
 
@@ -428,7 +429,7 @@ export class ReviewsController {
           kind: 'REVIEW_DECISION',
           title: 'Request ' + body.decision.toLowerCase(),
           body: review.summary.slice(0, 350),
-          link: reviewApprovalPath(review.kind)
+          link: reviewApprovalPath(review.kind, review.id)
         } });
       }
       return updated;

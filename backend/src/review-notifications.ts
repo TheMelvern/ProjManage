@@ -1,7 +1,12 @@
 import { PrismaService } from './prisma.service';
 
 /** Return the module-owned approval tab for a review category. */
-export function reviewApprovalPath(kind?: string): string {
+export function reviewApprovalPath(kind?: string, requestId?: string): string {
+  const path = reviewQueuePath(kind);
+  return requestId ? path + '/' + encodeURIComponent(requestId) : path;
+}
+
+function reviewQueuePath(kind?: string): string {
   if (!kind) return '/projects/approvals';
   if (['REGISTRATION','PARAMETER_UPDATE','MEMBERSHIP_UPDATE'].includes(kind)) return '/admin/approvals';
   if (kind === 'LEAVE_REQUEST') return '/leave/approvals';
@@ -21,7 +26,8 @@ export async function notifyReviewers(
   makerId: string | null,
   summary: string,
   adminOnly = false,
-  kind?: string
+  kind?: string,
+  requestId?: string
 ) {
   const reviewers = await prisma.membership.findMany({
     where: {
@@ -35,7 +41,7 @@ export async function notifyReviewers(
   const result = await prisma.notification.createMany({ data: reviewers.map(({ userId }) => ({
     organizationId, recipientId: userId,
     kind: 'REVIEW_PENDING', title: 'New approval request',
-    body: summary.slice(0, 350), link: reviewApprovalPath(kind)
+    body: summary.slice(0, 350), link: reviewApprovalPath(kind, requestId)
   })) });
   return result.count;
 }

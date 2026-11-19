@@ -1,62 +1,207 @@
 <template>
- <main class="history-page">
-  <header><p class="eyebrow">PEOPLE OPERATIONS / LEAVE HISTORY</p><h1>Leave Records & Policies</h1>
-    <p>Review personal leave transactions, available entitlement and approval decisions.</p></header>
-  <p v-if="error" class="alert error" role="alert">{{ error }}</p>
-  <section class="stats" v-if="balances">
-    <div><small>Annual entitlement</small><strong>{{ balances.entitlement.ANNUAL }}</strong><span>Days</span></div>
-    <div><small>Annual used</small><strong>{{ balances.used.ANNUAL }}</strong><span>Approved weekdays</span></div>
-    <div><small>Annual remaining</small><strong>{{ balances.remaining.ANNUAL }}</strong><span>Days available</span></div>
-    <div><small>Medical leave remaining</small><strong>{{ balances.remaining.MEDICAL }}</strong><span>Days available</span></div>
-  </section>
-  <section class="card">
-   <div class="card-header"><div><h2>My leave transactions</h2><p>Pending requests do not deduct balances until approved.</p></div>
-    <button @click="load">Refresh</button></div>
-   <div class="filters">
-     <label>Leave type <SmartSelect v-model="typeFilter" aria-label="Leave type filter" :options="[{value:'',label:'All types'},...['ANNUAL','MEDICAL','EMERGENCY','UNPAID'].map(v=>({value:v,label:v}))]" /></label>
-     <label>Decision <SmartSelect v-model="statusFilter" aria-label="Leave status filter" :options="[{value:'',label:'All statuses'},...['PENDING','APPROVED','REJECTED','RETURNED','CANCELLED'].map(v=>({value:v,label:v}))]" /></label>
-   </div>
-   <p v-if="loading">Loading records…</p>
-   <div v-else class="scroll"><table><thead><tr><th>Request ID</th><th>Leave type</th><th>Date range</th><th>Duration</th><th>Approval</th><th>Submitted</th></tr></thead>
-    <tbody><tr v-for="r in visible" :key="r.id">
-      <td class="mono">{{ r.id.slice(0,8) }}</td><td>{{ r.type }}</td><td>{{ r.startDate }} – {{ r.endDate }}</td>
-      <td>{{ r.dayType==='FULL'?'Full day(s)':r.dayType==='AM'?'Morning half':'Afternoon half' }}</td>
-      <td><span class="status" :class="r.status.toLowerCase()">{{ r.status }}</span></td>
-      <td>{{ new Date(r.createdAt).toLocaleDateString() }}</td>
-    </tr><tr v-if="!visible.length"><td colspan="6">No matching transactions.</td></tr></tbody>
-   </table></div>
-   <button class="secondary" :disabled="!visible.length" @click="exportCSV">Export my records</button>
-  </section>
-  <section class="card"><h2>Organization policy</h2>
-    <p>{{ balances?.note || 'Entitlements are retrieved from your organization policy.' }}</p>
-    <div class="links"><router-link to="/leave">Apply for Leave</router-link><router-link to="/leave/team" v-if="isManager">Team Calendar</router-link>
-      <router-link to="/admin/parameters" v-if="isAdmin">Configure leave policies</router-link><router-link to="/leave/approvals">Review leave approvals</router-link></div>
-  </section>
- </main>
+  <main class="history-page leave-ledger">
+    <header class="ledger-heading">
+      <div>
+        <h1>Leave records &amp; policies</h1>
+        <p>Track your requests, decisions, and available leave.</p>
+      </div>
+      <router-link class="pmo-control primary" :to="{ name: 'Leave', query: { request: '1' } }">
+        <span class="material-symbols-outlined" aria-hidden="true">add</span>Request leave
+      </router-link>
+    </header>
+
+    <section v-if="balances" class="ledger-balance" aria-labelledby="leave-balance-title">
+      <div class="balance-feature">
+        <div class="balance-label">
+          <span class="material-symbols-outlined" aria-hidden="true">calendar_today</span>
+          <h2 id="leave-balance-title">Annual leave remaining</h2>
+        </div>
+        <p class="balance-value">{{ balances.remaining.ANNUAL }} <span>days</span></p>
+        <p v-if="balances.entitlement?.ANNUAL != null" class="balance-detail">{{ balances.used?.ANNUAL ?? '—' }} used of {{ balances.entitlement.ANNUAL }} days</p>
+      </div>
+      <div class="balance-secondary">
+        <h2>Medical leave remaining</h2>
+        <p class="balance-value">{{ balances.remaining.MEDICAL }} <span>days</span></p>
+      </div>
+    </section>
+    <p v-if="balanceError" class="ledger-alert" role="alert">{{ balanceError }}</p>
+
+    <section class="ledger-panel" aria-labelledby="leave-history-title">
+      <header class="ledger-panel-heading">
+        <div>
+          <h2 id="leave-history-title">Request history <span v-if="records.length" class="pmo-status">{{ records.length }}</span></h2>
+          <p>Pending requests affect your balance after approval.</p>
+        </div>
+        <div class="ledger-actions">
+          <button type="button" class="pmo-control refresh-ledger" :disabled="loading" @click="load">
+            <span class="material-symbols-outlined" aria-hidden="true">refresh</span>{{ loading ? 'Refreshing…' : 'Refresh' }}
+          </button>
+          <button v-if="visible.length" type="button" class="pmo-control" @click="exportCSV">
+            <span class="material-symbols-outlined" aria-hidden="true">download</span>Export CSV
+          </button>
+        </div>
+      </header>
+
+      <p v-if="loading" class="ledger-feedback" role="status">{{ loaded ? 'Refreshing requests…' : 'Loading your requests…' }}</p>
+      <p v-if="recordsError" class="ledger-feedback ledger-alert" role="alert">{{ recordsError }}{{ loaded ? ' Showing your last available requests.' : ' Use Refresh to try again.' }}</p>
+
+      <div v-if="records.length" class="ledger-filters" aria-label="Filter requests">
+        <label>Leave type
+          <SmartSelect v-model="typeFilter" aria-label="Leave type filter" :options="types" />
+        </label>
+        <label>Status
+          <SmartSelect v-model="statusFilter" aria-label="Leave status filter" :options="statuses" />
+        </label>
+        <button v-if="filtered" type="button" class="pmo-control" @click="clearFilters">Clear filters</button>
+        <span class="ledger-count" role="status">{{ visible.length }} of {{ records.length }} requests</span>
+      </div>
+
+      <div v-if="visible.length" class="ledger-scroll" tabindex="0" role="region" aria-label="Leave request history table">
+        <table>
+          <thead><tr><th scope="col">Leave type</th><th scope="col">Dates</th><th scope="col">Duration</th><th scope="col">Status</th><th scope="col">Submitted</th></tr></thead>
+          <tbody>
+            <tr v-for="record in visible" :key="record.id">
+              <th scope="row"><strong>{{ label(record.type) }} leave</strong><small>Ref {{ record.id.slice(0, 8) }}</small></th>
+              <td>{{ dateRange(record.startDate, record.endDate) }}</td>
+              <td>{{ duration(record.dayType) }}</td>
+              <td><span class="record-state" :data-state="record.status">{{ label(record.status) }}</span></td>
+              <td>{{ formatDate(record.createdAt) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div v-else-if="loaded && !loading && !recordsError" class="ledger-empty">
+        <span class="material-symbols-outlined record-icon" aria-hidden="true">{{ filtered ? 'filter_list_off' : 'event_note' }}</span>
+        <div>
+          <h3>{{ filtered ? 'No requests match these filters' : 'No leave requests yet' }}</h3>
+          <p>{{ filtered ? 'Change the filters to see more requests.' : 'Your requests and their approval status will appear here.' }}</p>
+        </div>
+      </div>
+    </section>
+
+    <aside class="ledger-policy" aria-labelledby="leave-policy-title">
+      <span class="material-symbols-outlined record-icon" aria-hidden="true">policy</span>
+      <div>
+        <h2 id="leave-policy-title">Organization policy</h2>
+        <p>{{ balances?.note || 'Leave entitlements and holidays follow your organization’s policy.' }}</p>
+        <router-link v-if="isAdmin" class="policy-link" to="/admin/parameters">Manage leave policy</router-link>
+      </div>
+    </aside>
+  </main>
 </template>
+
 <script setup>
+import { computed, onMounted, ref } from 'vue';
 import SmartSelect from '../../../components/SmartSelect.vue';
-import {computed,onMounted,ref} from 'vue';
 import axios from '../../../api/axiosConfig';
-const records=ref([]),balances=ref(null),loading=ref(false),error=ref(''),typeFilter=ref(''),statusFilter=ref('');
-const role=(()=>{try{return JSON.parse(localStorage.getItem('user')||'{}').role||'MEMBER';}catch{return 'MEMBER';}})();
-const isAdmin=role==='ADMIN',isManager=['ADMIN','PMO','PROJECT_MANAGER'].includes(role);
-const visible=computed(()=>records.value.filter(r=>(!typeFilter.value||r.type===typeFilter.value)&&(!statusFilter.value||r.status===statusFilter.value)));
-async function load(){loading.value=true;error.value='';try{
- const [leave,balance]=await Promise.all([axios.get('/leave/mine'),axios.get('/leave/balances')]);
- records.value=leave.data.data;balances.value=balance.data.data;
-}catch(e){const m=e.response?.data?.message;error.value=Array.isArray(m)?m.join(', '):m||e.message;}finally{loading.value=false;}}
-function exportCSV(){
- const headers=['Request ID','Type','Start','End','Day Type','Status','Submitted'];
- const rows=visible.value.map(r=>[r.id,r.type,r.startDate,r.endDate,r.dayType,r.status,r.createdAt]);
- const safe=x=>{let s=String(x??'');if(/^[=+\-@]/.test(s))s="'"+s;return '"'+s.replaceAll('"','""')+'"';};
- const csv=[headers,...rows].map(row=>row.map(safe).join(',')).join('\r\n');
- const href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));
- const a=document.createElement('a');a.href=href;a.download='pmo-personal-leave-'+new Date().toISOString().slice(0,10)+'.csv';a.click();URL.revokeObjectURL(href);
+
+const records = ref([]);
+const balances = ref(null);
+const loaded = ref(false);
+const loading = ref(false);
+const recordsError = ref('');
+const balanceError = ref('');
+const typeFilter = ref('');
+const statusFilter = ref('');
+const role = (() => {
+  try { return JSON.parse(localStorage.getItem('user') || '{}').role; }
+  catch { return null; }
+})();
+const isAdmin = role === 'ADMIN';
+const label = value => String(value || '').replaceAll('_', ' ').toLowerCase().replace(/^./, char => char.toUpperCase());
+const types = [{ value: '', label: 'All types' }, ...['ANNUAL', 'MEDICAL', 'EMERGENCY', 'UNPAID'].map(value => ({ value, label: label(value) }))];
+const statuses = [{ value: '', label: 'All statuses' }, ...['PENDING', 'APPROVED', 'REJECTED', 'RETURNED', 'CANCELLED'].map(value => ({ value, label: label(value) }))];
+const filtered = computed(() => Boolean(typeFilter.value || statusFilter.value));
+const visible = computed(() => records.value.filter(record =>
+  (!typeFilter.value || record.type === typeFilter.value) && (!statusFilter.value || record.status === statusFilter.value)));
+const dateFormat = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+const formatDate = value => value ? dateFormat.format(new Date(value)) : '—';
+const dateRange = (start, end) => start === end ? formatDate(start) : formatDate(start) + ' – ' + formatDate(end);
+const duration = type => ({ AM: 'Morning half-day', PM: 'Afternoon half-day' })[type] || 'Full day';
+
+function clearFilters() {
+  typeFilter.value = '';
+  statusFilter.value = '';
+}
+async function load() {
+  if (loading.value) return;
+  loading.value = true;
+  recordsError.value = '';
+  balanceError.value = '';
+  const [leave, balance] = await Promise.allSettled([axios.get('/leave/mine'), axios.get('/leave/balances')]);
+  if (leave.status === 'fulfilled') {
+    records.value = leave.value.data.data;
+    loaded.value = true;
+  } else recordsError.value = 'Could not load your leave requests.';
+  if (balance.status === 'fulfilled') balances.value = balance.value.data.data;
+  else balanceError.value = 'Could not refresh your leave balances.';
+  loading.value = false;
+}
+function exportCSV() {
+  if (!visible.value.length) return;
+  const headers = ['Request ID', 'Type', 'Start', 'End', 'Day Type', 'Status', 'Submitted'];
+  const rows = visible.value.map(record => [record.id, record.type, record.startDate, record.endDate, record.dayType, record.status, record.createdAt]);
+  const safe = value => {
+    const text = String(value ?? '');
+    return '"' + (/^[=+\-@]/.test(text) ? "'" + text : text).replaceAll('"', '""') + '"';
+  };
+  const csv = [headers, ...rows].map(row => row.map(safe).join(',')).join('\r\n');
+  const href = URL.createObjectURL(new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' }));
+  const anchor = document.createElement('a');
+  anchor.href = href;
+  anchor.download = 'pmo-personal-leave-' + new Date().toISOString().slice(0, 10) + '.csv';
+  anchor.click();
+  URL.revokeObjectURL(href);
 }
 onMounted(load);
 </script>
+
 <style scoped>
-.history-page{min-height:100vh;background:#f4f7fb;padding:32px;display:grid;gap:20px;align-content:start;color:#18253c}.eyebrow{font-size:11px;color:#355ad3;font-weight:800;letter-spacing:.1em}header h1{font-size:29px;margin:6px 0}header p:not(.eyebrow),.card p{font-size:13px;color:#64748b}.card{background:#fff;border-radius:15px;border:1px solid #e5ebf3;padding:23px;min-width:0}.card h2{font-size:18px;margin:0}.card-header{display:flex;align-items:center;justify-content:space-between;gap:15px}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:13px}.stats>div{background:#fff;border:1px solid #e5ebf3;border-radius:14px;padding:20px;display:grid;gap:7px}.stats strong{font-size:29px}.stats small,.stats span{font-size:11px;color:#64748b}.filters{display:flex;gap:13px;margin:19px 0;flex-wrap:wrap}label{font-weight:750;font-size:12px;display:grid;gap:7px}select{padding:10px 12px;border:1px solid #d9e0eb;border-radius:9px;background:#f8faff;color:#273b55;font-size:12px}.scroll{overflow:auto;margin:15px 0}table{width:100%;border-collapse:collapse;text-align:left;min-width:700px}th{background:#f1f4f9;color:#66758b;font-size:11px;padding:13px}td{font-size:12px;padding:13px;border-bottom:1px solid #e8edf4}.mono{font-family:monospace}.status{background:#edf1f7;color:#56677e;font-weight:750;border-radius:18px;padding:6px 9px;font-size:10px}.status.pending{background:#fff1d7;color:#9e6917}.status.approved{background:#def7eb;color:#16765a}.status.rejected{background:#ffe8ed;color:#ae3853}button,.links a{border:0;background:#355ad3;color:#fff;border-radius:9px;padding:11px 14px;font-size:12px;font-weight:750;cursor:pointer;text-decoration:none}button.secondary,.links a{background:#edf2fe;color:#355ad3}.links{display:flex;gap:10px;margin:16px 0;flex-wrap:wrap}.alert.error{padding:12px;border-radius:9px;background:#ffe8ed;color:#ae3853}
-@media(max-width:960px){.stats{grid-template-columns:repeat(2,1fr)}}@media(max-width:650px){.history-page{padding:16px}.card-header{align-items:flex-start;flex-direction:column}}
+.leave-ledger{min-height:calc(100dvh - 100px);display:grid;align-content:start;gap:20px;padding:28px var(--product-gutter);color:var(--pmo-text)}
+.ledger-heading,.ledger-panel-heading{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px}
+.leave-ledger .ledger-heading{margin:0}
+.ledger-heading h1,.ledger-panel-heading h2,.ledger-policy h2{margin:0}
+.ledger-heading p,.ledger-panel-heading p,.ledger-empty p,.ledger-policy p{margin:4px 0 0;color:var(--pmo-muted)}
+.ledger-heading .pmo-control,.ledger-actions .pmo-control{gap:6px;white-space:nowrap}
+.pmo-control .material-symbols-outlined{font-size:18px}
+.ledger-balance{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:12px}
+.balance-feature,.balance-secondary{padding:16px 20px;border:1px solid var(--pmo-border);border-radius:12px;background:var(--pmo-panel)}
+.balance-feature{background:var(--pmo-accent-soft)}
+.balance-label{display:flex;align-items:center;gap:8px}
+.balance-label .material-symbols-outlined{font-size:18px;color:var(--pmo-accent)}
+.leave-ledger .ledger-balance h2{font-size:14px;line-height:20px;letter-spacing:0;margin:0}
+.leave-ledger .balance-value{font-size:30px;line-height:34px;font-weight:720;letter-spacing:-.035em;font-variant-numeric:tabular-nums;color:var(--pmo-text);margin:6px 0 0}
+.balance-value span{font-size:13px;font-weight:500;letter-spacing:0;color:var(--pmo-muted)}
+.balance-detail{margin:4px 0 0;font-size:12px}
+.ledger-panel{min-width:0;background:var(--pmo-panel);border:1px solid var(--pmo-border);border-radius:12px}
+.ledger-panel-heading{padding:18px 20px}
+.ledger-panel-heading h2{display:flex;align-items:center;gap:8px}
+.ledger-actions,.ledger-filters{display:flex;align-items:end;flex-wrap:wrap;gap:8px 12px}
+.ledger-actions .refresh-ledger{background:transparent}
+.ledger-filters{padding:12px 20px;background:var(--pmo-surface-alt);border-block:1px solid var(--pmo-border)}
+.ledger-filters label{display:grid;gap:4px;font-size:12px;font-weight:650}
+.ledger-count{margin-inline-start:auto;align-self:center;font-size:12px;color:var(--pmo-muted)}
+.ledger-scroll{max-inline-size:100%;overflow:auto}
+.ledger-scroll table{border-collapse:collapse;text-align:start;width:100%;min-width:600px;font-size:13px}
+.ledger-scroll :is(th,td){text-align:start;padding:13px 20px;border-bottom:1px solid var(--pmo-border)}
+.ledger-scroll tbody th{background:transparent}
+.ledger-scroll :is(strong,small){display:block}
+.ledger-scroll small{margin-top:3px;color:var(--pmo-muted)}
+.ledger-scroll .record-state[data-state=APPROVED]{background:#e2f3eb;color:#145844;border-color:#bcdfd0}
+.ledger-scroll .record-state[data-state=RETURNED]{background:#fff3da;color:#72500d;border-color:#ebd7aa}
+.ledger-scroll .record-state[data-state=REJECTED]{background:#fde9ed;color:#81283d;border-color:#f1c6cf}
+.ledger-empty{display:flex;align-items:center;gap:12px;padding:18px 20px;border-top:1px solid var(--pmo-border)}
+.ledger-empty h3{font-size:15px;margin:0}
+.ledger-feedback{padding:0 20px}
+.ledger-alert{color:var(--pmo-danger)}
+.ledger-policy{display:flex;align-items:flex-start;gap:12px;padding:14px 4px}
+.leave-ledger .ledger-policy h2{font-size:16px;line-height:22px}
+.ledger-policy .policy-link{display:inline-flex;align-items:center;min-height:44px;font-size:13px;font-weight:650}
+@media(max-width:600px){
+  .leave-ledger{padding-block:20px;gap:16px}
+  .balance-feature,.balance-secondary{padding:12px}
+  .ledger-panel-heading,.ledger-empty,.ledger-filters{padding-inline:14px}
+  .ledger-policy{padding-inline:2px}
+}
 </style>

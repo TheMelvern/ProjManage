@@ -1,15 +1,19 @@
 <template>
   <div v-if="isLogin" class="app-shell-login"><router-view /></div>
   <div v-else class="app-shell">
-    <aside class="app-sidebar" :class="{ 'sidebar-open': menuOpen }" aria-label="Primary navigation">
-      <div class="app-brand"><span class="brand-symbol">P</span><span>PMO Portal</span></div>
-      <p class="nav-category">WORKSPACE</p>
+    <aside id="workspace-navigation" ref="sidebar" :inert="compact && !menuOpen" class="app-sidebar" :class="{ 'sidebar-open': menuOpen }" aria-label="Primary navigation">
+      <div class="app-brand"><span class="brand-symbol">P</span><span>PMO Portal</span>
+        <button v-if="compact" class="drawer-close" type="button" aria-label="Close navigation" @click="closeNavigation(true)"><span class="material-symbols-outlined" aria-hidden="true">close</span></button>
+      </div>
       <nav class="sidebar-links" aria-label="PMO modules">
-        <router-link v-for="item in visibleNavigation" :key="item.to" :to="item.to"
-           :aria-current="(route.path === item.to || route.path === item.to + '/approvals' || (item.to === '/admin/parameters' && route.path.startsWith('/admin/'))) ? 'page' : undefined" @click="menuOpen = false">
+        <template v-for="group in navigationGroups" :key="group.title">
+          <p class="nav-category">{{ group.title }}</p>
+          <router-link v-for="item in group.items" :key="item.to" :to="item.to"
+            :aria-current="isActive(item) ? 'page' : undefined" @click="closeNavigation(route.path === item.to)">
           <span class="material-symbols-outlined" aria-hidden="true">{{ item.icon }}</span>
           <span>{{ item.label }}</span>
-        </router-link>
+          </router-link>
+        </template>
       </nav>
       <div class="sidebar-bottom">
         <button type="button" class="sidebar-signout" @click="logout">
@@ -18,9 +22,9 @@
         </button>
       </div>
     </aside>
-    <div class="app-content">
+    <div class="app-content" :inert="compact && menuOpen">
       <header class="app-topbar">
-        <button type="button" class="menu-toggle" @click="menuOpen = !menuOpen"
+        <button type="button" ref="menuTrigger" class="menu-toggle" aria-controls="workspace-navigation" @click="openNavigation"
           :aria-expanded="menuOpen" aria-label="Toggle navigation">
           <span class="material-symbols-outlined" aria-hidden="true">menu</span>
         </button>
@@ -51,12 +55,11 @@
     </div>
     <ProfileManagementModal v-if="profileOpen" @close="profileOpen = false"
       @updated="onProfileUpdated" @password-changed="onPasswordChanged" />
-    <button v-if="menuOpen" type="button" class="mobile-backdrop"
-      aria-label="Close navigation" @click="menuOpen = false" />
+    <div v-if="compact && menuOpen" class="mobile-backdrop" aria-hidden="true" @click="closeNavigation(true)" />
   </div>
 </template>
 <script setup>
-import { computed, ref, watch, onMounted, onUnmounted } from 'vue';
+import { computed, nextTick, ref, watch, onMounted, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axiosInstance from './api/axiosConfig';
 import ProfileManagementModal from './views/modules/administration/ProfileManagementModal.vue';
@@ -64,6 +67,26 @@ import {applyStoredAppearance,resetAppearance} from './utils/appearance';
 const route = useRoute();
 const router = useRouter();
 const menuOpen = ref(false);
+const sidebar = ref(null), menuTrigger = ref(null);
+const compactQuery = window.matchMedia('(max-width: 900px)');
+const compact = ref(compactQuery.matches);
+function syncViewport(event) {
+  compact.value = event.matches;
+  if (!event.matches) menuOpen.value = false;
+}
+async function openNavigation() {
+  menuOpen.value = true;
+  await nextTick();
+  const current = sidebar.value?.querySelector('[aria-current="page"], .sidebar-links a');
+  (sidebar.value?.querySelector('[aria-current="page"]') || current)?.focus();
+}
+async function closeNavigation(restoreFocus = false) {
+  menuOpen.value = false;
+  if (restoreFocus) {
+    await nextTick();
+    menuTrigger.value?.focus();
+  }
+}
 const profileOpen = ref(false);
 const profileData = ref(readStoredProfile());
 applyStoredAppearance(profileData.value);
@@ -83,12 +106,23 @@ async function refreshUnread(){
   try { const result = await axiosInstance.get('/notifications'); unreadCount.value=result.data.data.unread; recentNotifications.value=result.data.data.items.slice(0,5); }
   catch { unreadCount.value=0; }
 }
-watch(()=>route.fullPath,()=>{notificationsOpen.value=false;refreshUnread();});
+watch(() => route.fullPath, () => {
+  menuOpen.value = false;
+  notificationsOpen.value = false;
+  refreshUnread();
+});
 function onOutsideClick(event){if(notificationAnchor.value&&!notificationAnchor.value.contains(event.target))notificationsOpen.value=false;}
-function onEscape(event){if(event.key==='Escape')notificationsOpen.value=false;}
+function onEscape(event) {
+  if (event.defaultPrevented || event.key !== 'Escape') return;
+  if (menuOpen.value) closeNavigation(true);
+  else if (notificationsOpen.value) {
+    notificationsOpen.value = false;
+    notificationAnchor.value?.querySelector('button')?.focus();
+  }
+}
 async function toggleNotifications(){notificationsOpen.value=!notificationsOpen.value;if(!notificationsOpen.value)return;notificationLoading.value=true;notificationError.value='';try{await refreshUnread();}catch{notificationError.value='Unable to load recent notifications.';}finally{notificationLoading.value=false;}}
-onMounted(()=>{refreshUnread();refreshProfile();document.addEventListener('pointerdown',onOutsideClick);document.addEventListener('keydown',onEscape);});
-onUnmounted(()=>{document.removeEventListener('pointerdown',onOutsideClick);document.removeEventListener('keydown',onEscape);});
+onMounted(()=>{compactQuery.addEventListener('change', syncViewport);refreshUnread();refreshProfile();document.addEventListener('pointerdown',onOutsideClick);document.addEventListener('keydown',onEscape);});
+onUnmounted(()=>{compactQuery.removeEventListener('change', syncViewport);document.removeEventListener('pointerdown',onOutsideClick);document.removeEventListener('keydown',onEscape);});
 const navigation = [
   { to: '/portfolio', label: 'Portfolio Overview', icon: 'dashboard' },
   { to: '/projects', label: 'Projects & Tasks', icon: 'task_alt' },
@@ -99,6 +133,13 @@ const navigation = [
   { to: '/admin/parameters', label: 'Parameters', icon: 'tune' }
 ];
 const isLogin = computed(() => ['Login', 'Signup', 'VerifyEmail', 'ResendVerification', 'ForgotPassword', 'ResetPassword'].includes(route.name));
+watch(isLogin, (isPublic, wasPublic) => {
+  if (!isPublic && wasPublic) {
+    profileData.value = readStoredProfile();
+    applyStoredAppearance(profileData.value);
+    refreshProfile();
+  }
+});
 const currentRole = computed(() => {
   return profileData.value.role || 'MEMBER';
 });
@@ -106,16 +147,25 @@ const visibleNavigation = computed(() => navigation.filter(item =>
   (!item.adminOnly || currentRole.value === 'ADMIN') &&
   (!item.managerOnly || ['ADMIN','PMO','PROJECT_MANAGER'].includes(currentRole.value))));
 
+function isActive(item) {
+  const base = item.to.startsWith('/admin/') ? '/admin' : item.to;
+  return route.path === base || route.path.startsWith(base + '/');
+}
+const navigationGroups = computed(() => [
+  { title: 'Delivery', items: visibleNavigation.value.filter(item => ['/portfolio','/projects','/raid','/reports'].includes(item.to)) },
+  { title: 'People', items: visibleNavigation.value.filter(item => ['/timesheets','/leave'].includes(item.to)) },
+  { title: 'Administration', items: visibleNavigation.value.filter(item => item.to.startsWith('/admin/')) }
+].filter(group => group.items.length));
 const pageTitle = computed(() =>
   route.path.startsWith('/projects/') && !route.path.endsWith('/approvals') ? 'Projects & Tasks' :
   route.path === '/notifications' ? 'Notification Center' :
   route.path.startsWith('/admin/') ? 'Parameters' :
-  (route.path.startsWith('/leave/') ? 'Leave Tracker' : navigation.find(item => route.path === item.to || route.path === item.to + '/approvals')?.label) || 'PMO Portal'
+  (route.path.startsWith('/leave/') ? 'Leave Tracker' : navigation.find(isActive)?.label) || 'PMO Portal'
 );
 const currentUser = computed(() => {
   return profileData.value.name || profileData.value.email || 'Signed in';
 });
-const userInitials = computed(() => currentUser.value.split(/[\\s@.]+/).slice(0,2).map(w => w.charAt(0).toUpperCase()).join('') || 'PM');
+const userInitials = computed(() => currentUser.value.trim().split(/[\s@.]+/).slice(0,2).map(w => w.charAt(0).toUpperCase()).join('') || 'PM');
 function onProfileUpdated(updated) {
   profileData.value = { ...profileData.value, ...updated };
   localStorage.setItem('user', JSON.stringify(profileData.value));
