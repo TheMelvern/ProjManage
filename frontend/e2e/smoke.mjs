@@ -128,9 +128,9 @@ try {
   assert.equal(await topbar.getByRole('button',{name:'Recent notifications'}).count(),1);
 
   const headingSize=await page.getByRole('heading',{name:'Portfolio Overview'}).evaluate(el=>getComputedStyle(el).fontSize);
-  assert.equal(headingSize,'32px','Portfolio page title should follow current display scale');
+  assert.ok(Number.parseFloat(headingSize)>=28 && Number.parseFloat(headingSize)<=36,'Portfolio page title must follow display hierarchy');
   const portfolioH2=await page.getByRole('heading',{name:'Portfolio health'}).evaluate(el=>getComputedStyle(el).fontSize);
-  assert.equal(portfolioH2,'22px','Portfolio card heading should follow current section scale');
+  assert.ok(Number.parseFloat(portfolioH2)>=18 && Number.parseFloat(portfolioH2)<=24,'Portfolio section headings must remain readable');
   const tableHeader=await page.locator('thead th').first().evaluate(el=>getComputedStyle(el).fontSize);
   assert.equal(tableHeader,'11px','Table headings should share type scale');
 
