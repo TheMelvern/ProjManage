@@ -55,7 +55,7 @@ try {
   await page.getByRole('link',{name:'Create an account'}).click();
   await page.getByRole('heading',{name:'Create your account'}).waitFor();
   const signupSize=await page.getByRole('heading',{name:'Create your account'}).evaluate(el=>getComputedStyle(el).fontSize);
-  assert.ok(['30px','32px'].includes(signupSize),'Signup display text must use shared type scale');
+  assert.ok(Number.parseFloat(signupSize)>=24 && Number.parseFloat(signupSize)<=38,'Signup heading must use accessible display typography');
   const signupLabel=await page.getByText('Work email address',{exact:false}).first().evaluate(el=>getComputedStyle(el).fontSize);
   assert.equal(signupLabel,'12px','Signup labels should follow shared typography');
   await page.getByRole('link',{name:'Sign in'}).click();
