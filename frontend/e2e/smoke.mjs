@@ -172,13 +172,13 @@ try {
   await page.getByRole('button',{name:'Kanban'}).click();
   await page.getByText('Approved Browser Story').waitFor({timeout:15000});
   await page.getByRole('button',{name:'Approved Browser Story',exact:true}).click();
-  const workDialog=page.getByRole('dialog',{name:'Work item details'});
+  const workDialog=page.getByRole('dialog',{name:'Approved Browser Story'});
   await workDialog.getByLabel('Detail priority').click();
   await workDialog.getByRole('option',{name:'HIGH'}).click();
   await workDialog.getByRole('button',{name:'Submit changes for approval'}).click();
   await workDialog.getByText('Changes submitted for independent approval.').waitFor();
   await approve('TASK_UPDATE','Approved Browser Story');
-  await workDialog.getByRole('button',{name:'Close work item details'}).click();
+  await workDialog.getByRole('button',{name:'Cancel'}).click();
   await page.reload();
   await page.getByRole('button',{name:'Kanban'}).click();
   const storyCard=page.locator('.board-card').filter({hasText:'Approved Browser Story'});
