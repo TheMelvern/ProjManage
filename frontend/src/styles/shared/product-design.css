@@ -39,17 +39,96 @@
 .app-shell .sidebar-links .material-symbols-outlined {font-size:19px}
 .app-shell .sidebar-bottom {padding:8px 12px}
 .app-shell .sidebar-signout {min-height:44px}
-.app-shell .app-topbar {min-height:60px;padding-inline:var(--product-gutter)}
-.app-shell .topbar-label {font-size:13px;color:var(--pmo-muted)}
 .drawer-close {margin-inline-start:auto;flex:none;display:grid;place-items:center;min-width:44px;min-height:44px;border:0;border-radius:8px;background:transparent;color:var(--pmo-text)}
 /* Navigation chrome shares its edge with the page content. */
 
-.app-shell .topbar-label {
-  display: flex; align-items: center; gap: 10px; min-width: 0;
+/* Workspace header keeps the controls quiet until hover, focus or activation. */
+.app-shell .app-topbar {
+  min-block-size: 54px;
+  padding-inline: var(--product-gutter);
+  gap: 8px;
+  background: color-mix(in srgb, var(--pmo-surface) 82%, var(--pmo-canvas));
+  border-color: color-mix(in srgb, var(--pmo-border) 78%, transparent);
+}
+.app-shell .app-topbar .topbar-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-inline-size: 0;
+  margin-inline-end: auto;
+  color: var(--pmo-text);
+  font-size: .875rem;
+  font-weight: 600;
+  letter-spacing: -.015em;
+}
+.app-topbar .topbar-right {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+}
+.app-topbar .notification-anchor { position: static; }
+.app-shell .app-topbar :is(.menu-toggle, .notification-shortcut, .profile-badge-button) {
+  inline-size: var(--pmo-control-size);
+  block-size: var(--pmo-control-size);
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  color: var(--pmo-text);
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+  transition: background-color .15s ease;
+}
+.app-shell .app-topbar :is(.menu-toggle, .notification-shortcut, .profile-badge-button):is(:hover, [aria-expanded=true]) {
+  background: color-mix(in srgb, var(--pmo-text) 7%, transparent);
+}
+.app-shell .app-topbar button:focus-visible {
+  outline: 2px solid var(--pmo-accent-ink);
+  outline-offset: 1px;
+}
+.app-topbar :is(.menu-toggle, .notification-shortcut) .material-symbols-outlined {
+  font-size: 20px;
+}
+.app-topbar :is(.topbar-avatar-image, .topbar-avatar-initials) {
+  inline-size: 30px;
+  block-size: 30px;
+  border-radius: 50%;
+}
+.app-topbar .topbar-avatar-initials {
+  display: grid;
+  place-items: center;
+  background: var(--pmo-accent-soft);
+  color: var(--pmo-accent-ink);
+  font-size: .6875rem;
+  font-weight: 650;
+}
+.app-topbar .notification-count {
+  top: 3px;
+  right: 0;
+  min-width: 16px;
+  height: 16px;
+  border: 1px solid var(--pmo-surface);
+  font-size: 9px;
+}
+.app-topbar .notification-popover {
+  top: calc(100% + 8px);
+  width: min(360px, calc(100vw - 24px));
+}
+@media (max-width: 600px) {
+  .app-shell .app-topbar { padding-inline: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-shell .app-topbar button { transition: none; }
 }
 .topbar-area {
   border-inline-end: 1px solid var(--pmo-border);
   padding-inline-end: 10px;
+  flex: none;
+  color: var(--pmo-muted);
   font-weight: 500;
 }
 .topbar-destination {
@@ -322,9 +401,6 @@
   color:var(--pmo-on-accent);
 }
 
-.app-shell .app-topbar :is(.profile-badge,.notification-shortcut) {
-  color:var(--pmo-accent-ink);
-}
 .app-shell .sidebar-links a[aria-current=page] {color:var(--pmo-accent-ink)}
 .app-shell .sidebar-links {
   scrollbar-color:color-mix(in srgb,var(--pmo-accent) 52%,var(--pmo-sidebar)) transparent;
