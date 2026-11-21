@@ -35,7 +35,7 @@
         <div class="topbar-right">
           <div class="notification-anchor" ref="notificationAnchor">
             <button type="button" class="notification-shortcut" title="Recent notifications" aria-label="Recent notifications" :aria-expanded="notificationsOpen" aria-haspopup="dialog" @click="toggleNotifications">
-              <span class="material-symbols-outlined">notifications</span><span v-if="unreadCount" class="notification-count">{{ unreadCount > 99 ? "99+" : unreadCount }}</span>
+              <span class="material-symbols-outlined" aria-hidden="true">notifications</span><span v-if="unreadCount" class="notification-count">{{ unreadCount > 99 ? "99+" : unreadCount }}</span>
             </button>
             <section v-if="notificationsOpen" class="notification-popover" role="dialog" aria-label="Recent notifications">
               <div class="notification-popover-head"><strong>Recent activity</strong><span>{{ unreadCount }} unread</span></div>
@@ -51,7 +51,10 @@
             </section>
           </div>
           <button type="button" class="profile-badge profile-badge-button" :title="currentUser"
-            :aria-label="'Manage profile for ' + currentUser" @click="profileOpen = true"><img v-if="profileData.avatarDataUrl" :src="profileData.avatarDataUrl" alt="" class="topbar-avatar-image" />{{ profileData.avatarDataUrl ? '' : userInitials }}</button>
+            :aria-label="'Manage profile for ' + currentUser" @click="profileOpen = true">
+            <img v-if="profileData.avatarDataUrl" :src="profileData.avatarDataUrl" alt="" class="topbar-avatar-image" />
+            <span v-else class="topbar-avatar-initials" aria-hidden="true">{{ userInitials }}</span>
+          </button>
         </div>
       </header>
       <router-view v-slot="{ Component }">
