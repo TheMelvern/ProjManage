@@ -1,8 +1,8 @@
 /* Shared product surfaces and layout. Appearance colors remain user-selectable. */
 :root {
-  --product-sidebar: 224px;
-  --product-gutter: 32px;
-  --product-radius: 12px;
+  --product-sidebar: 232px;
+  --product-gutter: clamp(20px, 3vw, 40px);
+  --product-radius: 16px;
   --product-line: 1.5;
   --product-panel-space: 24px;
 }
@@ -39,33 +39,57 @@
 .app-shell .sidebar-links .material-symbols-outlined {font-size:19px}
 .app-shell .sidebar-bottom {padding:8px 12px}
 .app-shell .sidebar-signout {min-height:44px}
-.app-shell .app-topbar {min-height:56px;padding-inline:var(--product-gutter)}
+.app-shell .app-topbar {min-height:60px;padding-inline:var(--product-gutter)}
 .app-shell .topbar-label {font-size:13px;color:var(--pmo-muted)}
 .drawer-close {margin-inline-start:auto;flex:none;display:grid;place-items:center;min-width:44px;min-height:44px;border:0;border-radius:8px;background:transparent;color:var(--pmo-text)}
-/* The module tabs use a compact contextual segmented surface, not a second full-width tab strip. */
-.app-shell .app-content .module-tabs {
- display:flex;align-items:center;justify-content:space-between;flex-wrap:nowrap;
- min-height:66px;padding:10px var(--product-gutter);gap:20px;
- border-bottom:1px solid var(--pmo-border);
- background:var(--pmo-canvas);box-shadow:none;
+/* Navigation chrome shares its edge with the page content. */
+
+.app-shell .topbar-label {
+  display: flex; align-items: center; gap: 10px; min-width: 0;
 }
-.app-shell .app-content .module-tabs .module-tabs-track {
- display:flex;gap:4px;align-items:center;min-width:0;max-width:100%;
- padding:4px;border:1px solid var(--pmo-border);border-radius:13px;
- background:var(--pmo-surface-alt);overflow-x:auto;scrollbar-width:none;
+.topbar-area {
+  border-inline-end: 1px solid var(--pmo-border);
+  padding-inline-end: 10px;
+  font-weight: 500;
+}
+.topbar-destination {
+  color: var(--pmo-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.app-shell .sidebar-links a { min-height: 44px; border-radius: 10px; }
+.app-shell .sidebar-links a[aria-current=page] {
+  color: var(--pmo-accent-ink);
+  box-shadow: inset 0 0 0 1px var(--pmo-border);
+}
+.app-shell .app-content .module-tabs {
+  display: flex; align-items: center; min-width: 0;
+  padding: 5px var(--product-gutter) 0;
+  background: var(--pmo-surface);
+  border-block-end: 1px solid var(--pmo-border);
+}
+.module-tabs-track {
+  display: flex; gap: 14px; min-width: 0; max-width: 100%;
+  overflow-x: auto; overscroll-behavior-inline: contain;
 }
 .app-shell .app-content .module-tabs .module-tabs-track a {
- display:inline-flex;align-items:center;justify-content:center;flex:none;
- white-space:nowrap;min-height:36px;padding:8px 15px;
- border:1px solid transparent;border-radius:9px;font-size:12px;font-weight:650;
- background:transparent;color:var(--pmo-muted);box-shadow:none;
+  display: inline-flex; align-items: center; flex: none;
+  min-height: 44px; padding: 6px 10px;
+  border-block-end: 2px solid transparent;
+  color: var(--pmo-muted); white-space: nowrap; text-decoration: none;
+  font-size: 13px; font-weight: 650;
 }
-.app-shell .app-content .module-tabs .module-tabs-track a.selected {
- background:var(--pmo-surface)!important;border:1px solid var(--pmo-border)!important;
- color:var(--pmo-accent-ink)!important;box-shadow:0 1px 4px rgba(15,25,35,.06);
+.app-shell .app-content .module-tabs .module-tabs-track a:hover {
+  color: var(--pmo-text); background: var(--pmo-surface-alt);
 }
-.app-shell .app-content .module-tabs .module-tabs-track a:hover:not(.selected) {
- background:var(--pmo-surface);border-color:transparent;color:var(--pmo-text);
+.app-shell .app-content .module-tabs .module-tabs-track a[aria-current=page] {
+  color: var(--pmo-accent-ink); border-block-end-color: currentColor;
+}
+.app-shell .app-content .module-tabs .module-tabs-track a:focus-visible { outline-offset: -3px; }
+@media (max-width: 600px) {
+  .topbar-area { display: none; }
+  .module-tabs-track { gap: 4px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-shell .app-sidebar { transition: none; }
 }
 .app-shell .app-content :is(.workspace,.create-page,.portfolio-page,.review-page,.leave-screen,.executive-reports,.admin-page,.detail-screen,.notification-page,.hub) {
   padding-inline:var(--product-gutter);
@@ -279,8 +303,8 @@
 }
 .app-shell .sidebar-links {scrollbar-color:var(--pmo-action-border) transparent}
 .app-shell .sidebar-links::-webkit-scrollbar-thumb {background:var(--pmo-action-border)}
-.app-shell .app-content :is(.module-tabs,.hub-tabs) :is(a,button):not(.selected,.active):not(:hover) {color:var(--pmo-muted)}
-.app-shell .app-content :is(.module-tabs a.selected,.sidebar-links a[aria-current=page],.queue-record) {color:var(--pmo-accent-ink)}
+.app-shell .app-content .hub-tabs :is(a,button):not(.selected,.active):not(:hover) {color:var(--pmo-muted)}
+.app-shell .app-content .queue-record {color:var(--pmo-accent-ink)}
 .app-shell .app-content :is(.availability .controls,.portfolio-header .header-actions) button,
 .app-shell .app-content :is(.detail-screen .link,.detail-screen .links a,.raid-workspace .module-shortcuts a,.timesheets .module-shortcuts a,.history-page .links a,.history-page .secondary,.leave-screen .secondary,.notification-page .secondary,.review-page .secondary) {
   background:var(--pmo-action-tint);
@@ -324,10 +348,6 @@
   color:var(--pmo-accent-ink);
 }
 
-.app-shell .app-content .module-tabs .module-tabs-track a:not(.selected):hover {
-  color:var(--pmo-text);
-  border-color:transparent;
-}
 
 /* A shared hierarchy for workspace actions and compact operational content. */
 .app-shell .app-content .pmo-control.quiet {
@@ -424,9 +444,6 @@
 .app-shell-login :is(.auth-alert,.account-card .notice){border-radius:8px}
 
 @media(max-width:600px){
-  .app-shell .app-content .module-tabs {min-height:60px;gap:0;flex-wrap:nowrap;padding:9px var(--product-gutter)}
-  .app-shell .app-content .module-tabs .module-tabs-caption {display:none}
-  .app-shell .app-content .module-tabs .module-tabs-track {width:100%;justify-content:flex-start}
   .app-shell .app-content .availability .calendar-summary {order:1}
 }
 

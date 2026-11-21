@@ -7,7 +7,7 @@
       </div>
       <nav class="sidebar-links" aria-label="PMO modules">
         <template v-for="group in navigationGroups" :key="group.title">
-          <p class="nav-category">{{ group.title }}</p>
+          <p v-if="group.title" class="nav-category">{{ group.title }}</p>
           <router-link v-for="item in group.items" :key="item.to" :to="item.to"
             :aria-current="isActive(item) ? 'page' : undefined" @click="closeNavigation(route.path === item.to)">
           <span class="material-symbols-outlined" aria-hidden="true">{{ item.icon }}</span>
@@ -28,7 +28,10 @@
           :aria-expanded="menuOpen" aria-label="Toggle navigation">
           <span class="material-symbols-outlined" aria-hidden="true">menu</span>
         </button>
-        <div class="topbar-label">{{ pageTitle }}</div>
+        <div class="topbar-label">
+          <span v-if="currentGroup" class="topbar-area">{{ currentGroup.title }}</span>
+          <span class="topbar-destination">{{ pageTitle }}</span>
+        </div>
         <div class="topbar-right">
           <div class="notification-anchor" ref="notificationAnchor">
             <button type="button" class="notification-shortcut" title="Recent notifications" aria-label="Recent notifications" :aria-expanded="notificationsOpen" aria-haspopup="dialog" @click="toggleNotifications">
@@ -51,7 +54,9 @@
             :aria-label="'Manage profile for ' + currentUser" @click="profileOpen = true"><img v-if="profileData.avatarDataUrl" :src="profileData.avatarDataUrl" alt="" class="topbar-avatar-image" />{{ profileData.avatarDataUrl ? '' : userInitials }}</button>
         </div>
       </header>
-      <router-view />
+      <router-view v-slot="{ Component }">
+        <component :is="Component" v-bind="route.name === 'Workplace' ? { role: currentRole } : {}" />
+      </router-view>
     </div>
     <ProfileManagementModal v-if="profileOpen" @close="profileOpen = false"
       @updated="onProfileUpdated" @password-changed="onPasswordChanged" />
@@ -61,6 +66,7 @@
 <script setup>
 import { computed, nextTick, ref, watch, onMounted, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { allowedWorkplaceGroups, workplaceGroups, workplaceHome } from './workplaceNavigation';
 import axiosInstance from './api/axiosConfig';
 import ProfileManagementModal from './views/modules/administration/ProfileManagementModal.vue';
 import {applyStoredAppearance,resetAppearance} from './utils/appearance';
@@ -104,7 +110,11 @@ const notificationsOpen=ref(false),recentNotifications=ref([]),notificationLoadi
 async function refreshUnread(){
   if (!localStorage.getItem('access_token')) { unreadCount.value=0; return; }
   try { const result = await axiosInstance.get('/notifications'); unreadCount.value=result.data.data.unread; recentNotifications.value=result.data.data.items.slice(0,5); }
-  catch { unreadCount.value=0; }
+  catch {
+    unreadCount.value = 0;
+    recentNotifications.value = [];
+    if (notificationsOpen.value) notificationError.value = 'Unable to load recent notifications.';
+  }
 }
 watch(() => route.fullPath, () => {
   menuOpen.value = false;
@@ -120,18 +130,9 @@ function onEscape(event) {
     notificationAnchor.value?.querySelector('button')?.focus();
   }
 }
-async function toggleNotifications(){notificationsOpen.value=!notificationsOpen.value;if(!notificationsOpen.value)return;notificationLoading.value=true;notificationError.value='';try{await refreshUnread();}catch{notificationError.value='Unable to load recent notifications.';}finally{notificationLoading.value=false;}}
+async function toggleNotifications(){notificationsOpen.value=!notificationsOpen.value;if(!notificationsOpen.value)return;notificationLoading.value=true;notificationError.value='';try{await refreshUnread();}finally{notificationLoading.value=false;}}
 onMounted(()=>{compactQuery.addEventListener('change', syncViewport);refreshUnread();refreshProfile();document.addEventListener('pointerdown',onOutsideClick);document.addEventListener('keydown',onEscape);});
 onUnmounted(()=>{compactQuery.removeEventListener('change', syncViewport);document.removeEventListener('pointerdown',onOutsideClick);document.removeEventListener('keydown',onEscape);});
-const navigation = [
-  { to: '/portfolio', label: 'Portfolio Overview', icon: 'dashboard' },
-  { to: '/projects', label: 'Projects & Tasks', icon: 'task_alt' },
-  { to: '/raid', label: 'RAID Register', icon: 'warning_amber' },
-  { to: '/timesheets', label: 'Timesheets', icon: 'schedule' },
-  { to: '/leave', label: 'Leave Tracker', icon: 'event_available' },
-  { to: '/reports', label: 'Executive Reports', icon: 'summarize' },
-  { to: '/admin/parameters', label: 'Parameters', icon: 'tune' }
-];
 const isLogin = computed(() => ['Login', 'Signup', 'VerifyEmail', 'ResendVerification', 'ForgotPassword', 'ResetPassword'].includes(route.name));
 watch(isLogin, (isPublic, wasPublic) => {
   if (!isPublic && wasPublic) {
@@ -143,24 +144,19 @@ watch(isLogin, (isPublic, wasPublic) => {
 const currentRole = computed(() => {
   return profileData.value.role || 'MEMBER';
 });
-const visibleNavigation = computed(() => navigation.filter(item =>
-  (!item.adminOnly || currentRole.value === 'ADMIN') &&
-  (!item.managerOnly || ['ADMIN','PMO','PROJECT_MANAGER'].includes(currentRole.value))));
-
 function isActive(item) {
   const base = item.to.startsWith('/admin/') ? '/admin' : item.to;
   return route.path === base || route.path.startsWith(base + '/');
 }
 const navigationGroups = computed(() => [
-  { title: 'Delivery', items: visibleNavigation.value.filter(item => ['/portfolio','/projects','/raid','/reports'].includes(item.to)) },
-  { title: 'People', items: visibleNavigation.value.filter(item => ['/timesheets','/leave'].includes(item.to)) },
-  { title: 'Administration', items: visibleNavigation.value.filter(item => item.to.startsWith('/admin/')) }
-].filter(group => group.items.length));
+  { title: '', items: [workplaceHome] },
+  ...allowedWorkplaceGroups(currentRole.value)
+]);
+const currentGroup = computed(() => workplaceGroups.find(group => group.items.some(isActive)));
 const pageTitle = computed(() =>
-  route.path.startsWith('/projects/') && !route.path.endsWith('/approvals') ? 'Projects & Tasks' :
-  route.path === '/notifications' ? 'Notification Center' :
-  route.path.startsWith('/admin/') ? 'Parameters' :
-  (route.path.startsWith('/leave/') ? 'Leave Tracker' : navigation.find(isActive)?.label) || 'PMO Portal'
+  route.name === 'Workplace' ? workplaceHome.label :
+  route.name === 'Notifications' ? 'Notification Center' :
+  currentGroup.value?.items.find(isActive)?.label || 'PMO Portal'
 );
 const currentUser = computed(() => {
   return profileData.value.name || profileData.value.email || 'Signed in';
