@@ -96,15 +96,13 @@ html,body,#app{background:var(--pmo-canvas);color:var(--pmo-text);transition:bac
 .app-shell .app-content .hub,
 .app-shell .app-content .create-page,
 .app-shell .app-content .detail-screen{background:var(--pmo-canvas);color:var(--pmo-text)}
-.app-shell .app-content :is(.module-tabs,.workspace-card,.portfolio-panel,.kpi-card,.card,.panel,.project-list,.project-detail,.summary-panel,.insights article,.project-choices button,.project-tile,.board-card,.phase,.work-row,.task-create,.create-form,.profile-section,.notice:not(.error):not(.success)){
+.app-shell .app-content :is(.workspace-card,.portfolio-panel,.kpi-card,.card,.panel,.project-list,.project-detail,.summary-panel,.insights article,.project-choices button,.project-tile,.board-card,.phase,.work-row,.task-create,.create-form,.profile-section,.notice:not(.error):not(.success)){
  border-color:var(--pmo-border);box-shadow:var(--pmo-shadow);
 }
-.app-shell .app-content :is(.module-tabs,.workspace-card,.portfolio-panel,.kpi-card,.card,.panel,.project-list,.project-detail,.summary-panel,.insights article,.board-card,.work-row,.project-choices button,.project-tile){
+.app-shell .app-content :is(.workspace-card,.portfolio-panel,.kpi-card,.card,.panel,.project-list,.project-detail,.summary-panel,.insights article,.board-card,.work-row,.project-choices button,.project-tile){
  background:var(--pmo-panel)!important;color:var(--pmo-text);
 }
-.app-shell .app-content :is(.module-tabs,.project-overview,.portfolio-header){background:var(--pmo-canvas)}
-.app-shell .app-content .module-tabs a{color:var(--pmo-muted);border-radius:12px 12px 0 0}
-.app-shell .app-content .module-tabs a.selected,.app-shell .app-content .module-tabs a:hover{background:var(--pmo-accent-soft);color:var(--pmo-accent);border-bottom-color:var(--pmo-accent)}
+.app-shell .app-content :is(.project-overview,.portfolio-header){background:var(--pmo-canvas)}
 .app-shell .app-content :is(h1,h2,h3,strong,.section-heading h2,.project-choices strong,.work-row strong,.board-card strong){color:var(--pmo-text)}
 .app-shell .app-content :is(p,small,.detail-desc,.hint,.section-heading span,.panel-heading p,.project-choices small,.task-empty,.empty,.section-heading p,.kpi-card span,.kpi-card small){color:var(--pmo-muted)}
 .app-shell .app-content :is(input,select,textarea,.smart-trigger,.date-trigger){background:var(--pmo-input);color:var(--pmo-text);border-color:var(--pmo-border)}
@@ -234,7 +232,7 @@ html,body,#app,.app-shell,.app-shell-login,button,input,textarea,select{
 .app-shell .app-content :is(.summary>div,.summary>section,.report-metric,.report-table-card,.entry,.request,.register,.panel,.card,.workspace-card,.project-summary){
  background:var(--pmo-panel)!important;color:var(--pmo-text);
 }
-.app-shell .app-content :is(.entry,.request,.parameter-list>div,.project-status,.selector,.date-grid,.report-notice,.draft-preview,.module-tabs){
+.app-shell .app-content :is(.entry,.request,.parameter-list>div,.project-status,.selector,.date-grid,.report-notice,.draft-preview){
  border-color:var(--pmo-border);
 }
 .app-shell .app-content :is(.request,.parameter-list>div,.selector,.project-status,.project-choices button,.preview){
@@ -260,10 +258,10 @@ html,body,#app,.app-shell,.app-shell-login,button,input,textarea,select{
 .app-shell .app-content :is(button.secondary,.secondary,.nav-link,.report-detail-link,.heading-link){
  color:var(--pmo-accent);border-color:var(--pmo-border);
 }
-.app-shell .app-content :is(.tabs button.active,.hub-tabs button.active,.module-tabs a.selected,.method-card.picked){
+.app-shell .app-content :is(.tabs button.active,.hub-tabs button.active,.method-card.picked){
  color:var(--pmo-accent)!important;border-color:var(--pmo-accent)!important;
 }
-.app-shell .app-content :is(.tabs button.active,.module-tabs a.selected,.method-card.picked){
+.app-shell .app-content :is(.tabs button.active,.method-card.picked){
  background:var(--pmo-accent-soft)!important;
 }
 .app-shell .app-content :is(input:focus-visible,textarea:focus-visible,button:focus-visible,a:focus-visible){

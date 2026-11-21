@@ -9,6 +9,7 @@ import ProjectCreate from './views/modules/projects/ProjectCreate.vue';
 import ProjectHub from './views/modules/projects/ProjectHub.vue';
 import NotificationCenter from './views/modules/administration/NotificationCenter.vue';
 import PortfolioOverview from './views/modules/projects/pmoDashboard/PortfolioOverview.vue';
+import WorkplaceHome from './views/modules/WorkplaceHome.vue';
 import ModuleWorkspace from './views/modules/ModuleWorkspace.vue';
 import './styles/shared/tailwind.css';
 import './styles/shared/app.css';
@@ -53,7 +54,8 @@ const router = createRouter({
     { path: '/admin/access', redirect: '/admin/users' },
     { path: '/admin/audit', name: 'AuditLog', component: ModuleWorkspace, props: {module:'admin'} },
     { path: '/leave/team', name: 'TeamAvailability', component: ModuleWorkspace, props: {module:'leave'} },
-    { path: '/', redirect: '/portfolio' },
+    { path: '/', redirect: '/workplace' },
+    { path: '/workplace', name: 'Workplace', component: WorkplaceHome },
     { path: '/portfolio', name: 'Portfolio', component: PortfolioOverview },
     { path: '/workspace', redirect: '/projects' },
     { path: '/projects', name: 'Projects', component: ModuleWorkspace, props: {module:'projects'} },

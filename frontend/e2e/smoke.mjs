@@ -134,14 +134,22 @@ try {
   const tableHeader=await page.locator('thead th').first().evaluate(el=>getComputedStyle(el).fontSize);
   assert.equal(tableHeader,'11px','Table headings should share type scale');
 
-  await page.getByRole('link',{name:/Projects & Tasks/}).click();
+  await sidebar.getByRole('link',{name:'Workplace',exact:true}).click();
+  const workplace = page.getByRole('main');
+  await workplace.getByRole('heading',{name:'Workplace',exact:true}).waitFor();
+  assert.equal(await sidebar.getByRole('link',{name:'Workplace',exact:true}).getAttribute('aria-current'),'page');
+  await page.screenshot({path:'test-results/desktop-workplace.png',fullPage:true});
+  await workplace.getByRole('link',{name:'Open notification inbox'}).click();
+  await page.getByRole('heading',{name:'Notification Center'}).waitFor();
+  await sidebar.getByRole('link',{name:'Workplace',exact:true}).click();
+  await workplace.getByRole('link',{name:'Projects & Tasks',exact:true}).click();
   await page.getByRole('heading',{name:'Projects & tasks'}).waitFor();
   const projectTabs=page.getByRole('navigation',{name:'Projects & Tasks tabs'});
   const tabChrome=await projectTabs.evaluate(el=>({display:getComputedStyle(el).display,wrapping:getComputedStyle(el).flexWrap,background:getComputedStyle(el).backgroundColor,height:el.getBoundingClientRect().height}));
   assert.equal(tabChrome.display,'flex','Secondary module navigation must be flex-aligned');
   assert.equal(tabChrome.wrapping,'nowrap','Secondary navigation must stay on one line');
   assert.ok(tabChrome.height<=74,'Secondary navigation should remain compact');
-  assert.ok(await projectTabs.locator('.module-tabs-track').isVisible(),'Module navigation must use an inset segmented track');
+  assert.ok(await projectTabs.locator('.module-tabs-track').isVisible(),'Module navigation must expose its route links');
   assert.equal(await projectTabs.locator('a[aria-current="page"]').count(),1,'Exactly one contextual tab must be active');
 
   const projectHeading=await page.getByRole('heading',{name:'Projects & tasks'}).evaluate(el=>getComputedStyle(el).fontSize);
@@ -370,6 +378,13 @@ try {
   assert.ok(await mobileTabs.locator('.module-tabs-track').isVisible(),'Mobile should retain the compact tab selector');
   assert.ok(await mobileTabs.locator('.module-tabs-track').evaluate(el=>el.scrollWidth>=el.clientWidth));
 
+  const calendarTab = mobileTabs.getByRole('link',{name:'Team calendar'});
+  await calendarTab.focus();
+  await calendarTab.press('Enter');
+  await mobile.waitForURL('**/#/leave/team');
+  assert.equal(await calendarTab.getAttribute('aria-current'),'page');
+  await mobileTabs.getByRole('link',{name:'My leave'}).click();
+  await mobile.getByRole('heading',{name:'Leave tracker'}).waitFor();
   await mobile.screenshot({path:'test-results/mobile-leave.png',fullPage:true});
   await mobile.getByRole('button',{name:'Request leave'}).click();
   assert.ok(await mobile.getByRole('dialog',{name:'New leave request'}).isVisible(),'Premium leave composer must work on mobile');
