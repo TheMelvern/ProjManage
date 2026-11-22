@@ -21,7 +21,7 @@ const tokenFromMail = (email,kind) => {
   assert.ok(match,'Missing one-time token in delivered link');
   return match[1];
 };
-const base = 'http://127.0.0.1:3000/api';
+const base = 'http://127.0.0.1:' + (process.env.API_PORT || '3000') + '/api';
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 const jsonHeaders = { 'Content-Type': 'application/json' };
 
@@ -345,6 +345,25 @@ try {
   await request('GET','/projects',member,undefined,401);
   const refreshedMember=await login(memberUser.email,'member-password-123456');
   await request('GET','/projects',refreshedMember,undefined,200);
+  const claimBody = {
+    category:'TRAVEL', expenseDate:new Date().toISOString().slice(0,10),
+    amountMinor:4250, description:'Client visit taxi', receiptReference:'TEST-001'
+  };
+  await request('POST','/claims',maker,{...claimBody,amountMinor:0},400);
+  const claim = (await request('POST','/claims',maker,claimBody,201)).data;
+  assert.equal(claim.status,'PENDING');
+  const ownClaims = (await request('GET','/claims',maker,undefined,200)).data.claims;
+  assert.equal(ownClaims.find(item=>item.id===claim.id).expense.amountMinor,4250);
+  assert.equal((await request('GET','/reviews?module=claims&id='+claim.id,refreshedMember,undefined,200)).data.length,0);
+  assert.equal((await request('GET','/reviews?module=claims&id='+claim.id,outsider,undefined,200)).data.length,0);
+  await request('POST','/reviews/'+claim.id+'/decision',maker,{decision:'APPROVED'},403);
+  await request('POST','/reviews/'+claim.id+'/decision',outsider,{decision:'APPROVED'},403);
+  await request('POST','/reviews/'+claim.id+'/decision',refreshedMember,{decision:'APPROVED'},403);
+  await approve(checker,claim.id);
+  const reviewedClaim = (await request('GET','/reviews?module=claims&id='+claim.id,maker,undefined,200)).data[0];
+  assert.equal(reviewedClaim.status,'APPROVED');
+  assert.equal(reviewedClaim.proposed.receiptReference,'TEST-001');
+  assert.ok(await db.auditEvent.findFirst({where:{entityId:claim.id,action:'REVIEW_APPROVED'}}));
   await db.membership.delete({where:{organizationId_userId:{
     organizationId:organization.id,userId:memberUser.id
   }}});
@@ -405,7 +424,7 @@ try {
   const approvalGroups={
     projects:['PROJECT_CREATE','PROJECT_UPDATE','TASK_CREATE','TASK_UPDATE'],
     raid:['RISK_CREATE','RISK_UPDATE','ISSUE_CREATE','ISSUE_UPDATE','DECISION_CREATE','ACTION_CREATE','ACTION_UPDATE'],
-    timesheets:['TIMESHEET_CREATE'],leave:['LEAVE_REQUEST'],
+    timesheets:['TIMESHEET_CREATE'],leave:['LEAVE_REQUEST'],claims:['CLAIM_REQUEST'],
     reports:['REPORT_PUBLISH'],admin:['REGISTRATION','PARAMETER_UPDATE','MEMBERSHIP_UPDATE']
   };
   for (const [module,kinds] of Object.entries(approvalGroups)) {
@@ -415,5 +434,5 @@ try {
   const refreshedChecker=await login(checkerUser.email,'checker-password-12345');
   const managerAdmin=(await request('GET','/reviews?module=admin',refreshedChecker,undefined,200)).data;
   assert.ok(managerAdmin.every(item=>approvalGroups.admin.includes(item.kind)));
-  console.log('PASS: tenant isolation, registration, projects/tasks, RAID, timesheets, reports, leave, parameters, users, role approvals, audit, JWT revocation');
+  console.log('PASS: claims, tenant isolation, registration, projects/tasks, RAID, timesheets, reports, leave, parameters, users, role approvals, audit, JWT revocation');
 } finally { await db.$disconnect(); await new Promise(resolve=>mailServer.close(resolve)); }

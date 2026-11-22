@@ -1,6 +1,6 @@
 import { BadRequestException, Body, ConflictException, Controller, ForbiddenException, Get, NotFoundException, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { IsDateString, IsIn, IsOptional, IsString, MaxLength, MinLength, IsUUID } from 'class-validator';
+import { IsDateString, IsIn, IsOptional, IsString, MaxLength, MinLength, IsUUID, IsInt, Min, Max } from 'class-validator';
 import { AuthGuard, AuthenticatedRequest } from './auth.guard';
 import { PrismaService } from './prisma.service';
 import { assertReturnedRequest } from './returned-request';
@@ -15,8 +15,78 @@ class LeaveDto {
   @IsOptional() @IsUUID() revisesRequestId?: string;
 }
 
+const claimCategories = ['TRAVEL', 'MEALS', 'SUPPLIES', 'OTHER'] as const;
+const claimCurrencies = ['MYR', 'SGD', 'USD', 'EUR', 'GBP', 'AUD'];
+
+class ClaimDto {
+  @IsIn(claimCategories) category!: string;
+  @IsDateString({ strict: true }) expenseDate!: string;
+  @IsInt() @Min(1) @Max(99999999) amountMinor!: number;
+  @IsString() @MinLength(3) @MaxLength(500) description!: string;
+  @IsOptional() @IsString() @MaxLength(120) receiptReference?: string;
+}
+
+@Controller('claims')
+@UseGuards(AuthGuard)
+export class ClaimsController {
+  constructor(private readonly prisma: PrismaService) {}
+
+  private async policy(organizationId: string) {
+    const rows = await this.prisma.organizationParameter.findMany({
+      where: { organizationId, key: { in: ['claimCurrency', 'claimMaximum'] } }
+    });
+    const currency = String(rows.find(row => row.key === 'claimCurrency')?.value || 'MYR');
+    const maximum = Number(rows.find(row => row.key === 'claimMaximum')?.value);
+    return { currency: claimCurrencies.includes(currency) ? currency : 'MYR',
+      maxMinor: Number.isFinite(maximum) && maximum > 0 ? Math.round(maximum * 100) : null,
+      categories: claimCategories };
+  }
+
+  @Get()
+  async list(@Req() req: AuthenticatedRequest) {
+    const { organizationId, userId } = req.principal;
+    const [policy, rows] = await Promise.all([
+      this.policy(organizationId),
+      this.prisma.reviewRequest.findMany({
+        where: { organizationId, makerId: userId, kind: 'CLAIM_REQUEST' },
+        orderBy: { createdAt: 'desc' }, take: 150,
+        select: { id: true, summary: true, status: true, createdAt: true, payload: true }
+      })
+    ]);
+    return { success: true, data: { policy, claims: rows.map(({ payload, ...row }) => ({ ...row, expense: payload })) } };
+  }
+
+  @Post()
+  async submit(@Req() req: AuthenticatedRequest, @Body() body: ClaimDto) {
+    const { organizationId, userId } = req.principal;
+    const description = body.description.trim();
+    if (description.length < 3) throw new BadRequestException('Enter an expense description.');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(body.expenseDate) || body.expenseDate > new Date().toISOString().slice(0, 10)) {
+      throw new BadRequestException('Enter an expense date on or before today.');
+    }
+    const policy = await this.policy(organizationId);
+    if (policy.maxMinor !== null && body.amountMinor > policy.maxMinor) {
+      throw new BadRequestException('This claim exceeds the approved per-claim limit.');
+    }
+    const request = await this.prisma.$transaction(async tx => {
+      const created = await tx.reviewRequest.create({
+        data: { organizationId, makerId: userId, kind: 'CLAIM_REQUEST',
+          summary: 'Expense claim · ' + description.slice(0, 100),
+          payload: { category: body.category, expenseDate: body.expenseDate, amountMinor: body.amountMinor,
+            amount: (body.amountMinor / 100).toFixed(2) + ' ' + policy.currency,
+            currency: policy.currency, description, receiptReference: body.receiptReference?.trim() || '' } }
+      });
+      await tx.auditEvent.create({ data: { organizationId, actorId: userId,
+        action: 'REVIEW_SUBMITTED', entityType: created.kind, entityId: created.id } });
+      return created;
+    });
+    await notifyReviewers(this.prisma, organizationId, userId, 'Expense claim awaiting review', true, request.kind, request.id);
+    return { success: true, data: { id: request.id, status: request.status } };
+  }
+}
+
 class ParameterDto {
-  @IsIn(['timezone', 'currency', 'dateFormat', 'fiscalYearStart', 'leaveApprovalSlaDays', 'leaveAnnualEntitlement', 'leaveMedicalEntitlement', 'leavePublicHolidays', 'riskEscalationThreshold', 'sessionTimeoutMinutes'])
+  @IsIn(['timezone', 'currency', 'dateFormat', 'fiscalYearStart', 'leaveApprovalSlaDays', 'leaveAnnualEntitlement', 'leaveMedicalEntitlement', 'leavePublicHolidays', 'claimCurrency', 'claimMaximum', 'riskEscalationThreshold', 'sessionTimeoutMinutes'])
   key!: string;
   @IsString() @MinLength(1) @MaxLength(2000) value!: string;
   @IsOptional() @IsString() @MaxLength(400) summary?: string;
@@ -238,6 +308,16 @@ export class ParametersController {
       catch { throw new BadRequestException('Enter a valid IANA time zone'); }
     }
     if (body.key === 'leavePublicHolidays') parseHolidays(value);
+    if (['leaveAnnualEntitlement', 'leaveMedicalEntitlement', 'leaveApprovalSlaDays'].includes(body.key) &&
+        (!/^\d{1,3}$/.test(value) || Number(value) > 366)) {
+      throw new BadRequestException('Enter a whole number from 0 to 366.');
+    }
+    if (body.key === 'claimCurrency' && !claimCurrencies.includes(value)) {
+      throw new BadRequestException('Choose a supported claim currency.');
+    }
+    if (body.key === 'claimMaximum' && !/^\d{1,6}(?:\.\d{1,2})?$/.test(value)) {
+      throw new BadRequestException('Enter a non-negative amount with up to two decimal places.');
+    }
     const current = await this.prisma.organizationParameter.findUnique({
       where: { organizationId_key: { organizationId: req.principal.organizationId, key: body.key } }
     });

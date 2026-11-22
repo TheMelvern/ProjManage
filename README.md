@@ -1,10 +1,10 @@
 # PMO Portal
 
-Framer-aligned project-management workspace, implementing the [PMO Framer design](https://framer.com/projects/STom7jCmgSh7YkuQlZOB) with **Vue 3 + Vite frontend, NestJS API, Prisma and PostgreSQL**. Unlike Framer's static prototype, app modules read/write persisted records through authenticated API endpoints.
+Framer-aligned project-management workspace, implementing the [PMO Framer design](https://framer.com/projects/STom7jCmgSh7YkuQlZOB) with **React + TypeScript frontend with Vite, NestJS API, Prisma and PostgreSQL**. Unlike Framer's static prototype, app modules read/write persisted records through authenticated API endpoints.
 
 ## Modules
 
-| Module | URL (Vue hash routes) | Function |
+| Module | URL (React Router hash routes) | Function |
 |---|---|---|
 | Sign In / Sign Up | `/#/login`, `/#/signup` | JWT sign-in, independent approval and email verification |
 | Portfolio | `/#/portfolio` | Live project health, progress, risks and priorities |

@@ -13,7 +13,7 @@ import { ReportsController } from './reports.controller';
 import { RaidController } from './raid.controller';
 import { TimesheetsController } from './timesheets.controller';
 import { RegistrationController, ReviewsController } from './reviews.controller';
-import { LeaveController, ParametersController } from './workflow-modules.controller';
+import { ClaimsController, LeaveController, ParametersController } from './workflow-modules.controller';
 import { AdministrationController } from './administration.controller';
 import { OperationProposalsController } from './proposals.controller';
 import { ThrottleService } from './throttle.service';
@@ -35,7 +35,7 @@ import { EmailTokenService } from './email-token.service';
       }
     })
   ],
-  controllers: [HealthController, AuthController, ProjectsController, TasksController, ReportsController, RaidController, TimesheetsController, RegistrationController, ReviewsController, LeaveController, ParametersController, AdministrationController, OperationProposalsController, NotificationsController, ProfileController],
+  controllers: [HealthController, AuthController, ProjectsController, TasksController, ReportsController, RaidController, TimesheetsController, RegistrationController, ReviewsController, ClaimsController, LeaveController, ParametersController, AdministrationController, OperationProposalsController, NotificationsController, ProfileController],
   providers: [PrismaService, ProjectsService, AuthService, AuthGuard, ThrottleService, EmailService, EmailTokenService]
 })
 export class AppModule {}

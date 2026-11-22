@@ -1,0 +1,7 @@
+.portfolio-snapshot{min-inline-size:0;padding:16px;border:1px solid var(--pmo-border);border-radius:12px;background:var(--pmo-panel);color:var(--pmo-text)}
+.portfolio-snapshot p{margin:6px 0 12px;color:var(--pmo-muted)}
+.snapshot-scroll{max-inline-size:100%;overflow:auto}
+.portfolio-snapshot table{inline-size:100%;border-collapse:collapse;text-align:start}
+.portfolio-snapshot :is(th,td){padding:10px 12px;text-align:start;border-block-end:1px solid var(--pmo-border)}
+.portfolio-snapshot th{background:var(--pmo-surface-alt)}
+.portfolio-snapshot td{overflow-wrap:anywhere;min-inline-size:6rem}

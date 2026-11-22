@@ -1,4 +1,4 @@
-# Framer → Vue handoff
+# Framer handoff
 
 Framer project: https://framer.com/projects/PMO--STom7jCmgSh7YkuQlZOB-dM83E?node=augiA20Il
 
@@ -15,7 +15,7 @@ App shell, collapsible sidebar, topbar, breadcrumb, KPI card, project health bad
 WCAG AA contrast, keyboard-visible focus, semantic tables, labels, error descriptions, non-color-only status indicators, responsive layouts at mobile/tablet/desktop widths.
 
 ## Implementation mapping
-Framer is the visual specification; runtime screens remain Vue SFCs. Prefer tokens and reusable components rather than copying generated Framer React code. Verify each screen against the design at multiple viewport widths.
+Framer is the visual specification; runtime screens use React and TypeScript. Prefer tokens and reusable components rather than copying generated Framer React code. Verify each screen against the design at multiple viewport widths.
 
 ## Status
 This file records the handoff specification; the Framer canvas has not yet been redesigned.

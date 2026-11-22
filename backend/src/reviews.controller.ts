@@ -34,7 +34,7 @@ class DecisionDto {
 
 function safeRequest(r: { payload: unknown; [key: string]: unknown }) {
   const { payload, ...safe } = r;
-  return { ...safe, proposed: ['PROJECT_UPDATE', 'PARAMETER_UPDATE', 'LEAVE_REQUEST', 'MEMBERSHIP_UPDATE',
+  return { ...safe, proposed: ['PROJECT_UPDATE', 'PARAMETER_UPDATE', 'LEAVE_REQUEST', 'CLAIM_REQUEST', 'MEMBERSHIP_UPDATE',
     'PROJECT_CREATE','TASK_CREATE','TASK_UPDATE','RISK_CREATE','RISK_UPDATE','ISSUE_CREATE','ISSUE_UPDATE',
     'ACTION_CREATE','ACTION_UPDATE','DECISION_CREATE','TIMESHEET_CREATE','REPORT_PUBLISH'].includes(String(safe.kind)) ? payload : undefined };
 }
@@ -85,7 +85,7 @@ export class ReviewsController {
     const kinds: Record<string,string[]> = {
       projects:['PROJECT_CREATE','PROJECT_UPDATE','TASK_CREATE','TASK_UPDATE'],
       raid:['RISK_CREATE','RISK_UPDATE','ISSUE_CREATE','ISSUE_UPDATE','DECISION_CREATE','ACTION_CREATE','ACTION_UPDATE'],
-      timesheets:['TIMESHEET_CREATE'], reports:['REPORT_PUBLISH'], leave:['LEAVE_REQUEST'],
+      timesheets:['TIMESHEET_CREATE'], reports:['REPORT_PUBLISH'], leave:['LEAVE_REQUEST'], claims:['CLAIM_REQUEST'],
       admin:['REGISTRATION','PARAMETER_UPDATE','MEMBERSHIP_UPDATE']
     };
     if (module && !kinds[module]) throw new BadRequestException('Unknown approval module');
@@ -94,6 +94,7 @@ export class ReviewsController {
       where: {
         organizationId: req.principal.organizationId,
         ...(id ? { id } : {}),
+        ...(role === 'ADMIN' ? {} : { OR: [{ kind: { not: 'CLAIM_REQUEST' } }, { makerId: req.principal.userId }] }),
         ...(module || (role !== 'ADMIN' && role !== 'MEMBER') ? {
           kind: {
             ...(module ? { in: kinds[module] } : {}),
@@ -167,6 +168,9 @@ export class ReviewsController {
       }
       if (['REGISTRATION', 'MEMBERSHIP_UPDATE'].includes(review.kind) && req.principal.role !== 'ADMIN') {
         throw new ForbiddenException('Only organization administrators can approve account registration');
+      }
+      if (['PARAMETER_UPDATE', 'CLAIM_REQUEST'].includes(review.kind) && req.principal.role !== 'ADMIN') {
+        throw new ForbiddenException('An independent administrator must review this request');
       }
       if (review.kind === 'LEAVE_REQUEST' && !['ADMIN', 'PMO', 'PROJECT_MANAGER'].includes(req.principal.role)) {
         throw new ForbiddenException('Leave checker permission required');
@@ -394,6 +398,8 @@ export class ReviewsController {
               }
             }
           }
+        } else if (review.kind === 'CLAIM_REQUEST') {
+          // The approved request itself is the expense claim. Payment is handled outside this workflow.
         } else if (review.kind === 'REGISTRATION') {
           this.emailTokens.assertConfigured();
           const email = String(payload.email);

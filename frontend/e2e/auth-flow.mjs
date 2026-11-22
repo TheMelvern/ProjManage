@@ -17,7 +17,8 @@ const mailbox=createServer((req,res)=>{
   });
 });
 await new Promise(resolve=>mailbox.listen(39222,'127.0.0.1',resolve));
-const base='http://127.0.0.1:3000/api';
+const base=process.env.PMO_TEST_API_URL || 'http://127.0.0.1:3000/api';
+const frontend=process.env.PMO_TEST_FRONTEND_URL || 'http://localhost:5174';
 async function api(path,token,method='GET',body) {
   const response=await fetch(base+path,{
     method,
@@ -40,7 +41,7 @@ const page=await browser.newPage({viewport:{width:1280,height:900}});
 try {
   const unique=String(Date.now());
   const recipient='browser-auth-'+unique+'@pmo.test';
-  await page.goto('http://localhost:5174/#/signup',{waitUntil:'networkidle'});
+  await page.goto(frontend+'/#/signup',{waitUntil:'networkidle'});
   await page.getByLabel('First name').fill('Browser');
   await page.getByLabel('Last name').fill('Colleague');
   await page.getByLabel('Work email address').fill(recipient);
@@ -59,11 +60,11 @@ try {
   assert.ok(request,'Pending browser registration not found');
   await api('/reviews/'+request.id+'/decision',checker,'POST',{decision:'APPROVED'});
   const token=deliveredToken(recipient,'Verify');
-  await page.goto('http://localhost:5174/#/verify-email?token='+token,{waitUntil:'networkidle'});
+  await page.goto(frontend+'/#/verify-email?token='+token,{waitUntil:'networkidle'});
   await page.getByRole('button',{name:'Verify my email'}).click();
   await page.getByText(/Email verified/).waitFor({timeout:15000});
 
-  await page.goto('http://localhost:5174/#/login',{waitUntil:'networkidle'});
+  await page.goto(frontend+'/#/login',{waitUntil:'networkidle'});
   await page.getByPlaceholder('name@company.com').fill(recipient);
   await page.getByPlaceholder('••••••••').fill('browser-unique-password-123');
   await page.getByRole('button',{name:/Sign In/i}).click();
@@ -76,13 +77,13 @@ try {
   await page.getByRole('button',{name:'Send password reset link'}).click();
   await page.getByText(/password reset link will be sent/).waitFor({timeout:15000});
   const recovery=deliveredToken(recipient,'Reset');
-  await page.goto('http://localhost:5174/#/reset-password?token='+recovery,{waitUntil:'networkidle'});
+  await page.goto(frontend+'/#/reset-password?token='+recovery,{waitUntil:'networkidle'});
   await page.getByLabel('New password',{exact:true}).fill('browser-recovered-password-123');
   await page.getByLabel('Confirm new password').fill('browser-recovered-password-123');
   await page.getByRole('button',{name:'Reset password'}).click();
   await page.getByText(/Password reset/).waitFor({timeout:15000});
 
-  await page.goto('http://localhost:5174/#/login',{waitUntil:'networkidle'});
+  await page.goto(frontend+'/#/login',{waitUntil:'networkidle'});
   await page.getByPlaceholder('name@company.com').fill(recipient);
   await page.getByPlaceholder('••••••••').fill('browser-recovered-password-123');
   await page.getByRole('button',{name:/Sign In/i}).click();

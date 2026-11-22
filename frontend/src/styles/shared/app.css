@@ -8,13 +8,11 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--pmo-accent-ink);out
 .app-brand{display:flex;align-items:center;gap:12px;padding:27px 22px;font-size:19px;font-weight:750}
 .brand-symbol{width:35px;height:35px;border-radius:11px;display:grid;place-items:center;background:var(--pmo-accent);color:#111e39}
 .nav-category{padding:13px 22px;margin:14px 0 5px;font-size:10px;letter-spacing:.14em;color:var(--pmo-accent-ink);font-weight:800}
-.sidebar-links{display:flex;flex-direction:column;gap:6px;padding:0 12px 12px;flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#7287ae transparent}
-.sidebar-links::-webkit-scrollbar{width:6px}
-.sidebar-links::-webkit-scrollbar-thumb{background:#7287ae;border-radius:8px}
-.sidebar-links::-webkit-scrollbar-track{background:transparent}
+.sidebar-links{display:flex;flex-direction:column;gap:6px;padding:0 12px 12px;flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-width:none}
+.sidebar-links::-webkit-scrollbar{display:none}
 .sidebar-links a{display:flex;align-items:center;gap:14px;padding:13px 14px;color:var(--pmo-muted);text-decoration:none;font-size:13px;font-weight:600;border-radius:11px}
 .sidebar-links a:hover{background:var(--pmo-surface-alt)}
-.sidebar-links a.router-link-active{background:var(--pmo-accent);color:var(--pmo-on-accent)}
+.sidebar-links a[aria-current=page]{background:var(--pmo-accent);color:var(--pmo-on-accent)}
 .sidebar-links .material-symbols-outlined{font-size:21px}
 .sidebar-bottom{flex:0 0 auto;margin-top:auto;padding:14px 12px 22px;border-top:1px solid #ffffff1b}
 .sidebar-signout{width:100%;display:flex;align-items:center;gap:14px;text-align:left;padding:13px 14px;border:0;border-radius:11px;background:transparent;color:var(--pmo-muted);font-size:13px;font-weight:650;cursor:pointer;transition:background .15s ease,color .15s ease}
