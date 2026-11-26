@@ -1,0 +1,42 @@
+.notification-page{
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  max-width: 1120px;
+  margin-inline: auto;
+  padding-block: clamp(24px, 4vw, 40px);
+}
+.notification-page .page-heading, .notification-page .panel-header, .notification-page .inbox-actions{
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.notification-page .page-heading, .notification-page .panel-header{ justify-content: space-between; }
+.notification-page .page-heading h1, .notification-page .panel h2{ margin: 0; }
+.notification-page .page-heading p{ margin: 6px 0 0; }
+.notification-page .panel{
+  padding: var(--product-panel-space);
+  border: 1px solid var(--pmo-border);
+}
+.notification-page .item-list{ display: grid; margin-block-start: 16px; }
+.notification-page .item{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 12px;
+  border-block-start: 1px solid var(--pmo-border);
+}
+.notification-page .item.unread{ background: var(--pmo-surface-alt); }
+.notification-page .item-text{ flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.notification-page .item-text p{ margin: 3px 0; }
+.notification-page .unread-marker{
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--pmo-accent); flex: none;
+}
+.notification-page .empty{ padding-block: 18px; }
+.notification-page .error{ border-inline-start: 3px solid var(--pmo-danger); padding: 10px; }
+@media (max-width: 600px) {
+  .notification-page .item{ flex-wrap: wrap; }
+  .notification-page .item-text{ flex-basis: calc(100% - 76px); }
+}

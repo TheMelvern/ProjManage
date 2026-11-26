@@ -1,6 +1,6 @@
-# Framer → Vue / NestJS parity and integration
+# Framer to portal parity and integration
 
-**Design reference:** [PMO workspace in Framer](https://framer.com/projects/STom7jCmgSh7YkuQlZOB). Native editable Framer layers are not directly NestJS/Vue/Prisma code: UI was implemented in the existing Vue codebase, with PostgreSQL-backed NestJS workflows.
+**Design reference:** [PMO workspace in Framer](https://framer.com/projects/STom7jCmgSh7YkuQlZOB). Native editable Framer layers are not directly React and NestJS application code: UI runs in the React frontend, with PostgreSQL-backed NestJS workflows.
 
 ## Screen/route parity
 
@@ -20,7 +20,7 @@
 | Audit & Security | `/#/admin/audit` | Audit event viewer |
 | Connected Workflows | `/#/workflows` | Cross-module navigation and record relationships |
 
-Every app module links to related modules and uses a common responsive sidebar. Initials avatar badges and role labels appear in user records. A `/#/` hash prefix is expected in Vue but not Framer prototype URLs. Frontend is **localhost:5174**, backend 127.0.0.1:3000.
+Every app module links to related modules and uses a common responsive sidebar. Initials avatar badges and role labels appear in user records. A `/#/` hash prefix is expected in the portal but not Framer prototype URLs. Frontend is **localhost:5174**, backend 127.0.0.1:3000.
 
 ## Shared data rules
 

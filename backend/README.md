@@ -1,6 +1,6 @@
 # PMO Portal — NestJS API
 
-Node 22+, NestJS 10, Prisma 5 and PostgreSQL 16+. All protected endpoints require a JWT bearer token and perform organization membership rechecks. Local default `http://127.0.0.1:3000/api`, Vue origin `http://localhost:5174`.
+Node 22+, NestJS 10, Prisma 5 and PostgreSQL 16+. All protected endpoints require a JWT bearer token and perform organization membership rechecks. Local default `http://127.0.0.1:3000/api`, frontend origin `http://localhost:5174`.
 
 ## Setup
 

@@ -10,19 +10,19 @@
   --pmo-shadow: none;
 }
 :root[data-theme=light] {
-  --pmo-canvas: #f7f8f6;
-  --pmo-text: #17211f;
-  --pmo-muted: #52625e;
-  --pmo-border: #dce5e1;
-  --pmo-sidebar: #f1f4f1;
+  --pmo-canvas: #f5f5f7;
+  --pmo-text: #1d1d1f;
+  --pmo-muted: #56565e;
+  --pmo-border: #dedee3;
+  --pmo-sidebar: #f0f0f2;
 }
 @media (prefers-color-scheme: light) {
   :root[data-theme=system] {
-    --pmo-canvas: #f7f8f6;
-    --pmo-text: #17211f;
-    --pmo-muted: #52625e;
-    --pmo-border: #dce5e1;
-    --pmo-sidebar: #f1f4f1;
+    --pmo-canvas: #f5f5f7;
+    --pmo-text: #1d1d1f;
+    --pmo-muted: #56565e;
+    --pmo-border: #dedee3;
+    --pmo-sidebar: #f0f0f2;
   }
 }
 .app-shell .app-sidebar {
@@ -50,16 +50,11 @@
   background: color-mix(in srgb, var(--pmo-surface) 82%, var(--pmo-canvas));
   border-color: color-mix(in srgb, var(--pmo-border) 78%, transparent);
 }
-.app-shell .app-topbar .topbar-label {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-inline-size: 0;
+.app-topbar .topbar-area {
   margin-inline-end: auto;
-  color: var(--pmo-text);
+  color: var(--pmo-muted);
   font-size: .875rem;
   font-weight: 600;
-  letter-spacing: -.015em;
 }
 .app-topbar .topbar-right {
   position: relative;
@@ -67,6 +62,7 @@
   flex: none;
   align-items: center;
   gap: 4px;
+  margin-inline-start: auto;
 }
 .app-topbar .notification-anchor { position: static; }
 .app-shell .app-topbar :is(.menu-toggle, .notification-shortcut, .profile-badge-button) {
@@ -124,16 +120,6 @@
 @media (prefers-reduced-motion: reduce) {
   .app-shell .app-topbar button { transition: none; }
 }
-.topbar-area {
-  border-inline-end: 1px solid var(--pmo-border);
-  padding-inline-end: 10px;
-  flex: none;
-  color: var(--pmo-muted);
-  font-weight: 500;
-}
-.topbar-destination {
-  color: var(--pmo-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
 .app-shell .sidebar-links a { min-height: 44px; border-radius: 10px; }
 .app-shell .sidebar-links a[aria-current=page] {
   color: var(--pmo-accent-ink);
@@ -164,7 +150,6 @@
 }
 .app-shell .app-content .module-tabs .module-tabs-track a:focus-visible { outline-offset: -3px; }
 @media (max-width: 600px) {
-  .topbar-area { display: none; }
   .module-tabs-track { gap: 4px; }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -367,21 +352,18 @@
 /* Action colors are paired so a different accent updates fill, ink and tint together. */
 :root {
   --pmo-accent-ink:color-mix(in srgb,var(--pmo-accent) 83%,#000);
-  --pmo-action-tint:color-mix(in srgb,var(--pmo-accent) 9%,var(--pmo-panel));
+  --pmo-action-tint:color-mix(in srgb,var(--pmo-accent) 7%,var(--pmo-panel));
+  --pmo-accent-soft:var(--pmo-action-tint);
   --pmo-action-border:color-mix(in srgb,var(--pmo-accent) 24%,var(--pmo-panel));
 }
 :root[data-theme=dark] {
   --pmo-accent-ink:var(--pmo-accent);
-  --pmo-accent-soft:var(--pmo-action-tint);
 }
 @media(prefers-color-scheme:dark) {
   :root[data-theme=system] {
     --pmo-accent-ink:var(--pmo-accent);
-    --pmo-accent-soft:var(--pmo-action-tint);
   }
 }
-.app-shell .sidebar-links {scrollbar-color:var(--pmo-action-border) transparent}
-.app-shell .sidebar-links::-webkit-scrollbar-thumb {background:var(--pmo-action-border)}
 .app-shell .app-content .hub-tabs :is(a,button):not(.selected,.active):not(:hover) {color:var(--pmo-muted)}
 .app-shell .app-content .queue-record {color:var(--pmo-accent-ink)}
 .app-shell .app-content :is(.availability .controls,.portfolio-header .header-actions) button,
@@ -402,12 +384,6 @@
 }
 
 .app-shell .sidebar-links a[aria-current=page] {color:var(--pmo-accent-ink)}
-.app-shell .sidebar-links {
-  scrollbar-color:color-mix(in srgb,var(--pmo-accent) 52%,var(--pmo-sidebar)) transparent;
-}
-.app-shell .sidebar-links::-webkit-scrollbar-thumb {
-  background:color-mix(in srgb,var(--pmo-accent) 52%,var(--pmo-sidebar));
-}
 .app-shell .app-content :is(.back-link,.policy-link,.panel-link,.secondary-link,.project-workspace-link) {
   color:var(--pmo-accent-ink);
 }
@@ -571,3 +547,48 @@
 @media(max-width:650px) {
   .app-shell .portfolio-header .header-actions {flex-wrap:wrap}
 }
+
+/* Shared select field and dropdown. Keep hover, keyboard preview, and selection distinct. */
+.smart-select { position:relative; inline-size:100%; min-inline-size:0; }
+.smart-select:has(.smart-menu) { z-index:5; }
+.smart-select .smart-trigger,
+.app-shell .app-content .smart-select .smart-trigger {
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  inline-size:100%; min-block-size:44px; padding:8px 11px;
+  border:1px solid var(--pmo-border); border-radius:10px;
+  background:var(--pmo-input); color:var(--pmo-text);
+  font-size:var(--pmo-type-body); font-weight:550; text-align:start; cursor:pointer;
+}
+.smart-value { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.smart-value.placeholder, .smart-empty { color:var(--pmo-muted); }
+.smart-select .smart-chevron, .smart-check { inline-size:15px; block-size:15px; flex:none; color:var(--pmo-muted); }
+.smart-trigger[aria-expanded=true] .smart-chevron { transform:rotate(180deg); color:var(--pmo-accent-ink); }
+.smart-select .smart-trigger:disabled { opacity:.55; cursor:not-allowed; }
+.app-shell .app-content .smart-select .smart-trigger:is(:hover:not(:disabled),[aria-expanded=true]) {
+  background:var(--pmo-surface-alt); border-color:var(--pmo-action-border);
+}
+.smart-select .smart-menu,
+.app-shell .app-content .smart-select .smart-menu {
+  position:absolute; inset-block-start:calc(100% + 5px); inset-inline:0; min-inline-size:min(100%,140px);
+  overflow:auto; overscroll-behavior:contain; scroll-padding:5px; padding:5px;
+  border:1px solid var(--pmo-border); border-radius:12px;
+  background:var(--pmo-panel); color:var(--pmo-text); box-shadow:0 8px 28px rgb(15 23 42 / 14%);
+}
+.smart-select .smart-menu.opens-up,
+.app-shell .app-content .smart-select .smart-menu.opens-up {
+  inset-block-start:auto; inset-block-end:calc(100% + 5px);
+}
+.smart-menu [role=option], .smart-empty {
+  display:flex; justify-content:space-between; align-items:center; gap:8px;
+  min-block-size:38px; padding:6px 8px; border-radius:7px;
+  font-size:var(--pmo-type-body); line-height:1.4; overflow-wrap:anywhere;
+}
+.smart-menu [role=option] { cursor:pointer; }
+.smart-menu [aria-selected=true] { color:var(--pmo-accent-ink); font-weight:650; }
+.smart-menu [aria-selected=true] .smart-check { color:var(--pmo-accent-ink); }
+.smart-menu [role=option]:hover { background:var(--pmo-surface-alt); }
+.smart-menu [role=option].active { background:var(--pmo-action-tint); box-shadow:inset 2px 0 var(--pmo-accent-ink); }
+@media (max-width:600px) {
+  .smart-select .smart-trigger, .app-shell .app-content .smart-select .smart-trigger { font-size:16px; }
+}
+

@@ -1,0 +1,28 @@
+@scope (.raid-workspace) {
+.module-shortcuts{display:flex;gap:9px;flex-wrap:wrap}
+:scope{min-height:100vh;background:var(--pmo-accent-soft);padding:34px;color:var(--pmo-text)}
+.raid-header{display:flex;gap:24px;justify-content:space-between;align-items:center;margin-bottom:26px}
+.eyebrow{font-size:11px;font-weight:800;letter-spacing:.1em;color:var(--pmo-accent-ink)}
+.raid-header h1{font-size:30px;font-weight:750;margin:6px 0}
+.raid-header p:not(.eyebrow){color:#71829b;font-size:14px}
+.nav-link{background:white;border-radius:10px;padding:13px;color:var(--pmo-accent-ink);font-size:13px;font-weight:700}
+.notice{padding:17px;background:var(--pmo-accent-soft);border-radius:12px;color:var(--pmo-accent-ink);margin-bottom:20px}
+.notice.error{background:#fff0f1;color:#b6324a}.notice.success{background:#e9f9ef;color:#196844}
+.selector{display:flex;gap:16px;align-items:center;background:white;border-radius:16px;padding:22px;margin-bottom:20px}
+.selector label,.add-form label,.entry label{font-size:12px;color:#61738a;font-weight:700}
+select,input{padding:11px;border:1px solid var(--pmo-border);background:white;border-radius:9px;color:var(--pmo-text);min-width:0}
+.selector select{flex:1}.selector button,.add-form button{padding:12px 19px;border:0;background:var(--pmo-accent);color:var(--pmo-on-accent);font-weight:700;border-radius:9px;cursor:pointer}
+button:disabled{opacity:.5;cursor:not-allowed}
+.register{background:white;border-radius:18px;padding:24px}
+.tabs{display:flex;flex-wrap:wrap;gap:9px;margin-bottom:25px;border-bottom:1px solid var(--pmo-border);padding-bottom:18px}
+.tabs button{border:1px solid var(--pmo-border);background:white;color:#687991;border-radius:10px;padding:12px 18px;font-weight:700;cursor:pointer}
+.tabs button.active{background:var(--pmo-accent-soft);border-color:var(--pmo-border);color:var(--pmo-accent-ink)}
+.tabs span{font-size:11px;margin-left:5px;opacity:.65}
+.add-form{display:flex;gap:11px;align-items:center;flex-wrap:wrap;margin-bottom:26px}
+.add-form input{flex:1;min-width:200px}
+.entry{border-top:1px solid var(--pmo-border);padding:20px 0;display:flex;align-items:center;gap:16px}
+.entry>div{flex:1}.entry strong{font-size:15px}
+.entry p{font-size:13px;color:#718096}.entry small{display:block;margin-top:8px;color:#8190a5;font-size:12px}
+.empty{padding:40px 12px;text-align:center;color:#8290a4;font-size:14px}
+@media(max-width:700px){:scope{padding:16px}.raid-header,.selector,.entry{flex-direction:column;align-items:stretch}.register{padding:15px}.selector select{width:100%}}
+}

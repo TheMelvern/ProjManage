@@ -7,9 +7,11 @@
 
 :root {
   --pmo-font-body: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --pmo-type-page: 30px;
-  --pmo-type-section: 18px;
-  --pmo-type-subsection: 15px;
+  --pmo-type-page: 25px;
+  --pmo-type-display: 29px;
+  --pmo-type-metric: 24px;
+  --pmo-type-section: 17px;
+  --pmo-type-subsection: 14px;
   --pmo-type-body: 13px;
   --pmo-type-label: 12px;
   --pmo-type-caption: 11px;
@@ -18,9 +20,9 @@
   --pmo-weight-normal: 400;
   --pmo-weight-medium: 500;
   --pmo-weight-semibold: 600;
-  --pmo-weight-bold: 750;
+  --pmo-weight-bold: 700;
   --pmo-weight-extra: 800;
-  --pmo-line-body: 1.55;
+  --pmo-line-body: 1.5;
   --pmo-line-heading: 1.22;
   --pmo-tracking-heading: -0.025em;
 }
@@ -104,7 +106,7 @@ button, input, select, textarea { font-family: inherit; }
   letter-spacing: var(--pmo-tracking-heading);
 }
 .app-shell-login :is(.auth-story, .brand) h1 {
-  font-size: 42px !important;
+  font-size: var(--pmo-type-display) !important;
   font-weight: var(--pmo-weight-extra) !important;
   line-height: 1.14 !important;
   letter-spacing: -0.03em;
@@ -129,7 +131,31 @@ button, input, select, textarea { font-family: inherit; }
   font-weight: var(--pmo-weight-extra);
   letter-spacing: .1em;
 }
+/* Keep interactive text readable without increasing every label and heading. */
+.app-shell .app-sidebar .app-brand { font-size: 16px; }
+.app-shell .app-sidebar :is(.sidebar-links a, .sidebar-signout) { font-size: var(--pmo-type-label); }
+.app-shell .sidebar-links .nav-category { font-size: var(--pmo-type-caption); }
+.app-shell .app-content .module-tabs .module-tabs-track a { font-size: var(--pmo-type-button); }
+.app-shell .app-topbar .pmo-control { font-size: var(--pmo-type-button); }
+.app-shell .app-content main :is(.operational-heading, .portfolio-header, .workplace-intro) p {
+  font-size: var(--pmo-type-body);
+}
+.app-shell .app-content main .workplace-intro h1 { font-size: var(--pmo-type-display) !important; }
+.app-shell .app-content main :is(.kpi-card, .approval-total, .report-metric, .leave-screen .summary) strong {
+  font-size: var(--pmo-type-metric);
+  line-height: 1.2;
+}
+.app-shell .app-content main :is(a.pmo-control, .smart-trigger, .date-trigger) {
+  font-size: var(--pmo-type-button);
+}
+.app-shell-login :is(.auth-form-card #login-heading, .account-card h1) {
+  font-size: var(--pmo-type-page) !important;
+  line-height: var(--pmo-line-heading);
+}
 @media (max-width: 600px) {
-  :root { --pmo-type-page: 27px; }
-  .app-shell-login :is(.auth-story, .brand) h1 { font-size: 30px !important; }
+  :root { --pmo-type-page: 22px; --pmo-type-display: 25px; --pmo-type-metric: 22px; }
+  .app-shell .app-content main :is(input:not([type=checkbox]):not([type=radio]), select, textarea),
+  .app-shell-login :is(.auth-form-card, .account-card) :is(input:not([type=checkbox]), select, textarea) {
+    font-size: 16px !important;
+  }
 }

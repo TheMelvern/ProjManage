@@ -9,6 +9,7 @@ export function reviewApprovalPath(kind?: string, requestId?: string): string {
 function reviewQueuePath(kind?: string): string {
   if (!kind) return '/projects/approvals';
   if (['REGISTRATION','PARAMETER_UPDATE','MEMBERSHIP_UPDATE'].includes(kind)) return '/admin/approvals';
+  if (kind === 'CLAIM_REQUEST') return '/claims/approvals';
   if (kind === 'LEAVE_REQUEST') return '/leave/approvals';
   if (kind === 'TIMESHEET_CREATE') return '/timesheets/approvals';
   if (kind === 'REPORT_PUBLISH') return '/reports/approvals';

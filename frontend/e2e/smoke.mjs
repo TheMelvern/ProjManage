@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
 import { chromium } from 'playwright';
 
-const base='http://127.0.0.1:3000/api';
+const base=process.env.PMO_TEST_API_URL || 'http://127.0.0.1:3000/api';
+const frontend=process.env.PMO_TEST_FRONTEND_URL || 'http://localhost:5174';
 async function request(path,token,method='GET',body) {
   const response=await fetch(base+path,{method,headers:{
     'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})
@@ -27,7 +28,7 @@ const page=await browser.newPage({viewport:{width:1440,height:900},acceptDownloa
 const errors=[];
 page.on('pageerror',e=>errors.push(e.message));
 try {
-  await page.goto('http://localhost:5174/#/login',{waitUntil:'networkidle'});
+  await page.goto(frontend+'/#/login',{waitUntil:'networkidle'});
   // Login uses the same design tokens and layout conventions as signup and dashboard.
   const layout=await page.locator('.auth-layout').evaluate(el=>getComputedStyle(el).display);
   assert.equal(layout,'grid','Unified PMO authentication layout CSS was not applied');
@@ -41,7 +42,7 @@ try {
     weight:Number(getComputedStyle(el).fontWeight)
   }));
   assert.ok(loginType.family.includes('Inter'),'Authentication header must use Figma Inter typography');
-  assert.equal(loginType.size,'32px','Authentication headings must use current display scale');
+  assert.equal(loginType.size,'25px','Authentication headings must use current display scale');
   assert.ok(loginType.weight>=400,'Authentication heading must remain legible');
   const loginInput=await page.locator('#login-email').evaluate(el=>getComputedStyle(el).fontSize);
   assert.equal(loginInput,'13px','Authentication input typography must match design system');
@@ -66,6 +67,10 @@ try {
   await page.getByRole('heading',{name:'Portfolio Overview'}).waitFor();
   // Profile badge opens management, and sidebar navigation scrolls independently.
   const sidebar = page.getByRole('complementary',{name:'Primary navigation'});
+  async function openModule(group, name) {
+    await sidebar.getByRole('button',{name:group,exact:true}).press('Enter');
+    await sidebar.getByRole('navigation',{name:group+' navigation'}).getByRole('link',{name,exact:true}).click();
+  }
   const nav = sidebar.getByRole('navigation',{name:'PMO modules'});
   const navOverflow = await nav.evaluate(el=>getComputedStyle(el).overflowY);
   assert.equal(navOverflow,'auto','Sidebar navigation must scroll within the fixed sidebar');
@@ -128,15 +133,24 @@ try {
   assert.equal(await topbar.getByRole('button',{name:'Recent notifications'}).count(),1);
 
   const headingSize=await page.getByRole('heading',{name:'Portfolio Overview'}).evaluate(el=>getComputedStyle(el).fontSize);
-  assert.ok(Number.parseFloat(headingSize)>=28 && Number.parseFloat(headingSize)<=36,'Portfolio page title must follow display hierarchy');
+  assert.equal(headingSize,'25px','Portfolio should use the shared page heading size');
   const portfolioH2=await page.getByRole('heading',{name:'Portfolio health'}).evaluate(el=>getComputedStyle(el).fontSize);
-  assert.ok(Number.parseFloat(portfolioH2)>=18 && Number.parseFloat(portfolioH2)<=24,'Portfolio section headings must remain readable');
+  assert.equal(portfolioH2,'17px','Portfolio should use the shared section heading size');
   const tableHeader=await page.locator('thead th').first().evaluate(el=>getComputedStyle(el).fontSize);
   assert.equal(tableHeader,'11px','Table headings should share type scale');
 
   await sidebar.getByRole('link',{name:'Workplace',exact:true}).click();
   const workplace = page.getByRole('main');
   await workplace.getByRole('heading',{name:'Workplace',exact:true}).waitFor();
+  await workplace.getByRole('link',{name:'Explore sample workflow'}).click();
+  for (const label of ['Inspect the work item','View the sample request','See the outcome']) {
+    await page.getByRole('button',{name:label,exact:true}).click();
+  }
+  await page.getByRole('heading',{name:'The change appears in the project'}).waitFor();
+  await page.getByRole('link',{name:'Back to Workplace',exact:true}).click();
+  const shortcuts = workplace.getByRole('navigation',{name:'Workspace shortcuts'});
+  await shortcuts.getByRole('link',{name:'Notifications',exact:true}).waitFor();
+  assert.equal(await shortcuts.getByRole('link').count(),5);
   assert.equal(await sidebar.getByRole('link',{name:'Workplace',exact:true}).getAttribute('aria-current'),'page');
   await page.screenshot({path:'test-results/desktop-workplace.png',fullPage:true});
   await workplace.getByRole('link',{name:'Open notification inbox'}).click();
@@ -153,7 +167,7 @@ try {
   assert.equal(await projectTabs.locator('a[aria-current="page"]').count(),1,'Exactly one contextual tab must be active');
 
   const projectHeading=await page.getByRole('heading',{name:'Projects & tasks'}).evaluate(el=>getComputedStyle(el).fontSize);
-  assert.equal(projectHeading,headingSize,'Operational module headings should match Portfolio');
+  assert.equal(projectHeading,headingSize,'Operational areas should use the same heading scale');
   await page.getByText('E2E Delivery Project').first().waitFor({timeout:15000});
   await page.getByRole('link',{name:/Create project/}).click();
   await page.getByRole('heading',{name:'Create a project'}).waitFor();
@@ -169,7 +183,7 @@ try {
   await page.getByText('Request approved').first().waitFor({timeout:15000});
   await page.getByRole('button',{name:'Mark all read'}).click();
   await page.getByText('No notifications yet.').count().then(count => assert.equal(count,0));
-  await page.getByRole('link',{name:/Projects & Tasks/}).click();
+  await openModule('Delivery','Projects & Tasks');
   await page.reload();
   await page.getByText('Approved Browser Project').first().waitFor({timeout:15000});
   await page.locator('.project-record-link').filter({hasText:'Approved Browser Project'}).click();
@@ -222,7 +236,7 @@ try {
   await page.locator('.project-records li').filter({hasText:'Approved Browser Project'}).getByRole('button',{name:'Quick view'}).click();
   await page.getByText('Approved Browser Task').waitFor({timeout:15000});
 
-  await page.getByRole('link',{name:/RAID Register/}).click();
+  await openModule('Delivery','RAID Register');
   await page.getByRole('heading',{name:'RAID Register'}).waitFor();
   await page.getByRole('button',{name:'Add risk'}).click();
   await page.getByRole('dialog',{name:'New risk'}).waitFor();
@@ -233,7 +247,7 @@ try {
   await page.getByRole('button',{name:'Refresh'}).click();
   await page.getByText('Approved Browser Risk').waitFor({timeout:15000});
 
-  await page.getByRole('link',{name:/Timesheets/}).click();
+  await openModule('Delivery','Timesheets');
   await page.getByRole('heading',{name:'Timesheets'}).waitFor();
   await page.getByRole('button',{name:/Log time/}).click();
   await page.getByRole('dialog',{name:'New time entry'}).waitFor();
@@ -245,7 +259,7 @@ try {
   await page.reload();
   await page.getByText('Browser approval walkthrough').waitFor({timeout:15000});
 
-  await page.getByRole('link',{name:/Executive Reports/}).click();
+  await openModule('Delivery','Executive Reports');
   await page.getByRole('heading',{name:'Executive status reports'}).waitFor();
   await page.getByText('Approved Browser Project').waitFor({timeout:15000});
   await page.getByRole('button',{name:'Submit snapshot for review'}).click();
@@ -263,24 +277,24 @@ try {
   assert.equal(await sidebar.getByRole('link',{name:'Admin Parameters'}).count(),0);
   assert.equal(await sidebar.getByRole('link',{name:'Users & Roles'}).count(),0);
   assert.equal(await sidebar.getByRole('link',{name:'Audit & Security'}).count(),0);
-  assert.equal(await sidebar.getByRole('link',{name:'Parameters'}).count(),1);
+  assert.equal(await sidebar.getByRole('button',{name:'Administration',exact:true}).count(),1);
   await page.getByRole('navigation',{name:'Executive Reports tabs'}).getByRole('link',{name:'Approvals'}).click();
   await page.getByRole('heading',{name:'Report approvals'}).waitFor();
   await page.getByText('Publication submitted').count().then(count=>assert.equal(count,0));
-  await page.getByRole('link',{name:/RAID Register/}).click();
+  await openModule('Delivery','RAID Register');
   await page.getByRole('navigation',{name:'RAID Register tabs'}).getByRole('link',{name:'Approvals'}).click();
   await page.getByRole('heading',{name:'RAID approvals'}).waitFor();
-  await page.getByRole('region',{name:'Approval requests table'}).getByText('Approved Browser Risk').first().waitFor({timeout:15000});
-  await page.getByRole('link',{name:/Projects & Tasks/}).click();
+  await page.getByRole('region',{name:'Approval requests'}).getByText('Approved Browser Risk').first().waitFor({timeout:15000});
+  await openModule('Delivery','Projects & Tasks');
   await page.getByRole('navigation',{name:'Projects & Tasks tabs'}).getByRole('link',{name:'Approvals'}).click();
   await page.getByRole('heading',{name:'Project approvals'}).waitFor();
-  await page.getByRole('region',{name:'Approval requests table'}).getByText('Approved Browser Project').first().waitFor({timeout:15000});
-  await page.getByRole('link',{name:/Timesheets/}).click();
+  await page.getByRole('region',{name:'Approval requests'}).getByText('Approved Browser Project').first().waitFor({timeout:15000});
+  await openModule('Delivery','Timesheets');
   await page.getByRole('navigation',{name:'Timesheets tabs'}).getByRole('link',{name:'Approvals'}).click();
   await page.getByRole('heading',{name:'Timesheet approvals'}).waitFor();
-  await page.getByRole('region',{name:'Approval requests table'}).getByText('7.5 hours').first().waitFor({timeout:15000});
+  await page.getByRole('region',{name:'Approval requests'}).getByText('7.5 hours').first().waitFor({timeout:15000});
 
-  await page.getByRole('link',{name:/Leave Tracker/}).click();
+  await openModule('People','Leave Tracker');
   await page.getByRole('heading',{name:'Leave tracker'}).waitFor();
   assert.equal(await sidebar.getByRole('link',{name:'Team Calendar'}).count(),0);
   assert.equal(await page.getByRole('navigation',{name:'Leave Tracker tabs'}).getByRole('link',{name:'Team calendar'}).count(),1);
@@ -311,15 +325,21 @@ try {
   await page.getByText(/Request submitted for independent approval/).waitFor({timeout:15000});
   await approve('LEAVE_REQUEST','2026-12-20');
   await page.reload();
+  const approvedLeave = page.getByRole('region',{name:'Leave request history table'}).getByRole('row').filter({hasText:'Browser approved leave'});
+  await approvedLeave.locator('summary').filter({hasText:'Request details'}).click();
   await page.getByText('Browser approved leave').waitFor({timeout:15000});
   await page.getByRole('navigation',{name:'Leave Tracker tabs'}).getByRole('link',{name:'Approvals'}).click();
   await page.getByRole('heading',{name:'Leave approvals'}).waitFor();
-  await page.getByRole('region',{name:'Approval requests table'}).getByText('2026-12-20').first().waitFor({timeout:15000});
+  await page.getByRole('region',{name:'Approval requests'}).getByText('2026-12-20').first().waitFor({timeout:15000});
 
 
-  await sidebar.getByRole('link',{name:'Parameters'}).click();
+  await openModule('Administration','Parameters');
   const adminTabs=page.getByRole('navigation',{name:'Administration tabs'});
-  assert.equal(await adminTabs.getByRole('link').count(),4);
+  await adminTabs.getByRole('link',{name:'Admin Parameters',exact:true}).waitFor();
+  assert.equal(await adminTabs.getByRole('link').count(),3);
+  await openModule('People','HR setup');
+  await page.getByRole('heading',{name:'HR setup',exact:true}).waitFor();
+  await openModule('Administration','Parameters');
   await page.getByRole('heading',{name:'Admin Parameters'}).waitFor();
   await page.getByRole('button',{name:'Propose change to Reporting currency'}).click();
   await page.getByRole('dialog',{name:'Change organization parameter'}).waitFor();
@@ -337,9 +357,9 @@ try {
   await adminTabs.getByRole('link',{name:'Audit & Security'}).click();
   await page.getByRole('heading',{name:'Audit & Security'}).waitFor();
   assert.equal(await page.getByRole('heading',{name:'Related administration controls'}).count(),0);
-  await adminTabs.getByRole('link',{name:'Approvals'}).click();
+  await openModule('Administration','Admin approvals');
   await page.getByRole('heading',{name:'Administration approvals'}).waitFor();
-  await page.getByRole('region',{name:'Approval requests table'}).getByText('Browser report currency setting').first().waitFor({timeout:15000});
+  await page.getByRole('region',{name:'Approval requests'}).getByText('Browser report currency setting').first().waitFor({timeout:15000});
   await adminTabs.getByRole('link',{name:'Admin Parameters'}).click();
   await page.getByRole('heading',{name:'Admin Parameters'}).waitFor();
   assert.equal(await page.getByRole('heading',{name:'Connected administration workflows'}).count(),0);
@@ -355,7 +375,7 @@ try {
   // Exercise responsive mobile sidebar, navigation and leave form.
   const mobile=await browser.newPage({viewport:{width:390,height:844}});
   mobile.on('pageerror',e=>errors.push(e.message));
-  await mobile.goto('http://localhost:5174/#/login',{waitUntil:'networkidle'});
+  await mobile.goto(frontend+'/#/login',{waitUntil:'networkidle'});
   const mobileLayout=await mobile.locator('.auth-layout').evaluate(el=>getComputedStyle(el).display);
   assert.equal(mobileLayout,'grid','Mobile login should keep its centered single-card layout');
   assert.equal(await mobile.locator('.auth-story').isVisible(),false,'Mobile login must hide decorative brand panel');
@@ -382,12 +402,13 @@ try {
   await calendarTab.focus();
   await calendarTab.press('Enter');
   await mobile.waitForURL('**/#/leave/team');
+  await mobileTabs.locator('a[aria-current=page]').getByText('Team calendar', {exact:true}).waitFor();
   assert.equal(await calendarTab.getAttribute('aria-current'),'page');
   await mobileTabs.getByRole('link',{name:'My leave'}).click();
   await mobile.getByRole('heading',{name:'Leave tracker'}).waitFor();
   await mobile.screenshot({path:'test-results/mobile-leave.png',fullPage:true});
   await mobile.getByRole('button',{name:'Request leave'}).click();
-  assert.ok(await mobile.getByRole('dialog',{name:'New leave request'}).isVisible(),'Premium leave composer must work on mobile');
+  await mobile.getByRole('dialog',{name:'New leave request'}).waitFor();
   assert.ok(await mobile.getByLabel('Leave duration').isVisible());
   await mobile.close();
   assert.deepEqual(errors,[],'Browser runtime exceptions');
