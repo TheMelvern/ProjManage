@@ -335,6 +335,7 @@ try {
 
   await openModule('Administration','Parameters');
   const adminTabs=page.getByRole('navigation',{name:'Administration tabs'});
+  await adminTabs.getByRole('link',{name:'Admin Parameters',exact:true}).waitFor();
   assert.equal(await adminTabs.getByRole('link').count(),3);
   await openModule('People','HR setup');
   await page.getByRole('heading',{name:'HR setup',exact:true}).waitFor();
