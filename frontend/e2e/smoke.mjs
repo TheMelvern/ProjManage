@@ -402,12 +402,13 @@ try {
   await calendarTab.focus();
   await calendarTab.press('Enter');
   await mobile.waitForURL('**/#/leave/team');
+  await mobileTabs.locator('a[aria-current=page]').getByText('Team calendar', {exact:true}).waitFor();
   assert.equal(await calendarTab.getAttribute('aria-current'),'page');
   await mobileTabs.getByRole('link',{name:'My leave'}).click();
   await mobile.getByRole('heading',{name:'Leave tracker'}).waitFor();
   await mobile.screenshot({path:'test-results/mobile-leave.png',fullPage:true});
   await mobile.getByRole('button',{name:'Request leave'}).click();
-  assert.ok(await mobile.getByRole('dialog',{name:'New leave request'}).isVisible(),'Premium leave composer must work on mobile');
+  await mobile.getByRole('dialog',{name:'New leave request'}).waitFor();
   assert.ok(await mobile.getByLabel('Leave duration').isVisible());
   await mobile.close();
   assert.deepEqual(errors,[],'Browser runtime exceptions');
